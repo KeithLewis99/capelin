@@ -223,8 +223,24 @@ north55 <- as(north55, "SpatialPolygons")
 proj4string(north55) <- proj4string(water)
 plot(north55, border = "red", add = TRUE) # plot red rectangle over norther Lab Sea (Latitude 55 deg???)
 
+#Trinity and Bonavista Bay
+plot(water, xlim = c(-53.25, -53.23), ylim = c(47, 49.5), col = "lightblue", border = NA)
+x <- c(-52.79640, -52.91794, -53.07998, -53.24203, -53.52560, -53.93072,
+       -53.99148, -53.98136, -54.13327, -54.30545, -54.02187, -54.16366, 
+       -54.32570, -53.64714, -53.09011, -52.91794, -52.79640) # captured using locator function
+y <- c(47.75702, 47.52098, 47.39285, 47.51424, 47.50075, 47.72330,
+       47.92562, 48.21561, 48.33025, 48.40444, 48.60001, 48.72814,
+       48.78884, 49.20022, 48.64047, 48.11445, 47.76376)
+p <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
+proj4string(p) <- proj4string(water)
+
+eastcoast <- gIntersection(water, p, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
+eastcoast <- gBuffer(eastcoast, width = 0.1) # add a small buffer
+plot(eastcoast, border = "red", add = TRUE) # plots Lake Melville with border
+
 ## Ignoring Lake Melville made little difference
 filters <- gUnaryUnion(rbind(melville, north55))
+filters <- gUnaryUnion(rbind(filters, eastcoast))
 #filters <- gUnaryUnion(north55)            # joing rectangle with main map????
 slot(filters@polygons[[1]], "ID") <- "- filters"
 plot(water, col = "lightblue", border = NA)
