@@ -2,6 +2,7 @@
 #  Script written by Paul Regular (Paul.Regular@dfo-mpo.gc.ca)  #
 #  Created 201X-XX-XX, R version 3.X.x (201X-XX-XX)             #
 #  Last modified by Paul Regular, Alejandro Buren, and Keith Lewis 2017-07.04 #
+#  See Ale's optimization functions at the end
 ################################################################
 
 # The purpose of this file is to store the funcitons required for:
@@ -555,3 +556,35 @@ lookATSubEgg <- function(z, i){
 }
 
 
+### Feb 3 2015 - ADB
+### Code to fit the ice capelin model presented in Buren et al 2014
+### this is not elegant code, but at the time I ran the nalyses was good enough
+### I define 2 functions: one is the objective function SSQCapelinDome   and the second function
+### obtains the Expected Log Capelin BIomass (CapelinDome)
+
+### The data must be stored in a dataframe called capelin with at least 3 columns: 'year','tice','logcapelin'
+### logcapelin is the observed capelin biomass (in log scale). The data frame capelin cancontain more columns
+### NA values of logcapelin (i.e. years when there were no capelin surveys) are not used during optimization
+
+## Objective function - part of optimization function
+SSQCapelinDome <- function(params,dataf){
+  Alpha <- params[1]
+  Beta <- params[2]
+  Gamma <- params[3]
+  year <- dataf[,1]
+  tice <- dataf[,2]
+  logcap <- dataf[,3]
+  ELogCapBiom <- ifelse(year<1991, Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma)
+  sum((logcap-ELogCapBiom)^2)
+}
+
+## Function to obtain Expected Log Capelin Biomass         
+CapelinDome <- function(params,dataf){
+  Alpha <- params[1]
+  Beta <- params[2]
+  Gamma <- params[3]
+  year <- dataf[,1]
+  tice <- dataf[,2]
+  ELogCapBiom <- ifelse(year<1991, Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma)
+  ELogCapBiom
+}
