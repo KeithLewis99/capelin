@@ -8,7 +8,7 @@
 # This does an outstanding job except for 2013 and 2014 - why?  What covariates might explain the difference?
 
 setwd("D:/Keith/ice/2017-project")
-source('fncapelindome.r')
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
 library(plotrix)
 
 

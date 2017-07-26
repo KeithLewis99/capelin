@@ -39,7 +39,7 @@ rm(list=ls()) # Clear the workspace
 # devtools::install_github("eblondel/cleangeo") # for cleaning SpatialPolygon objects; also on CRAN
 options(stringsAsFactors = FALSE)
 
-source("D:/Keith/ice/2017-project/ice-chart-processing-function-v2.R") 
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
 
 #setwd("C:/Users/Paul/Documents/DFO/ice")
 setwd("D:/Keith/ice/2017-project")
@@ -265,7 +265,7 @@ trends <- rbind(trends, na.omit(data.frame(date = dates3, area = trends_update$a
 trends <- trends[order(trends$date), ]
 save(trends, file = "ice_trends_2017.Rdata")
 
-source("D:/Keith/ice/2017-project/ice-chart-processing-function-v2.R") 
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
 
 # test with all of date3
 # problem with 2002-07-15
