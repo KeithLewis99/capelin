@@ -22,7 +22,12 @@ Not clear if these subsets removes polygons or not for mapping?  Check this as w
   +	About 1% of all e00 files do not convert to *.Rdata.  
     - Not clear why this is the case and both Paul Regular and I have tried to figure it out.  The code creates a avc_data folder with appropriate subfolders but only creates a few files.  
     - Dates are as follows: 19730528, 19780122, 19780423, 19830102, 19840313, 19900226, 19931213, 20110718, 20111114, 20111121, 20120723, 20120730, 20121126, 20131223, 20150216, 20151109, 20160208, 20161205, 20170213
-    - Try to convert in QGIS on recommendations from Pete.
+    - Solution (thanks to Pete):
+      - Load files into QGIS.  
+      - Save teh PAL (polygon layer) as a shapefile.  
+      - Import to R.  Now, it is a SPDF rather than a SLineDF.  
+      - Problems: doesn't plot well although all data is there.
+    - queries for ice volume
 
 ## Notes on Area calculations 
 * Unresolved:
