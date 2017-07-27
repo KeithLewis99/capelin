@@ -4,13 +4,16 @@
 #  Last modified by Paul Regular, Alejandro Buren, and Keith Lewis 2017-07.04 #
 ################################################################
 
-# Plot of the optimization curves in comparing capelin abundance with timing of sea ice retreat.
+# The purpose of this file is to:
+#1) Plot the optimization curves in comparing capelin abundance with timing of sea ice retreat.
+
+# Notes:
 # This does an outstanding job except for 2013 and 2014 - why?  What covariates might explain the difference?
 
-setwd("D:/Keith/ice/2017-project")
+setwd("D:/Keith/capelin/2017-project")
 source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
 library(plotrix)
-
+library(ggplot2)
 
 
 capelin <- read.csv('capelin-ice-2014.csv',header=T)
@@ -43,57 +46,87 @@ xtice <- xtice[order(xtice$tice),]
 xtice$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par),dataf = xtice)
 xtice$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par),dataf = xtice)
 #not sure what these are for but used in plots below but creates a data set where all values of year are the same????
+
+
+
+
+# make optimization graphs by year and in comparison to ice
+# plot of capelin biomass v. year with ice models  
+# plot data, CI, optimzation curves (red = 2014, blue = 2010), not sure what last line if for
+
+# set values
 regime1 <- xtice[which(xtice$year == 1990),]
 regime2 <- xtice[which(xtice$year == 2000),]
 
-# make optimization graphs by year and in comparison to ice
-pdf('ice-capelin-update-2014.pdf',height=9,width=9,pointsize =8)
-par(mfrow=c(2,2))
-# plot of capelin biomass v. year with ice models  
-# plot data, CI, optimzation curves (red = 2014, blue = 2010), not sure what last line if for
-       with(capelin,plot(x=year,y=logcapelin,lty=1,pch=16,xlab='Year',ylab='ln (Capelin biomass (ktons))',xlim=c(1982,2014),xaxp=c(1982,2014,4),ylim=c(2,9),yaxp=c(2,9,2),col='black')) 
-        with(capelin,plotCI(x=year,y=logcapelin,uiw=logcapelinub-logcapelin,liw=logcapelin-logcapelinlb,sfrac=0,add=T,lty=1, yaxt='n',gap=0,pch=16,xlab='',xaxt='n',ylab='',xlim=c(1982,2014),ylim=c(2,9)))
-           with(subset(capelin,year>1981),lines(year,ExpectedLogBiomass,col='red', lwd=2,type='l'))
-           with(subset(capelin,year>1981),lines(year,ExpectedLogBiomassOld,col='blue', lwd=2,type='l'))
-           with(capelin,points(x=year,y=logcapelin,lty=1,pch=16,xlab='Year',ylab='ln (Capelin biomass (ktons))',xlim=c(1982,2014),xaxp=c(1982,2014,4),ylim=c(2,9),yaxp=c(2,9,2),col='black')) # think that this is redundant
+yearInt <- seq(1982, 2014, by=4)
+lnbiomassInt <- seq(0, 10, by=2)
+biomassInt <- seq(0, 8500)
 
-           
-           # plot of capelin biomass v. year with ice models  red = 2014, blue = 2010
-       with(capelin,plot(x=year,y=capelin,lty=1,pch=16,xlab='Year',ylab='Capelin biomass (ktons)',xlim=c(1982,2014),xaxp=c(1982,2014,4),ylim=c(0,8500),yaxp=c(0,8500,2),col='black')) 
-        with(capelin,plotCI(x=year,y=capelin,uiw=capelinub-capelin,liw=capelin-capelinlb,sfrac=0,add=T,lty=1, yaxt='n',gap=0,pch=16,xlab='',xaxt='n',ylab='',xlim=c(1982,2014),ylim=c(0,8500)))       
-           with(subset(capelin,year>1981),lines(year,exp(ExpectedLogBiomass),col='red', lwd=2,type='l'))
-           with(subset(capelin,year>1981),lines(year,exp(ExpectedLogBiomassOld),col='blue', lwd=2,type='l'))
-           legend(1998,8500,col=c('red','blue'),pch=NA,lwd=2,bty='n',cex=0.85,legend=c('Model estimates including data up to 2014', 'Model estimates including data up to 2010'))
-           with(capelin,points(x=year,y=capelin,lty=1,pch=16,xlab='Year',ylab='Capelin biomass (ktons)',xlim=c(1982,2014),xaxp=c(1982,2014,4),ylim=c(0,8500),yaxp=c(0,8500,2),col='black')) 
+p1 <- ggplot(capelin, aes(x = year, y = logcapelin)) + 
+  geom_errorbar(width = 0.3, colour = "black", aes(ymin=logcapelinlb, ymax=logcapelinub)) + 
+  geom_point(shape=16, size=3)  +
+  geom_line(aes(y=ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
+  geom_line(aes(y=ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+  scale_y_continuous(limits = c(0,10), breaks = lnbiomassInt) +
+  scale_x_continuous(limits = c(1982,2014), breaks = yearInt) +
+  xlab('Year') +
+  ylab('ln (Capelin biomass (ktons))') + 
+  theme_bw()
+p1
 
-# optimization curves           
-  plot(regime1$tice[which(regime1$ExpectedLogBiomass>0)],regime1$ExpectedLogBiomass[which(regime1$ExpectedLogBiomass>0)],col='red', type='l', lwd=2,ylim=c(0,9),yaxp=c(0,9,2),xlab=labtice, ylab='ln (Capelin biomass (ktons))', xlim=c(0,190),xaxp=c(0,190,2))
-  
-  lines(regime2$tice[which(regime2$ExpectedLogBiomass>0)], regime2$ExpectedLogBiomass[which(regime2$ExpectedLogBiomass>0)],col='red', type='l', lwd=2)
-  
-  lines(regime1$tice[which(regime1$ExpectedLogBiomassOld>0)], regime1$ExpectedLogBiomassOld[which(regime1$ExpectedLogBiomassOld>0)], col='blue', type='l', lwd=2,ylim=c(0,9),yaxp=c(0,9,2), xlab=labtice,ylab='ln (Capelin biomass (ktons))', xlim=c(0,190),xaxp=c(0,190,2))
-  
-  lines(regime2$tice[which(regime2$ExpectedLogBiomassOld>0)],regime2$ExpectedLogBiomassOld[which(regime2$ExpectedLogBiomassOld>0)],col='blue', type='l', lwd=2,ylim=c(0,9),yaxp=c(0,9,2),xlab=labtice,ylab='ln (Capelin biomass (ktons))', xlim=c(0,190),xaxp=c(0,190,2))
-  axis(1, at = c(0,50,70,120,140), labels = TRUE, tick = TRUE, line = NA,pos = NA, outer = FALSE, font = NA, lty = "solid", lwd = 1, col = NULL)
+p2 <- ggplot(capelin, aes(x = year, y = capelin)) +
+  geom_errorbar(width = 0.3, colour = "black", aes(ymin=capelinlb, ymax=capelinub)) + 
+  geom_point(shape=16, size=3)  +
+  geom_line(aes(y=exp(ExpectedLogBiomass)), colour="red", linetype=1, size=1.25) +
+  geom_line(aes(y=exp(ExpectedLogBiomassOld)), colour="blue", linetype=1, size=1.25) +
+  #scale_y_continuous(limits = c(0,8500), breaks = biomassInt) +
+  scale_x_continuous(limits = c(1982,2014), breaks = yearInt) +
+  xlab('Year') +
+  ylab('Capelin biomass (ktons)') + 
+  theme_bw() +
+  annotate("text", x = 2008, y = 8400, label = "Model estimates to 2014") + # all following for the legend
+  annotate("text", x = 2008, y = 8000, label = "Model estimates to 2010") +
+  annotate("segment", x = 2001, xend = 2003, y = 8400, yend = 8400, colour = "red") +
+  annotate("segment", x = 2001, xend = 2003, y = 8000, yend = 8000, colour = "blue")
+p2
 
-     points(capelin$tice[which(capelin$year<1991)],capelin$logcapelin[which(capelin$year<1991)],type='p',ylim=c(0,9),xlim=c(0,200),pch= 2)
-    points(capelin$tice[which(capelin$year>1990)],capelin$logcapelin[which(capelin$year>1990)],type='p',ylim=c(0,9),xlim=c(0,200),pch= 15)
-     with(capelin[which(capelin$year<1991),],plotCI(x=tice,y=logcapelin,uiw=logcapelinub-logcapelin,liw=logcapelin-logcapelinlb,sfrac=0,add=T,lty=1, yaxt='n',gap=0,pch=2,xlab='',xaxt='n',ylab='',xlim=c(0,200),ylim=c(0,9)))           
-     with(capelin[which(capelin$year>1990),],plotCI(x=tice,y=logcapelin,uiw=logcapelinub-logcapelin,liw=logcapelin-logcapelinlb,sfrac=0,add=T,lty=1, yaxt='n',gap=0,pch=15,xlab='',xaxt='n',ylab='',xlim=c(0,200),ylim=c(0,9)))           
+
+p3 <- ggplot() +
+  geom_line(data = regime1, aes(x = tice, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) + 
+  geom_line(data = regime2, aes(x = tice, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
+  geom_line(data = regime1, aes(x = tice, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+  geom_line(data = regime2, aes(x = tice, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+  geom_point(data = subset(capelin, year < 1991), aes(x = tice, y = logcapelin), shape=2, size=3) +
+  geom_point(data = subset(capelin, year > 1991), aes(x = tice, y = logcapelin), shape=15, size=3) + 
+  geom_errorbar(data = subset(capelin, year < 1991), aes(x = tice, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+  geom_errorbar(data = subset(capelin, year > 1991), aes(x = tice, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+  xlab("labtice") +
+  ylab("ln (Capelin biomass (ktons))") + 
+  ylim(0,9) +
+  theme_bw()
+p3
+
+ggplot() +
+  geom_line(data = regime1, aes(x = tice, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) + 
+  geom_line(data = regime2, aes(x = tice, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
+  geom_line(data = regime1, aes(x = tice, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+  geom_line(data = regime2, aes(x = tice, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+  geom_point(data = subset(capelin, year < 1991), aes(x = tice, y = capelin), shape=2, size=3) +
+  geom_point(data = subset(capelin, year > 1991), aes(x = tice, y = capelin), shape=15, size=3) + 
+  geom_errorbar(data = subset(capelin, year < 1991), aes(x = tice, ymin=capelinlb, ymax=capelinub), width = 0.3, colour = "black") +
+  geom_errorbar(data = subset(capelin, year > 1991), aes(x = tice, ymin=capelinlb, ymax=capelinub), width = 0.3, colour = "black") +
+  xlab("labtice") +
+  ylab("Capelin biomass (ktons)") + 
+  ylim(0,9) +
+  theme_bw()
+
+
+# make multiplot
+#pdf('ice-capelin-update-2014-new.pdf',height=9,width=9,pointsize =8)
+multiplot(p1, p3, p2, cols=2)
 #dev.off()
 
-# other optimization curves
- # png(filename = "ice-capelin-update.png",width = 1000, height = 1000, units = "px", pointsize = 20, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png"))
-  plot(regime1$tice[which(regime1$ExpectedLogBiomass>0)],regime1$ExpectedLogBiomass[which(regime1$ExpectedLogBiomass>0)],col='red', type='l', lwd=3,ylim=c(0,9),yaxp=c(0,9,2),xlab=labtice,ylab='ln (Capelin biomass (ktons))', xlim=c(0,190),xaxp=c(0,190,2))
-   lines(regime2$tice[which(regime2$ExpectedLogBiomass>0)],regime2$ExpectedLogBiomass[which(regime2$ExpectedLogBiomass>0)],col='red', type='l', lwd=3)
-   lines(regime1$tice[which(regime1$ExpectedLogBiomassOld>0)],regime1$ExpectedLogBiomassOld[which(regime1$ExpectedLogBiomassOld>0)],col='blue', type='l', lwd=3,ylim=c(0,9),yaxp=c(0,9,2),xlab=labtice,ylab='ln (Capelin biomass (ktons))', xlim=c(0,190),xaxp=c(0,190,2))
-  lines(regime2$tice[which(regime2$ExpectedLogBiomassOld>0)],regime2$ExpectedLogBiomassOld[which(regime2$ExpectedLogBiomassOld>0)],col='blue', type='l', lwd=3,ylim=c(0,9),yaxp=c(0,9,2),xlab=labtice,ylab='ln (Capelin biomass (ktons))', xlim=c(0,190),xaxp=c(0,190,2))
-  axis(1, at = c(0,50,70,120,140), labels = TRUE, tick = TRUE, line = NA,pos = NA, outer = FALSE, font = NA, lty = "solid", lwd = 1, col = NULL)
-   points(capelin$tice[which(capelin$year<1991)],capelin$logcapelin[which(capelin$year<1991)],type='p',ylim=c(0,9),xlim=c(0,200),pch= 2)
-    points(capelin$tice[which(capelin$year>1990)],capelin$logcapelin[which(capelin$year>1990)],type='p',ylim=c(0,9),xlim=c(0,200),pch= 15)
-     with(capelin[which(capelin$year<1991),],plotCI(x=tice,y=logcapelin,uiw=logcapelinub-logcapelin,liw=logcapelin-logcapelinlb,sfrac=0,add=T,lty=1, yaxt='n',gap=0,pch=2,xlab='',xaxt='n',ylab='',xlim=c(0,200),ylim=c(0,9)))           
-     with(capelin[which(capelin$year>1990),],plotCI(x=tice,y=logcapelin,uiw=logcapelinub-logcapelin,liw=logcapelin-logcapelinlb,sfrac=0,add=T,lty=1, yaxt='n',gap=0,pch=15,xlab='',xaxt='n',ylab='',xlim=c(0,200),ylim=c(0,9)))           
-dev.off()      
+
 #####################################################################################################
 #graphics.off()
 #####################################################################################################
@@ -103,7 +136,18 @@ capelin$logdiff <- NA
 for(i in 2:nrow(capelin)){
   capelin$logdiff[i] <- (capelin$logcapelin[i]-capelin$logcapelin[i-1])*100
 }
- 
+
+# new version of figure below
+ggplot(capelin, aes(x = year, y = logdiff)) + 
+  geom_point(pch = 16, size = 3) + 
+  geom_hline(yintercept = 100, lty = 3) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = -100, lty = 3) +
+  xlab("Year") +
+  ylab("L%") + 
+  #ylim(0,9) +
+  theme_bw()
+
 #plot of logdiff in capelin from previous year    
 png(filename = "ice-capelin-update2.png",width = 1000, height = 1000, units = "px", pointsize = 20, bg = "white", res = NA, 
 family = "", restoreConsole = TRUE, type = c("cairo-png")) 
