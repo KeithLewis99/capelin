@@ -13,8 +13,8 @@
   #6) Make filter polygons
   #7) Area and volume calculations
 
-# Main issues:
-  #1) Many errors in downloading files from the internet or converting e00 to SpatialPolygonDataframe
+# Main issues (see README):
+  #1) Few errors in downloading files from the internet or converting e00 to SpatialPolygonDataframe
   #2) Too many connections open when converting files
   #3) Lots of long loops that could be made into functions to simplify code. Done.
   #4) can date computations be simplified with lubridate?
@@ -42,7 +42,7 @@ options(stringsAsFactors = FALSE)
 source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
 
 #setwd("C:/Users/Paul/Documents/DFO/ice")
-setwd("D:/Keith/ice/2017-project")
+setwd("D:/Keith/capelin/2017-project")
 library(RArcInfo)
 library(maptools)
 library(rgdal)
@@ -52,6 +52,9 @@ library(data.table)
 library(ggplot2)
 library(RColorBrewer)
 library(cleangeo)
+library(dplyr)
+library(tidyr)
+library(broom)
 #library(doParallel)
 
 ## create dirs for data storage
@@ -108,26 +111,7 @@ dates
 
 # downloads all files not already in e00_data folder
 # error messages indicate maps that have not been or may never be created.  Can be ignored. See previous comment
-for(i in dates) {
-  fname <- paste0("e00_data/", i, ".e00")
-  ftest <- "e00_data/test.e00"
-  url.dir <- "http://ice-glaces.ec.gc.ca//www_archive/AOI_12/Coverages/"
-  url.file <- paste0("rgc_a12_", i, c("_CEXPREC.e00", "_EXPREC.e00", "_XXXXXX.e00", "_exprec.e00"))
-  url <- paste0(url.dir, url.file)
-  test <- try(download.file(url[1], ftest))
-  if(class(test) == "try-error") {
-    test <- try(download.file(url[2], ftest))
-    if(class(test) == "try-error") {
-      test <- try(download.file(url[3], ftest))
-      if(class(test) == "try-error") {
-        test <- try(download.file(url[4], ftest))
-      }
-    }
-  }
-  if(test == 0) { 
-    file.copy(ftest, fname)
-  }
-}
+e00Download(dates)
 
 ## e00 file conversion to Spatial Polygons Dataframe---------------------------------------------------------
 # e00 to avc_data (coverages) and then to SpatialPolygonsDAtaframe in sp_data
@@ -209,14 +193,14 @@ x <- c(-58.26572, -58.18660, -57.68811, -59.42886,
        -61.16169, -61.39115, -59.93525, -58.70091) # captured using locator function
 y <- c(54.25903, 54.21695, 54.12346, 52.94540, 
        52.92670, 53.93646, 54.45069, 54.58626)
-p <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
-proj4string(p) <- proj4string(water)
-#plot(p, add = TRUE, border = "steelblue")
-melville <- gIntersection(water, p, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
+p1 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
+proj4string(p1) <- proj4string(water)
+melville <- gIntersection(water, p1, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
 melville <- gBuffer(melville, width = 0.1) # add a small buffer
 plot(melville, border = "red", add = TRUE) # plots Lake Melville with border
 
-plot(water, col = "lightblue", border = NA) # plot North Atlantic (Gulf of Maine to Labrador Sea)
+# plot North Atlantic (Gulf of Maine to Labrador Sea)
+plot(water, col = "lightblue", border = NA) 
 north55 <- extent(water)
 north55@ymin <- 55
 north55 <- as(north55, "SpatialPolygons")
@@ -227,19 +211,37 @@ plot(north55, border = "red", add = TRUE) # plot red rectangle over norther Lab 
 plot(water, xlim = c(-53.25, -53.23), ylim = c(47, 49.5), col = "lightblue", border = NA)
 x <- c(-52.79640, -52.91794, -53.07998, -53.24203, -53.52560, -53.93072,
        -53.99148, -53.98136, -54.13327, -54.30545, -54.02187, -54.16366, 
-       -54.32570, -53.64714, -53.09011, -52.91794, -52.79640) # captured using locator function
+       -54.32570, -53.64714, -53.09011, -52.91794, -52.79640) # captured using locator()
 y <- c(47.75702, 47.52098, 47.39285, 47.51424, 47.50075, 47.72330,
        47.92562, 48.21561, 48.33025, 48.40444, 48.60001, 48.72814,
        48.78884, 49.20022, 48.64047, 48.11445, 47.76376)
-p <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
-proj4string(p) <- proj4string(water)
+p2 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
+proj4string(p2) <- proj4string(water)
+trin_bon <- gIntersection(water, p2, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
+trin_bon <- gBuffer(trin_bon, width = 0.1) # add a small buffer
+plot(trin_bon, border = "red", add = TRUE) # plots Trinity/Bonavista with border
 
-eastcoast <- gIntersection(water, p, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
+
+# Gulf of St. Lawrence Filter
+plot(water, xlim = c(-70, -62), ylim = c(45, 52), col = "lightblue", border = NA) # plot Gulf of St. Lawrense
+x <- c(-55.63588, -56.38329, -67.00278, -71.89210, -61.36604, -56.81928, -56.10301) # captured using locator()
+y <- c(51.49008, 52.06787, 50.35513, 46.70265, 45.27881, 47.52807, 51.40753)
+p3 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
+proj4string(p3) <- proj4string(water)
+gulf <- gIntersection(water, p3, byid = TRUE) # intesection of water (ocean surronding NL) and Gulf of St. Lawrence
+gulf <- gBuffer(gulf, width = 0.1) # add a small buffer
+plot(gulf, border = "red", add = TRUE) # plots gulf with border
+
+# intesection of water (ocean surronding NL) and Lake Melville
+eastcoast <- gIntersection(water, p1, byid = TRUE) 
+#eastcoast2 <- gIntersection(water, p2, byid = TRUE) 
 eastcoast <- gBuffer(eastcoast, width = 0.1) # add a small buffer
 plot(eastcoast, border = "red", add = TRUE) # plots Lake Melville with border
 
 ## Ignoring Lake Melville made little difference
 filters <- gUnaryUnion(rbind(melville, north55))
+filters <- gUnaryUnion(rbind(filters, trin_bon))
+filters <- gUnaryUnion(rbind(filters, gulf))
 filters <- gUnaryUnion(rbind(filters, eastcoast))
 #filters <- gUnaryUnion(north55)            # joing rectangle with main map????
 slot(filters@polygons[[1]], "ID") <- "- filters"
@@ -253,37 +255,66 @@ plot(filters, border = "red", add = TRUE) # plot main map with filter
 converted <- list.files("sp_data/", pattern = ".Rdata")
 load("ice_trends.Rdata")  # this is circular but is working under the assumption that code has been run in past years and that there is already and ice_trends.Rdata file.  So just load it and continue on with the code - it should only be a year out of date.
 trends.calculated <- trends$date # this is from ice_trends.Rdata
-dates3 <- strptime(converted, "%Y%m%d.Rdata")
+dates3 <- strptime(converted, "%Y%m%d.Rdata") # use this for the full run
 dates3 <- dates3[!format(dates3, "%Y%m%d") %in% format(trends.calculated, "%Y%m%d")] # these are dates that are not in ice_trends.Rdata- hence it is small
+
+
+## subset the ice data
+# create "model sets"
+
+ct <- c(1:10)
+sa <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "1.", "4.", "7.", "8.", "9.") # don't have "ice of land origin" or "undetermined or unknown"
+m1 <- list(ct=ct, sa=sa)
+m1
+
+ct <- c(3:10)
+sa <- c("5", "6", "7", "8", "9", "1.", "4.", "7.")
+m2 <- list(ct=ct, sa=sa)
+m2
+
+ct <- c(8, 9)
+sa <- c("5")
+m3 <- list(ct=ct, sa=sa)
+m3
 
 
 # use function to calc Area/Volumes of ice
 # works OK
-trends_update <- calcAreaVolume(dates3[1:10], ct=m1$ct, sa=m1$sa)
-
-trends <- rbind(trends, na.omit(data.frame(date = dates3, area = trends_update$areas, volume = trends_update$volumes))) # this 
-trends <- trends[order(trends$date), ]
-save(trends, file = "ice_trends_2017.Rdata")
-
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
-
-# test with all of date3
-# problem with 2002-07-15
-trends_update2 <- calcAreaVolume(dates3, ct=m1$ct, sa=m1$sa)
-dates3[46]
+# this is just to test on small batches
+trends_update_subset <- calcAreaVolume(dates3[1:10], ct=m1$ct, sa=m1$sa)
+trends <- rbind(trends, na.omit(data.frame(date = dates3, area = trends_update_subset$areas, volume = trends_update_subset$volumes)))  # it makes no sense to bind minlat to this because the original ice-trends.Rdata does not have this value - therefore, updating it makes no sense.
+save(trends, file = "ice_trends_subset-test.Rdata")
 
 # test with NULL
 # works OK but seems to break if run more than once
-trends_update3 <- calcAreaVolume(dates3[1:10])
+trends_update2 <- calcAreaVolume(dates3, ct=m1$ct, sa=m1$sa)
+trends <- rbind(data.frame(date = dates3, area = trends_update2$areas, volume = trends_update2$volumes, minlat = trends_update2$minlats)) 
 
+str(dates3)
+str(trends_update2)
+# this gets errors if you subset on dates3 as in some of the tests here.  Works fine if calcAreaVolume done on full dates3 vector
+trends <- trends[order(trends$date), ]
+head(trends)
+tail(trends)
+lookAt(trends)
+save(trends, file = "ice-trends-2017-m1-all.Rdata")
+
+#source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
+
+# test with all of date3
+# problem with 2002-07-15
+trends_update3 <- calcAreaVolume(dates3, ct=m2$ct, sa=m2$sa)
+trends <- rbind(data.frame(date = dates3, area = trends_update3$areas, volume = trends_update3$volumes, minlat = trends_update3$minlats)) 
+save(trends, file = "ice-trends-2017-m2-all.Rdata")
+dates3[46]
+
+save(trends, file = "ice-trends-2017-m1-all.Rdata")
 # test with other values
 # works OK
-trends_update4 <- calcAreaVolume(dates3[1:10], ct=m2$ct, sa=m2$sa)
+trends_update3 <- calcAreaVolume(dates3, ct=m3$ct, sa=m3$sa)
 
 
-ct
-sa
-save(trends, file = "ice_trends_subset-test.Rdata")
+
 
 str(dates3)
 ## Annual maps -----------------------------------------------------------------
