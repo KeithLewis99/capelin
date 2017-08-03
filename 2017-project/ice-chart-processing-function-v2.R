@@ -322,12 +322,11 @@ iceVolume <- function(x) {
 #' 
 
 iceTiming <- function(x){
-  min <- x %>%
+  minlat <- x %>%
     tidy() %>%
-    summarise(minlat = min(lat))
-  return(as.numeric(min))  
+    summarise(min(lat))
+  return(as.numeric(minlat))  
 }
-
 
   
 #######################################################################  
@@ -422,30 +421,6 @@ e00_to_SpatialPolygonDataframe <- function(x){
   }
 }
 
-# there appear to be two main types of errors---------------
-# 1) 4 errors for one file
-#Error in e00toavc(e00file, file.path(avcdir, "bin")) : 
- # ERROR 4: Unable to create coverage directory: avc_data/19730528/bin.
-
-#Error in get.arcdata(avcdir, "bin") : 
- # ERROR 3: Attempt to read past EOF in avc_data/19730528\bin\arc.adf.
-
-#Error in get.paldata(avcdir, "bin") : 
- # ERROR 4: Failed to open file avc_data/19730528\bin\pal.adf
-
-#Error in get.tabledata(file.path(avcdir, "info"), "bin.PAT") : 
-  #ERROR 3: Attempt to read past EOF in avc_data/19730528/info\arc.dir.
-# these vary from file to file and sometimes, the error is different, e.g.
-# Error in get.tabledata(file.path(avcdir, "info"), "bin.PAT") : 
-# ERROR 3: Attempt to read past EOF in avc_data/19780423/info\arc.dir.
-
-
-# 2) This error is less important - we have gone through the work and downloaded teh files but it would be ncie to solve for the future
-#Error in file(con, "r") : cannot open the connection
-#In addition: Warning message:
-# In file(con, "r") :
-#  cannot open file 'e00_data/19730604.e00': Too many open files
-
 
 
 ##' calcAreaVolume() ------------------------------------------------
@@ -469,12 +444,13 @@ e00_to_SpatialPolygonDataframe <- function(x){
      
      ## set area and volume to 0 if no egg attributes
      if(all(is.na(ice$EGG_ATTR))) {  # START HERE
-       area <- volume <- minlat <- 0
+       area <- volume <- 0
+         minlat <- 55
      } else {
        
        ## subset and project
-       egg <- ice[!is.na(ice$EGG_ATTR), ]  # subset here???
-       egg <- spTransform(egg, CRS("+proj=longlat +datum=WGS84"))
+       egg <- ice[!is.na(ice$EGG_ATTR), ]  
+       egg <- spTransform(egg, CRS("+proj=longlat +datum=WGS84")) # convert to WGS84 bc filters are in WGS84 - used on line 460
        
        ## Apply filters
        attr.tab <- egg@data
@@ -486,18 +462,19 @@ e00_to_SpatialPolygonDataframe <- function(x){
        if(class(sub.egg) != "try-error" & !is.null(sub.egg)) {
          row.names(attr.tab) <- paste(row.names(attr.tab), "- filters")
          attr.tab <- attr.tab[names(sub.egg), ]
-         sub.egg <- SpatialPolygonsDataFrame(sub.egg, attr.tab) # recover data
+         sub.egg <- SpatialPolygonsDataFrame(sub.egg, attr.tab) # recover data bc of gBuffer and gDifference which make a SP rather than an SPDF
        }
        if(class(sub.egg) == "try-error") { stop("There was a problem applying the filters") }
-       if(is.null(sub.egg)) { area <- volume <- minlat <- 0 }
        
        ## proceed with area and volume calculations
        if(is.null(sub.egg)) {
-         area <- volume <- minlat <- 0 # if NULL, then no ice was below 55 deg North
+         area <- volume <- 0
+           minlat <- 55 # if NULL, then no ice was below 55 deg North
        } else {
          
          if(class(sub.egg) != "try-error") {
-           ## return to lcc projection and calculate area and volume
+           minlat <- iceTiming(sub.egg)
+           ## return to lcc projection and calculate area and volume bc e00 data is in lcc and meters - needed to get proper area/volume calculations
            sub.egg <- spTransform(sub.egg, CRS(proj4string(ice)))
            a <- try(gArea(sub.egg, byid = TRUE)) # sometimes holes are not identified correctly, so try and extract max polygon area within each id
            if(class(a) == "try-error") { 
@@ -509,7 +486,7 @@ e00_to_SpatialPolygonDataframe <- function(x){
              subarea <- iceArea(sub.egg@data, ct = ct, sa = sa)
              area <- subarea[[2]]
              volume <- iceVolume(sub.egg@data) 
-             minlat <- iceTiming(sub.egg)
+             #minlat <- iceTiming(sub.egg)
             } else {
              area <- volume <-  minlat <- NA 
            }
@@ -603,7 +580,7 @@ lookAt <- function(x) {
 #' @param z = a vector of dates
 #' @param i = a datum in the vector
 #'
-#' @return a sub.egg object
+#' @return an ice object which is in an LCC projection; ice is the unfiltered e00 file in RData form, sub.egg is filtered ice
 #' @export
 #'
 #' @examples
