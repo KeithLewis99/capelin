@@ -72,6 +72,7 @@ filterEgg <- function(egg) {
 
 #sub.egg <- filterEgg(egg)      
 
+
 ############################################################
 ## proceed with area and volume calculations
 calcLatLong <- function(sub.egg, ct = NULL, sa = NULL) {
@@ -130,7 +131,7 @@ calcPolyA <- function(z){
 
 ############################################################
 trendsCalc <- function(x){
-  browser()
+  #browser()
   #x$sub.egg1@data$AREA_SA <- x$sub.egg1@data$AREA_SB <- x$sub.egg1@data$AREA_SC <- x$sub.egg1@data$AREA_SD <- rep(NA, length(x$sub.egg1@data))
   if(class(x$a) != "try-error") {
     x$sub.egg1@data$AREA <- x$a * 1e-6 # replace polygon area (use square km)
@@ -139,18 +140,11 @@ trendsCalc <- function(x){
     volume <- iceVolume(x$sub.egg1@data) 
     #minlat <- iceTiming(sub.egg)
   } else {
-    area <- volume <-  minlat <- NA 
+    area <- volume <-  minlat <- minlong <- NA 
   }
-  return(list(area=area, volume=volume, minlat=temp.ls$coords_min$lat, minlong=temp.ls$coords_min$long))
+  return(list(area=area, volume=volume, minlat=x$minlat, minlong=x$minlong))
 } 
 
 #calc <- trendsCalc(temp.ls)
 
-# not sure where this should go
-else { 
-  area <- volume <- minlat <-  NA 
-    }
-  }
- }
-} #end here when making single object for testing
 
