@@ -39,7 +39,7 @@ rm(list=ls()) # Clear the workspace
 # devtools::install_github("eblondel/cleangeo") # for cleaning SpatialPolygon objects; also on CRAN
 options(stringsAsFactors = FALSE)
 
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2a.R")
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
 #setwd("C:/Users/Paul/Documents/DFO/ice")
 setwd("D:/Keith/capelin/2017-project")
@@ -278,7 +278,7 @@ dates3 <- dates3[!format(dates3, "%Y%m%d") %in% format(trends.calculated, "%Y%m%
 ## subset the ice data
 # create "model sets"
 
-ct <- c(1:10)
+ct <- c(1:10, 9.5)
 sa <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "1.", "4.", "7.", "8.", "9.") # don't have "ice of land origin" or "undetermined or unknown"
 m1 <- list(ct=ct, sa=sa)
 m1
@@ -293,13 +293,14 @@ sa <- c("5")
 m3 <- list(ct=ct, sa=sa)
 m3
 
+rm(ct)
+rm(sa)
 
 # use function to calc Area/Volumes of ice
-# works OK
 # this is just to test on small batches
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2a.R")
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
-trends_update_subset <- calcAreaVolume(dates3[-c(23)], ct=m1$ct, sa=m1$sa)
+trends_update_subset <- calcAreaVolLat(dates3[-c(23)], ct=m1$ct, sa=m1$sa)
 trends <- rbind(trends, na.omit(data.frame(date = dates3[1:10], 
                                   area = trends_update_subset$areas, 
                                   volume = trends_update_subset$volumes,
@@ -317,8 +318,9 @@ save(trends, file = "ice_trends_subset-test.Rdata")
 
 # test with NULL
 # works OK but seems to break if run more than once
-trends_update2 <- calcAreaVolume(dates3, ct=m1$ct, sa=m1$sa)
-trends.m1 <- rbind(data.frame(date = dates3, 
+
+trends_update2 <- calcAreaVolume(dates3[c(-23)], ct=m1$ct, sa=m1$sa)
+trends.m1 <- rbind(data.frame(date = dates3[c(-23)], 
                            area = trends_update2$areas, 
                            volume = trends_update2$volumes,
                            minlats = trends_update2$minlats,
@@ -328,12 +330,14 @@ trends.m1 <- rbind(data.frame(date = dates3,
 lookAt(trends.m1)
 trends.m1 <- trends.m1[order(trends.m1$date), ]
 save(trends.m1, file = "ice-trends-2017-m1-all.Rdata")
+save(trends.m1, file = "ice-trends-2017-m1-subset.Rdata")
 
-#source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
 
 # test with all of date3
 # problem with 2002-07-15
-trends_update3 <- calcAreaVolume(dates3, ct=m2$ct, sa=m2$sa)
+
+trends_update3 <- calcAreaVolume(dates3[2:100], ct=m2$ct, sa=m2$sa)
 trends.m2 <- rbind(data.frame(date = dates3, 
                            area = trends_update3$areas, 
                            volume = trends_update3$volumes, 
@@ -341,7 +345,8 @@ trends.m2 <- rbind(data.frame(date = dates3,
                            minlongs = trends_update3$minlongs )) 
 trends.m2 <- trends.m2[order(trends.m2$date), ]
 save(trends.m2, file = "ice-trends-2017-m2-all.Rdata")
-
+save(trends.m2, file = "ice-trends-2017-m2-subset.Rdata")
+save(trends.m2, file = "ice-trends-2017-m2-all.Rdata")
 
 # test with other values
 # works OK
