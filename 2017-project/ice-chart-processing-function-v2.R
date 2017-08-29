@@ -224,8 +224,8 @@ iceSubset <- function(x, ct = NULL, sa = NULL) {
 #   slice(which.min(lat))
 #  return(z)
 #}
-spdf <- temp.ls$sub.egg1
-iceTiming(spdf)
+#spdf <- temp.ls$sub.egg1
+#iceTiming(spdf)
 iceTiming <- function(spdf){
   #browser()
   #print("inside IT")
@@ -427,6 +427,13 @@ plotIce <- function(x, main = "") {
 
 ##' e00_to_SpatialPolygonDataframe() ----------------------------------
 ##' e00 to avc_data (coverages) and then to SpatialPolygonsDAtaframe in sp_data
+#'
+#' @param x 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 
 e00_to_SpatialPolygonDataframe <- function(x){
   for(i in x) {
