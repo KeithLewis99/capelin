@@ -249,48 +249,72 @@ iceTiming <- function(spdf){
 #' @examples
 
 withinPolyAreaA <- function(x = data) {
+  #browser()
+  print("within")
   for (i in 1:nrow(x)) {
     if (is.na(x$SA[i])) {
       x$AREA_SA[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
     } else {
-      x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/10 # calculate area for desired values of SA
+      if(x$CA[i]==0){
+        x$AREA_SA[i] <- x$AREA[i] # if CA == 0, the below calc won't work - AREA=AREA_SA
+      } else {
+        x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
+      }
     }
   }
   return(x)
 }
 
 withinPolyAreaB <- function(x = data) {
+  #browser()
   for (i in 1:nrow(x)) {
     if (is.na(x$SB[i])) {
       x$AREA_SB[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
     } else {
-      x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/10 # calculate area for desired values of SA
+      if(x$CA[i]==0){
+        x$AREA_SB[i] <- 0 # if CA == 0, then no values for SB, SC, or SD
+      } else {
+        x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
+      }
     }
   }
   return(x)
 }
+
 
 withinPolyAreaC <- function(x = data) {
+  #browser()
   for (i in 1:nrow(x)) {
     if (is.na(x$SC[i])) {
-      x$AREA_SC[i] <- 0  # if value of SC = NA, then set AREA_SC to zero
+      x$AREA_SC[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
     } else {
-      x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/10 # calculate area for desired values of SA
+      if(x$CA[i]==0){
+        x$AREA_SC[i] <- 0 # if value of SA = NA, then set AREA_SA to zero
+      } else {
+        x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
+      }
     }
   }
   return(x)
 }
 
+
 withinPolyAreaD <- function(x = data) {
+  #browser()
   for (i in 1:nrow(x)) {
     if (is.na(x$SD[i])) {
-      x$AREA_SD[i] <- 0  # if value of SD = NA, then set AREA_SD to zero
+      x$AREA_SD[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
     } else {
-      x$AREA_SD[i] <- x$AREA[i] * as.numeric(x$CD[i])/10 # calculate area for desired values of SA
+      if(x$CA[i]==0){
+        x$AREA_SD[i] <- 0 # if value of SA = NA, then set AREA_SA to zero
+      } else {
+        x$AREA_SD[i] <- x$AREA[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
+      }
     }
   }
   return(x)
 }
+
 
 ##' iceArea()-----------------------------
 ##'uses attribute table to calculate total ice area
@@ -304,6 +328,7 @@ withinPolyAreaD <- function(x = data) {
 #' @examples
 #' 
 iceArea <- function(x) {
+  #browser()
   #x$AREA_SA <- x$AREA_SB <- x$AREA_SC <- x$AREA_SD <- rep(NA, length(x)) 
   x <- withinPolyAreaA(x)
   x <- withinPolyAreaB(x)
@@ -606,7 +631,7 @@ calcPolyA <- function(z){
 #' @examples calc <- trendsCalc(temp.ls)
 trendsCalc <- function(x, y){
   #browser()
-  if(class(a) != "try-error") {
+  if(class(y) != "try-error") {
     x@data$AREA <- y * 1e-6 # replace polygon area (use square km)
     subarea <- iceArea(x@data)
     area <- subarea[[2]]
