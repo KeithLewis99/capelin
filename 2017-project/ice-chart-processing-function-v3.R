@@ -70,7 +70,6 @@ eggAttr <- function(x) {
   sx
 }
 
-
 ##' attrTab()-----------------------------
 ##' function for extracting attribute table from raw e00 file (not 100% successful)
 #' Attribute Table
@@ -247,19 +246,26 @@ iceTiming <- function(spdf){
 #' @export
 #'
 #' @examples
-
 withinPolyAreaA <- function(x = data) {
   #browser()
-  print("within")
+  print("within1")
   for (i in 1:nrow(x)) {
     if (is.na(x$SA[i])) {
       x$AREA_SA[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
-    } else {
-      if(x$CA[i]==0){
-        x$AREA_SA[i] <- x$AREA[i] # if CA == 0, the below calc won't work - AREA=AREA_SA
+    
+      } else if (x$CA[i]==0){
+      x$AREA_SA[i] <- x$AREA[i] # if CA == 0, the below calc won't work - AREA=AREA_SA
+    
+      } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) ==10){
+      x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/10 # if CA-D values == 10
+    
+      } else if (x$CD[i] == 0 & x$SD[i] != 0) {
+        x$CD[i] <- 1 # is this right?  Should it not be CT - (CA + CB + CC)
+        x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
+        x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i])
+
       } else {
-        x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
-      }
+      x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
     }
   }
   return(x)
@@ -270,12 +276,20 @@ withinPolyAreaB <- function(x = data) {
   for (i in 1:nrow(x)) {
     if (is.na(x$SB[i])) {
       x$AREA_SB[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
-    } else {
-      if(x$CA[i]==0){
-        x$AREA_SB[i] <- 0 # if CA == 0, then no values for SB, SC, or SD
+      
+    } else if(x$CA[i]==0){
+      x$AREA_SB[i] <- 0  # if CA == 0, then no values for SB, SC, or SD
+    
+      } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) ==10){
+      x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/10 # calculate
+    
+      } else if (x$CD[i] == 0 & x$SD[i] != 0) {
+        x$CD[i] <- 1
+        x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
+        x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i])
+      
       } else {
-        x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
-      }
+      x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
     }
   }
   return(x)
@@ -287,12 +301,20 @@ withinPolyAreaC <- function(x = data) {
   for (i in 1:nrow(x)) {
     if (is.na(x$SC[i])) {
       x$AREA_SC[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
-    } else {
-      if(x$CA[i]==0){
-        x$AREA_SC[i] <- 0 # if value of SA = NA, then set AREA_SA to zero
+    
+      } else if(x$CA[i]==0){
+      x$AREA_SC[i] <- 0   # if CA == 0, then no values for SB, SC, or SD
+    
+      } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) ==10){
+      x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/10 # calculate
+    
+      } else if (x$CD[i] == 0 & x$SD[i] != 0) {
+        x$CD[i] <- 1
+        x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
+        x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i])
+        
       } else {
-        x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
-      }
+      x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
     }
   }
   return(x)
@@ -304,16 +326,25 @@ withinPolyAreaD <- function(x = data) {
   for (i in 1:nrow(x)) {
     if (is.na(x$SD[i])) {
       x$AREA_SD[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
+      
+    } else if(x$CA[i]==0){
+      x$AREA_SD[i] <- 0   # if CA == 0, then no values for SB, SC, or SD
+      
+    } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) == 10){
+      x$AREA_SD[i] <- x$AREA[i] * as.numeric(x$CD[i])/10 # calculate
+      
+    } else if (x$CD[i] == 0 & x$SD[i] != 0) {
+      x$CD[i] <- 1
+      x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
+      x$AREA_SD[i] <- x$AREA[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i])
+      
     } else {
-      if(x$CA[i]==0){
-        x$AREA_SD[i] <- 0 # if value of SA = NA, then set AREA_SA to zero
-      } else {
-        x$AREA_SD[i] <- x$AREA[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
-      }
+      x$AREA_SD[i] <- x$AREA[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
     }
   }
   return(x)
 }
+
 
 
 ##' iceArea()-----------------------------
@@ -551,6 +582,52 @@ filterEgg <- function(egg) {
 ############################################################
 ## proceed with area and volume calculations
 ############################################################
+##' calcPolyA()-----------
+#' calculates the area of each polygon in SpatailPolygonDataframe
+#' @param z list with subegg, minlat, and minlong
+#'
+#' @return
+#' @export z list with subegg, minlat, and minlong and a (used to calculate area)
+#'
+#' @examples temp.ls <- calcPolyA(temp.ls)
+#' temp.ls[[2]]$sub.egg1@data
+
+calcPolyA <- function(z){
+  #browser()
+  a <- try(gArea(z, byid = TRUE)) # sometimes holes are not identified correctly, so try and extract max polygon area within each id
+  if(class(a) == "try-error") { 
+    message("gArea didn't work. Trying alternate approach")
+    a <- sapply(slot(z, "polygons"), function(x) max(sapply(slot(x, "Polygons"), slot, "area"))) 
+  }
+  #z$sub.egg1$AREA <- a * 1e-6 # replace polygon area (use square km)
+  #temp.ls$a <- a
+  
+  return(a=a)
+}
+
+##' trendsCalc()-------
+#' use iceArea() and iceVolume() to calculate the area and volume of ice for specified area
+#' @param x  list with subegg, minlat, and minlong and a (used to calculate area)
+#'
+#' @return list with area, volume, minlat, and minlong for a given date (from Rdata[i])
+#' @export
+#'
+#' @examples calc <- trendsCalc(temp.ls)
+trendsCalc <- function(x, y){
+  #browser()
+  if(class(y) != "try-error") {
+    x@data$AREA <- y * 1e-6 # replace polygon area (use square km)
+    subarea <- iceArea(x@data)
+    area <- subarea[[2]]
+    volume <- iceVolume(x@data) 
+    #minlat <- iceTiming(sub.egg)
+    
+  }
+  return(list(area=area, volume=volume, minlat=x$minlat, minlong=x$minlong))
+  
+} 
+
+
 ## calcLatLong()------
 #' subset the sub.egg data by ice concentration and stage of development and calculate the minimum latitude (timing of iceretreat) using sub functions - needed to proceed with area and volume calculations
 #'
@@ -597,51 +674,6 @@ calcLatLong <- function(sub.egg, ct = NULL, sa = NULL) {
   
   return(list(area=area, volume=volume, minlat=minlat, minlong=minlong))
 }
-
-##' calcPolyA()-----------
-#' calculates the area of each polygon in SpatailPolygonDataframe
-#' @param z list with subegg, minlat, and minlong
-#'
-#' @return
-#' @export z list with subegg, minlat, and minlong and a (used to calculate area)
-#'
-#' @examples temp.ls <- calcPolyA(temp.ls)
-#' temp.ls[[2]]$sub.egg1@data
-
-calcPolyA <- function(z){
-  #browser()
-  a <- try(gArea(z, byid = TRUE)) # sometimes holes are not identified correctly, so try and extract max polygon area within each id
-  if(class(a) == "try-error") { 
-    message("gArea didn't work. Trying alternate appriach")
-    a <- sapply(slot(z, "polygons"), function(x) max(sapply(slot(x, "Polygons"), slot, "area"))) 
-  }
-  #z$sub.egg1$AREA <- a * 1e-6 # replace polygon area (use square km)
-  #temp.ls$a <- a
-  
-  return(a=a)
-}
-
-##' trendsCalc()-------
-#' use iceArea() and iceVolume() to calculate the area and volume of ice for specified area
-#' @param x  list with subegg, minlat, and minlong and a (used to calculate area)
-#'
-#' @return list with area, volume, minlat, and minlong for a given date (from Rdata[i])
-#' @export
-#'
-#' @examples calc <- trendsCalc(temp.ls)
-trendsCalc <- function(x, y){
-  #browser()
-  if(class(y) != "try-error") {
-    x@data$AREA <- y * 1e-6 # replace polygon area (use square km)
-    subarea <- iceArea(x@data)
-    area <- subarea[[2]]
-    volume <- iceVolume(x@data) 
-    #minlat <- iceTiming(sub.egg)
-    
-  }
-  return(list(area=area, volume=volume, minlat=x$minlat, minlong=x$minlong))
-  
-} 
 
 ############################################################
 # This is the end function - all of the above contribute to this one
@@ -797,14 +829,35 @@ lookAt <- function(x) {
 #' @export
 #'
 #' @examples
-lookATSubEgg <- function(z, i){
-  ## load map data
+lookAtIce <- function(z, i, ct = NULL, sa = NULL){
+  #browser()
   print(z[i])                   #start here when making single object for testing
   load(format(z[i], "sp_data/%Y%m%d.Rdata"))
   #plotIce(ice, main = dates[i])
   iceLook <- ice
   showIce <- ice@data[, c("AREA", "A_LEGEND", "EGG_ATTR", "E_CT", "E_CA", "E_SA", "E_SB")]
-  return(list(a=iceLook, b=showIce))
+  egg <- subsetProject(ice)    # ice is not in the local environment
+  sub.egg <- filterEgg(egg)
+  sub.egg1 <- iceSubset(sub.egg, ct = ct, sa = sa) 
+  
+  return(list(a=iceLook, b=showIce, c=sub.egg1))
+}
+
+
+extractSubegg1 <- function(z, i, ct = NULL, sa = NULL){
+  #browser()
+  print(z[i])                   #start here when making single object for testing
+  load(format(z[i], "sp_data/%Y%m%d.Rdata"))
+  #plotIce(ice, main = dates[i])
+  egg <- subsetProject(ice)    # ice is not in the local environment
+  sub.egg <- filterEgg(egg)
+  sub.egg1 <- iceSubset(sub.egg, ct = ct, sa = sa) 
+  
+  sub.egg1 <- sp::spTransform(sub.egg1, CRS(proj4string(ice)))
+  out <- iceArea(sub.egg1)
+  #sub.poly <- calcPolyA(sub.egg1)
+  #sub.trend <- trendsCalc(sub.egg1, sub.poly)
+  return(out)
 }
 
 ##################################################################################################### OPtimization funcitons
