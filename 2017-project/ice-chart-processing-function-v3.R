@@ -250,18 +250,19 @@ withinPolyAreaA <- function(x = data) {
   #browser()
   print("within1")
   for (i in 1:nrow(x)) {
-    if (is.na(x$SA[i])) {
-      x$AREA_SA[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
+    if (is.na(x$SA[i])) { # if value of SA = NA, then set AREA_SA to zero
+      x$AREA_SA[i] <- 0  
     
-      } else if (x$CA[i]==0){
-      x$AREA_SA[i] <- x$AREA[i] # if CA == 0, the below calc won't work - AREA=AREA_SA
+      } else if (x$CA[i] == 0){ # if CA == 0, the below calc won't work - AREA=AREA_SA
+      x$AREA_SA[i] <- x$AREA[i] 
     
-      } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) ==10){
-      x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/10 # if CA-D values == 10
+      } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) == 10){ # if CA-D values == 10
+      x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/10 
     
-      } else if (x$CD[i] == 0 & x$SD[i] != 0) {
-        x$CD[i] <- 1 # is this right?  Should it not be CT - (CA + CB + CC)
-        x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
+      } else if (x$CD[i] == 0 & x$SD[i] != 0) { # if Sd is used and Cd is omitted, then..
+        #x$CD[i] <- 1 
+        x$CD[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]))
+        #x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
         x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i])
 
       } else {
@@ -280,13 +281,14 @@ withinPolyAreaB <- function(x = data) {
     } else if(x$CA[i]==0){
       x$AREA_SB[i] <- 0  # if CA == 0, then no values for SB, SC, or SD
     
-      } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) ==10){
-      x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/10 # calculate
+      } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) ==10){ # if CA-D values == 10
+      x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/10 
     
-      } else if (x$CD[i] == 0 & x$SD[i] != 0) {
-        x$CD[i] <- 1
-        x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
-        x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i])
+      } else if (x$CD[i] == 0 & x$SD[i] != 0) { # if Sd is used and Cd is omitted, then..
+        #x$CD[i] <- 1 
+        x$CD[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]))
+        #x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
+        x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/as.numeric(x$CT[i])
       
       } else {
       x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
@@ -308,11 +310,11 @@ withinPolyAreaC <- function(x = data) {
       } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) ==10){
       x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/10 # calculate
     
-      } else if (x$CD[i] == 0 & x$SD[i] != 0) {
-        x$CD[i] <- 1
-        x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
-        x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i])
-        
+      } else if (x$CD[i] == 0 & x$SD[i] != 0) { # if Sd is used and Cd is omitted, then..
+        #x$CD[i] <- 1 
+        x$CD[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]))
+        #x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
+        x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/as.numeric(x$CT[i])
       } else {
       x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
     }
@@ -333,9 +335,10 @@ withinPolyAreaD <- function(x = data) {
     } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) == 10){
       x$AREA_SD[i] <- x$AREA[i] * as.numeric(x$CD[i])/10 # calculate
       
-    } else if (x$CD[i] == 0 & x$SD[i] != 0) {
-      x$CD[i] <- 1
-      x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
+    } else if (x$CD[i] == 0 & x$SD[i] != 0) { # if Sd is used and Cd is omitted, then..
+      #x$CD[i] <- 1 
+      x$CD[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]))
+      #x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
       x$AREA_SD[i] <- x$AREA[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i])
       
     } else {
