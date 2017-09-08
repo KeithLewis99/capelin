@@ -181,10 +181,11 @@ eggAttr.cols <- function(x) {
 #'
 #' @examples eggAttr.query(x = data, CT = ct, cA = NULL, SA = sa, SB = NULL)
 
-eggAttr.query <- function(x = data, ct = NULL, sa = NULL){
+eggAttr.query <- function(x = data, ct = NULL, sa = NULL, sb = NULL){
   if(is.null(ct)) ct <- unique(x$CT) #if all values of CT are desired
   if(is.null(sa)) sa <- unique(x$SA) #if all values of SA are desired
-  x <- subset(x, subset = CT %in% ct & SA %in% sa)
+  if(is.null(sb)) sa <- unique(x$SB) #if all values of SB are desired
+  x <- subset(x, subset = CT %in% ct & SA %in% sa & SB %in% sb)
   if(nrow(x)==0) {
     cols <- ncol(x)
     x[1, ] <- rep(0, cols)
@@ -204,15 +205,15 @@ eggAttr.query <- function(x = data, ct = NULL, sa = NULL){
 #' @export
 #'
 #' @examples
-iceSubset <- function(x, ct = NULL, sa = NULL) {
+iceSubset <- function(x, ct = NULL, sa = NULL, sb = NULL) {
   #browser()
   print("inside IS")
   #print(environment())
   #print(ls())
   x@data <- eggAttr.cols(x@data)
-  x@data <- eggAttr.query(x@data, ct = ct, sa = sa)# try with ....
+  x@data <- eggAttr.query(x@data, ct = ct, sa = sa, sb = sb)# try with ....
   
-  y <- subset(x, subset = CT %in% ct & SA %in% sa)
+  y <- subset(x, subset = CT %in% ct & SA %in% sa & SB %in% sb)
   #  return(y)
 }
 
@@ -253,8 +254,10 @@ withinPolyAreaA <- function(x = data) {
     if (is.na(x$SA[i])) { # if value of SA = NA, then set AREA_SA to zero
       x$AREA_SA[i] <- 0  
     
-      } else if (x$CA[i] == 0){ # if CA == 0, the below calc won't work - AREA=AREA_SA
+      } else if (x$CA[i] == 0| x$CA[i]=="?"){ # if CA == 0, the below calc won't work - AREA=AREA_SA
+      print("CA = ?")
       x$AREA_SA[i] <- x$AREA[i] 
+      x$CA[i] <- x$CT[i]
     
       } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) == 10){ # if CA-D values == 10
       x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/10 
@@ -587,7 +590,9 @@ filterEgg <- function(egg) {
 ############################################################
 ##' calcPolyA()-----------
 #' calculates the area of each polygon in SpatailPolygonDataframe
-#' @param z list with subegg, minlat, and minlong
+#' # Polgon area != ice area
+#' # Polygon area is supplied in raw ice SPDF but is needs to be recalculated because portions of the data are filtered.  Therefore, there is a need to recalculate AREA using the gAREA function resulting in a more robust estiamte of the actual ice area
+#' @param z list with subeg`g, minlat, and minlong
 #'
 #' @return
 #' @export z list with subegg, minlat, and minlong and a (used to calculate area)
@@ -644,10 +649,10 @@ trendsCalc <- function(x, y){
 #' @examples temp.ls <- calcLatLong(sub.egg, ct = m1$ct, sa = m1$sa)
 #' test <- calcLatLong(sub.egg, ct = m2$ct, sa = m2$sa)
 
-calcLatLong <- function(sub.egg, ct = NULL, sa = NULL) {
+calcLatLong <- function(sub.egg, ct = NULL, sa = NULL, sb = NULL) {
   #browser()
   
-  sub.egg1 <- iceSubset(sub.egg, ct = ct, sa = sa) 
+  sub.egg1 <- iceSubset(sub.egg, ct = ct, sa = sa, sb = sb) 
   
   if(nrow(sub.egg1@data)==0){ # if you subset out all data
     print("subset zero - rows")
@@ -693,7 +698,7 @@ calcLatLong <- function(sub.egg, ct = NULL, sa = NULL) {
 #' @examples test <- calcAreaVolLat(dates3, ct=m1$ct, sa=m1$sa)
 #' test <- calcAreaVolLat(dates3[1], ct=m2$ct, sa=m2$sa)
 #' test <- calcAreaVolLat(dates3[2], ct=m2$ct, sa=m2$sa)
-calcAreaVolLat <- function(y, ct = NULL, sa = NULL) {
+calcAreaVolLat <- function(y, ct = NULL, sa = NULL, sb = NULL) {
   #browser()
   #my.env <- new.env()
   areas <-
@@ -724,7 +729,7 @@ calcAreaVolLat <- function(y, ct = NULL, sa = NULL) {
         minlong <- -57
       } else {
         if (class(sub.egg) != "try-error") {
-          calc <- calcLatLong(sub.egg, ct = ct, sa = sa)
+          calc <- calcLatLong(sub.egg, ct = ct, sa = sa, sb = sb)
           
           
           area <- calc$area
@@ -822,7 +827,7 @@ lookAt <- function(x) {
   PrintLvls(x) #see above for code
 }
 
-## lookAtSubEgg() -------------
+## lookAtSubEgg()   -------------
 #' Look At the STructure of a sub.egg object
 #'
 #' @param z = a vector of dates
@@ -832,7 +837,7 @@ lookAt <- function(x) {
 #' @export
 #'
 #' @examples
-lookAtIce <- function(z, i, ct = NULL, sa = NULL){
+lookAtIce <- function(z, i, ct = NULL, sa = NULL, sb = NULL){
   #browser()
   print(z[i])                   #start here when making single object for testing
   load(format(z[i], "sp_data/%Y%m%d.Rdata"))
@@ -841,20 +846,20 @@ lookAtIce <- function(z, i, ct = NULL, sa = NULL){
   showIce <- ice@data[, c("AREA", "A_LEGEND", "EGG_ATTR", "E_CT", "E_CA", "E_SA", "E_SB")]
   egg <- subsetProject(ice)    # ice is not in the local environment
   sub.egg <- filterEgg(egg)
-  sub.egg1 <- iceSubset(sub.egg, ct = ct, sa = sa) 
-  
+  sub.egg1 <- iceSubset(sub.egg, ct = ct, sa = sa, sb = sb) 
+  sub.egg1 <- sp::spTransform(sub.egg1, CRS(proj4string(ice)))
   return(list(a=iceLook, b=showIce, c=sub.egg1))
 }
 
 
-extractSubegg1 <- function(z, i, ct = NULL, sa = NULL){
+extractSubegg1 <- function(z, i, ct = NULL, sa = NULL, sb = NULL){
   #browser()
   print(z[i])                   #start here when making single object for testing
   load(format(z[i], "sp_data/%Y%m%d.Rdata"))
   #plotIce(ice, main = dates[i])
   egg <- subsetProject(ice)    # ice is not in the local environment
   sub.egg <- filterEgg(egg)
-  sub.egg1 <- iceSubset(sub.egg, ct = ct, sa = sa) 
+  sub.egg1 <- iceSubset(sub.egg, ct = ct, sa = sa, sb = sb) 
   
   sub.egg1 <- sp::spTransform(sub.egg1, CRS(proj4string(ice)))
   out <- iceArea(sub.egg1)
