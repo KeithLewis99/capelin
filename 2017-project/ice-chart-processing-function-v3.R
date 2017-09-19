@@ -182,10 +182,12 @@ eggAttr.cols <- function(x) {
 #' @examples eggAttr.query(x = data, CT = ct, cA = NULL, SA = sa, SB = NULL)
 
 eggAttr.query <- function(x = data, ct = NULL, sa = NULL, sb = NULL){
+  #browser()
   if(is.null(ct)) ct <- unique(x$CT) #if all values of CT are desired
   if(is.null(sa)) sa <- unique(x$SA) #if all values of SA are desired
   if(is.null(sb)) sa <- unique(x$SB) #if all values of SB are desired
-  x <- subset(x, subset = CT %in% ct & SA %in% sa & SB %in% sb)
+  x <- subset(x, subset = CT %in% ct & SA %in% sa | CT %in% ct & SB %in% sb)
+  #x <- subset(x, subset = CT %in% ct & SA %in% sa & SB %in% sb)
   if(nrow(x)==0) {
     cols <- ncol(x)
     x[1, ] <- rep(0, cols)
@@ -211,9 +213,10 @@ iceSubset <- function(x, ct = NULL, sa = NULL, sb = NULL) {
   #print(environment())
   #print(ls())
   x@data <- eggAttr.cols(x@data)
-  x@data <- eggAttr.query(x@data, ct = ct, sa = sa, sb = sb)# try with ....
+  x <- eggAttr.query(x, ct = ct, sa = sa, sb = sb)# try with ....
   
-  y <- subset(x, subset = CT %in% ct & SA %in% sa & SB %in% sb)
+ # y <- subset(x, subset = CT %in% ct & SA %in% sa & SB %in% sb | CT %in% ct & SA %in% sa) # not sure what this line is for
+  #y <- subset(x, subset = @data$CT %in% ct & x@data$SA %in% sa & x@data$SB %in% sb)
   #  return(y)
 }
 
@@ -247,110 +250,113 @@ iceTiming <- function(spdf){
 #' @export
 #'
 #' @examples
-withinPolyAreaA <- function(x = data) {
+#'
+withinPolyAreaA <- function(x = data, ct = ct, sa = sa, sb = sb) {
   #browser()
   print("within1")
+  
   for (i in 1:nrow(x)) {
-    if (is.na(x$SA[i])) { # if value of SA = NA, then set AREA_SA to zero
-      x$AREA_SA[i] <- 0  
     
-      } else if (x$CA[i] == 0| x$CA[i]=="?"){ # if CA == 0, the below calc won't work - AREA=AREA_SA
-      print("CA = ?")
-      x$AREA_SA[i] <- x$AREA[i] 
+    if (is.na(x$SA[i]) | !(x$SA[i] %in% sa)) { # if value of SA = NA, then set AREA_SA to zero
+      x$AREA_SA[i] <- 0  # should this be NA????
+      
+    } else if (x$CA[i] == 0| x$CA[i]=="?"){ # if CA == 0, the below calc won't work - AREA=AREA_SA
+      print("CA = 0 or ?")
+      x$AREA_SA[i] <- x$AREAice[i] 
       x$CA[i] <- x$CT[i]
-    
-      } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) == 10){ # if CA-D values == 10
-      x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/10 
-    
-      } else if (x$CD[i] == 0 & x$SD[i] != 0) { # if Sd is used and Cd is omitted, then..
-        #x$CD[i] <- 1 
-        x$CD[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]))
-        #x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
-        x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i])
+      
+      # false CD==0 problem - change value of CD according to other values
+    } else if (x$CD[i] == 0 & x$SD[i] != 0) { 
+      x$CD[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]))
+      x$AREA_SA[i] <- x$AREAice[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i])
 
-      } else {
-      x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
+      # alter C[X] values to accomodate the CT = 9.5 and CA:CD values sum to 10 or 9		 
+    } else if (x$CT[i] == 9.5 & x$CC[i] == 0 & x$CD[i] == 0) {
+      
+      x$CB[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i]))  
+      x$CC[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CD[i]))
+      x$CD[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]))
+
+      x$AREA_SA[i] <- x$AREAice[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i])
+    # note that this does not account for the rare times when CT == 9.5 and SD == !0
+      # fix this later
+      
+      # regular	
+  } else if (x$CT[i] == 9.5 & x$CD[i] !=0  & x$SD[i] !=0) {
+
+    x$CD[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]))
+    
+    x$AREA_SA[i] <- x$AREAice[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i])
+    # note that this does not account for the rare times when CT == 9.5 and SD == !0
+    # fix this later
+    
+    # regular	
+  } else if (x$CT[i] == 9.5 & x$CD[i] == 0 & x$SD[i] == 0) {
+    
+    x$CD[i] <- abs(as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i])))
+    
+    x$AREA_SA[i] <- x$AREAice[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i])
+    # note that this does not account for the rare times when CT == 9.5 and SD == !0
+    # fix this later
+    
+    # regular	
+  
+    else {
+    x$AREA_SA[i] <- x$AREAice[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
     }
-  }
+  }  
   return(x)
 }
 
-withinPolyAreaB <- function(x = data) {
+
+
+withinPolyAreaB <- function(x = data, sb = sb) {
   #browser()
   for (i in 1:nrow(x)) {
-    if (is.na(x$SB[i])) {
+    if (is.na(x$SB[i]) | !(x$SB[i] %in% sb)) {
       x$AREA_SB[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
       
     } else if(x$CA[i]==0){
       x$AREA_SB[i] <- 0  # if CA == 0, then no values for SB, SC, or SD
     
-      } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) ==10){ # if CA-D values == 10
-      x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/10 
-    
-      } else if (x$CD[i] == 0 & x$SD[i] != 0) { # if Sd is used and Cd is omitted, then..
-        #x$CD[i] <- 1 
-        x$CD[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]))
-        #x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
-        x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/as.numeric(x$CT[i])
-      
       } else {
-      x$AREA_SB[i] <- x$AREA[i] * as.numeric(x$CB[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
+      x$AREA_SB[i] <- x$AREAice[i] * as.numeric(x$CB[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
     }
   }
   return(x)
 }
 
-
-withinPolyAreaC <- function(x = data) {
+withinPolyAreaC <- function(x = data, sb = sb) {
   #browser()
   for (i in 1:nrow(x)) {
-    if (is.na(x$SC[i])) {
+    if (is.na(x$SC[i]) | !(x$SC[i] %in% sb)) {
       x$AREA_SC[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
     
       } else if(x$CA[i]==0){
       x$AREA_SC[i] <- 0   # if CA == 0, then no values for SB, SC, or SD
     
-      } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) ==10){
-      x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/10 # calculate
-    
-      } else if (x$CD[i] == 0 & x$SD[i] != 0) { # if Sd is used and Cd is omitted, then..
-        #x$CD[i] <- 1 
-        x$CD[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]))
-        #x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
-        x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/as.numeric(x$CT[i])
       } else {
-      x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
+      x$AREA_SC[i] <- x$AREAice[i] * as.numeric(x$CC[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
     }
   }
   return(x)
 }
 
-
-withinPolyAreaD <- function(x = data) {
+withinPolyAreaD <- function(x = data, sb = sb) {
   #browser()
   for (i in 1:nrow(x)) {
-    if (is.na(x$SD[i])) {
+    if (is.na(x$SD[i]) | !(x$SD[i] %in% sb)) {
       x$AREA_SD[i] <- 0  # if value of SA = NA, then set AREA_SA to zero
       
     } else if(x$CA[i]==0){
       x$AREA_SD[i] <- 0   # if CA == 0, then no values for SB, SC, or SD
       
-    } else if(as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) == 10){
-      x$AREA_SD[i] <- x$AREA[i] * as.numeric(x$CD[i])/10 # calculate
-      
-    } else if (x$CD[i] == 0 & x$SD[i] != 0) { # if Sd is used and Cd is omitted, then..
-      #x$CD[i] <- 1 
-      x$CD[i] <- as.numeric(x$CT[i]) - (as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]))
-      #x$CT[i] <- as.numeric(x$CA[i]) + as.numeric(x$CB[i]) + as.numeric(x$CC[i]) + as.numeric(x$CD[i])
-      x$AREA_SD[i] <- x$AREA[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i])
-      
     } else {
-      x$AREA_SD[i] <- x$AREA[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
+      x$AREA_SD[i] <- x$AREAice[i] * as.numeric(x$CD[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
     }
   }
   return(x)
 }
-
 
 
 ##' iceArea()-----------------------------
@@ -364,13 +370,13 @@ withinPolyAreaD <- function(x = data) {
 #'
 #' @examples
 #' 
-iceArea <- function(x) {
+iceArea <- function(x, ct = NULL, sa = NULL, sb = NULL) {
   #browser()
-  #x$AREA_SA <- x$AREA_SB <- x$AREA_SC <- x$AREA_SD <- rep(NA, length(x)) 
-  x <- withinPolyAreaA(x)
-  x <- withinPolyAreaB(x)
-  x <- withinPolyAreaC(x)
-  x <- withinPolyAreaD(x)
+  x$AREA_SD <- x$AREA_SC <- x$AREA_SB <- x$AREA_SA <- rep(NA, length(x)) 
+  x <- withinPolyAreaA(x, ct = ct, sa = sa, sb = sb)
+  x <- withinPolyAreaB(x, sb = sb)
+  x <- withinPolyAreaC(x, sb = sb)
+  x <- withinPolyAreaD(x, sb = sb)
   
   if(nrow(x) == 0){
     print("nrow = 0")
@@ -402,7 +408,7 @@ iceVolume <- function(x) {
   if(nrow(x) == 0){
     vtab <- 0    
   } else {
-    area <- x$AREA
+    area <- x$AREAice
     etab <- eggAttr(x$EGG_ATTR)
     etab$E_CA[is.na(etab$E_CA)] <- etab$E_CT[is.na(etab$E_CA)] # place total concentration in column a if only one ice type
     ct <- as.numeric(gsub("\\+", ".5", etab$E_CT))/10
@@ -621,11 +627,13 @@ calcPolyA <- function(z){
 #' @export
 #'
 #' @examples calc <- trendsCalc(temp.ls)
-trendsCalc <- function(x, y){
+trendsCalc <- function(x, y, ct = NULL, sa = NULL, sb = NULL){
   #browser()
   if(class(y) != "try-error") {
     x@data$AREA <- y * 1e-6 # replace polygon area (use square km)
-    subarea <- iceArea(x@data)
+    x@data$AREAice <- x@data$AREA*as.numeric(x@data$CT)/10
+    #subarea <- iceArea(x@data)
+    subarea <- iceArea(x)
     area <- subarea[[2]]
     volume <- iceVolume(x@data) 
     #minlat <- iceTiming(sub.egg)
@@ -843,7 +851,7 @@ lookAtIce <- function(z, i, ct = NULL, sa = NULL, sb = NULL){
   load(format(z[i], "sp_data/%Y%m%d.Rdata"))
   #plotIce(ice, main = dates[i])
   iceLook <- ice
-  showIce <- ice@data[, c("AREA", "A_LEGEND", "EGG_ATTR", "E_CT", "E_CA", "E_SA", "E_SB")]
+  showIce <- ice@data[, c("AREA", "BIN#", "A_LEGEND", "EGG_ATTR", "E_CT", "E_CA", "E_SA", "E_SB")]
   egg <- subsetProject(ice)    # ice is not in the local environment
   sub.egg <- filterEgg(egg)
   sub.egg1 <- iceSubset(sub.egg, ct = ct, sa = sa, sb = sb) 
@@ -867,6 +875,27 @@ extractSubegg1 <- function(z, i, ct = NULL, sa = NULL, sb = NULL){
   #sub.trend <- trendsCalc(sub.egg1, sub.poly)
   return(out)
 }
+
+extractSPDFfinal <- function(z, i, ct = NULL, sa = NULL, sb = NULL){
+  #browser()
+  print(z[i])                   #start here when making single object for testing
+  load(format(z[i], "sp_data/%Y%m%d.Rdata"))
+  #plotIce(ice, main = dates[i])
+  egg <- subsetProject(ice)    # ice is not in the local environment
+  sub.egg <- filterEgg(egg)
+  sub.egg1 <- iceSubset(sub.egg, ct = ct, sa = sa, sb = sb) 
+  
+  sub.egg1 <- sp::spTransform(sub.egg1, CRS(proj4string(ice)))
+  y <- calcPolyA(sub.egg1)
+  sub.egg1@data$AREA <- y * 1e-6 # replace polygon area (use square km)
+  sub.egg1@data$AREAice <- sub.egg1@data$AREA*as.numeric(sub.egg1@data$CT)/10
+  out <- iceArea(sub.egg1, ct=ct, sa=sa, sb=sb)
+  return(out)
+}
+
+#x@data$AREA <- y * 1e-6 # replace polygon area (use square km)
+#x@data$AREAice <- x@data$AREA*as.numeric(x@data$CT)/10
+#subarea <- iceArea(x@data)
 
 ##################################################################################################### OPtimization funcitons
 ##  SSQCapelinDome()--------------
