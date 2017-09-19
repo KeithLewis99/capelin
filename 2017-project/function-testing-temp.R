@@ -2,33 +2,52 @@
 # things seem to be changing from day to day - things that were the same yesterday aren't today.  Could be an environment thing??
 
 
-
 rm(list=ls())
 load("output-processing/dates3.Rdata")
 load("output-processing/filters.Rdata")
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
+#source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
+#source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3-test.R")
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3-test1.R")
+options(stringsAsFactors = FALSE)
+setwd("D:/Keith/capelin/2017-project")
 
-y <- dates3
-i <- 1
-dates3[25]
+rm(test)
+rm(sub)
+rm(test1)
+rm(orig)
 
+z <- dates
+i <- 25
+z <- sub.egg1
+x <- sub.egg1
+y <- a
 
+q <- c("1", "2", "3")
+
+i != q
+## Compare the value of AREA and a = gArea------------
 # extract essence of sub.egg1
 test <- extractSubegg1(dates3, 25, ct=m1$ct, sa=m1$sa, sb=m1$sb)
+test <- extractSubegg1(dates3, 25, ct=m2$ct, sa=m2$sa, sb=m2$sb)
+
+test <- extractSPDFfinal(dates3, 77, ct=m1$ct, sa=m1$sa, sb=m1$sb)
+test <- extractSPDFfinal(dates3, 65, ct=m2$ct, sa=m2$sa, sb=m2$sb)
 test[[1]]@data
-sub <- test[[1]]@data[, c("AREA", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "AREA_SA", "AREA_SB", "AREA_SC", "AREA_SD")]
-str(sub)
-
-
+sub <- test[[1]]@data[, c("AREA",  "AREAice", "A_LEGEND", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "SE","AREA_SA", "AREA_SB", "AREA_SC", "AREA_SD")] #
 #extract all sub.egg - remember that ice is unfiltered and will have lots more polygons
-test1 <- lookAtIce(dates3, 25, ct=m1$ct, sa=m1$sa, sb=m1$sb)
+head(sub, 20)
+sapply(slot(test[[1]], "polygons"), function(x) slot(x, "ID"))
 
-test1$c@data # this has filtered out irrelevant polygons
-orig <- test1$c@data[, c("AREA", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD")]
+test1 <- lookAtIce(dates3, 65, ct=m1$ct, sa=m1$sa, sb=m1$sb)
+test1 <- lookAtIce(dates3, 77, ct=m2$ct, sa=m2$sa, sb=m2$sb)
+
+orig <- test1$c@data[, c("AREA", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "SE")]
+head(orig, 20)
 str(orig)
+ice.orig <- test1$a@data[, c("AREA", "PERIMETER", "BIN#")]
 
 # calculate total area from AREA for sub.egg1
-AREA <- sum(test[[1]]@data$AREA)/1000000
+AREAice <- sum(test[[1]]@data$AREAice)/1000000
 
 # calculate total area from AREA of each ice type
 A <- sum(test[[1]]@data$AREA_SA)/1000000
@@ -38,19 +57,21 @@ D <- sum(test[[1]]@data$AREA_SD)/1000000
 
 TOT <- sum(A, B, C, D)
 
-AREA/TOT # this compares favourably to AREA 
+AREAice/TOT # this compares favourably to AREA 
 
 # look at AREA and AREA[SX]
-compare <- test[[1]]@data[, c("AREA", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "AREA_SA", "AREA_SB", "AREA_SC", "AREA_SD")]
+compare <- test[[1]]@data[, c("AREA", "AREAice", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "AREA_SA", "AREA_SB", "AREA_SC", "AREA_SD")]
 # sum the columns of AREA[SX]
 sumcols <- (test[[1]]@data$AREA_SA + test[[1]]@data$AREA_SB + test[[1]]@data$AREA_SC + test[[1]]@data$AREA_SD)
-sum(sumcols)
 
 # compare the values of AREA and sumcols - should be equal 
 # note that this will change - sumcols should be a percentage of AREA corresponding to CT
 as.data.frame(cbind(compare, sumcols))
-as.data.frame(cbind(compare[,c("AREA")], sumcols))
+as.data.frame(cbind(compare[,c("AREA", "AREAice")], sumcols))
 # These match suggesting that the AREA_SX is summing correctly (internally consistent)
+sum(sumcols)
+sum(compare[, c("AREA")])
+sum(compare[, c("AREAice")])
 
 
 #why does sum of AREA not equal areas???? Externally inconsistent
@@ -58,60 +79,58 @@ as.data.frame(cbind(compare[,c("AREA")], sumcols))
 # this calculates area
 sub.poly <- calcPolyA(test1$c) # calcPoly calculates the area of each polygon manually using either 1) gArea or 2) mannualy calculating the area from all the slot @area in each polygon
 
-str(sub.poly)
+length(test1$c)
+length(sub.poly)
 sub.trend <- trendsCalc(test1$c, sub.poly) # converts the AREAS in the SPDF and sums all areas
+test1$c
+sub.poly
 
 # this further breaks down the code to run it line by line
 z <- test1$c
+x <- z
+#z <- test[[1]]
 
   a <- try(gArea(z, byid = TRUE)) 
   str(a)
 # from iceAREA  
   z@data$AREA <- a * 1e-6
-  subarea <- iceArea(z@data)
+  z@data$AREAice <- z@data$AREA*as.numeric(z@data$CT)/10
+  subarea <- iceArea(z@data, ct=m2$ct, sa=m2$sa, sb=m2$sb)
   options(scipen=999)  
 
+subarea[[1]][, c("AREA", "AREAice", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "AREA_SA", "AREA_SB", "AREA_SC", "AREA_SD")]  
 # sub.trend and subarea are equal    
   
   # calculation of areas does NOT match subarea (has been through all)
+  #calcAreaVolLat(dates3[25], ct=m1$ct, sa=m1$sa, sb=m1$sb)  
   calcAreaVolLat(dates3[25], ct=m1$ct, sa=m1$sa, sb=m1$sb)  
+  calcAreaVolLat(dates3[25], ct=m2$ct, sa=m2$sa, sb=m2$sb)  
   sub.poly1 <- calcPolyA(test[[1]]) 
-  str(sub.poly1)
   sub.trend1 <- trendsCalc(test[[1]], sub.poly1)
 
   # sum of AREA (has been through iceArea but not gArea)
-  sum(test[[1]]@data$AREA/1000000) # this value is teh same as AREA - good!!!!! 14 values
-  sum(test[[1]]$AREA_SA + test[[1]]$AREA_SB + test[[1]]$AREA_SC + test[[1]]$AREA_SD)/1000000
+  sum(test[[1]]@data$AREAice) # this value is teh same as AREA - good!!!!! 14 values
+  sum(test[[1]]$AREA_SA + test[[1]]$AREA_SB + test[[1]]$AREA_SC + test[[1]]$AREA_SD)
+  test[[2]]
   
   # sum of AREAS[SX] - has been through all 
   sum(subarea[[1]]$AREA_SA + subarea[[1]]$AREA_SB + subarea[[1]]$AREA_SC + subarea[[1]]$AREA_SD)
-  sum(subarea[[1]]$AREA)                  # 19 values
-  sub.trend
-  test[[2]]/1000000
+  sum(subarea[[1]]$AREAice)                  # 19 values
+  sub.trend1
+  
   # this matches subarea perfectly - good
   
 # subtrend and subarea and calcAreaVolLat and sum of AREA_S[X] give the same results (internal consistency)  
 
-  
-
-  # compare AREA and a ########## THESE ARE VERY, VERY different - why????
-  cbind(AREA=test[[1]]@data$AREA/1000000, a=subarea[[1]]$AREA) # shows differences between approaches by polygon 
-  
-    
+  # compare AREA and a ########## THESE were VERY, VERY different but now eqaul.  SB = 0 was the problem
+  cbind(AREAice=test[[1]]@data$AREAice, a=subarea[[1]]$AREAice) # shows differences between approaches by polygon 
 ##################################################################
 
 # compare data sets using the polygons
   # How is AREA calculated - its not using @area
 str(test1$c, max.level = 5)
-str(test[[1]], max.level = 5)
-str(z)
 
-# strucutre of polygons
-str(test1[[1]]@polygons[4])
-str(test1[[1]]@polygons[[5]]@Polygons)
-test1$c@polygons[[10]]@Polygons
-
-# dates[9]
+# dates[9]-----
 # not gArea
     test1$c@polygons[[1]]@Polygons[[1]]@area/1000000
     str(test1[[3]]@polygons)
@@ -130,43 +149,88 @@ test[[1]]@data$AREA/1000000
 z@data$AREA
 
 
-#dates[25]
-# not gArea
-test1$c@polygons[[1]]@Polygons[[1]]@area/1000000
-str(test1[[3]]@polygons)
-# not gArea
-test[[1]]@polygons[[1]]@Polygons[[1]]@area/1000000
-str(test[[1]]@polygons)
+#dates[25]-------
+#test[[1]]@polygons[[4]]
 
+# raw data
+str(test1$a@polygons[[16]])
+test1$a@polygons[[16]]@Polygons[[1]]@area/1000000
+test1$a$AREA[16]/1000^2
+
+# polygons have been subsetted but AREA has not been corrected
+test1$c@polygons[[4]]@Polygons[[1]]@area/1000000
+test1$c@polygons[[4]]@Polygons[[2]]@area/1000000
+str(test1$c@polygons[[4]])
+test1$c@data$AREA[[4]]/1000^2
+
+# polygons have been subsetted but AREA has not been corrected
+test[[1]]@polygons[[4]]@Polygons[[1]]@area/1000000
+test[[1]]@polygons[[4]]@Polygons[[2]]@area/1000000
+str(test[[1]]@polygons[[4]])
+test[[1]]@data$AREA[[4]]/1000^2
+
+# gArea - subsetted and corrected wtih gArea
 # this perfectly replicates the area for subarea    
 p1 <- z@polygons[[4]]@Polygons[[1]]@area/1000000
 p2 <- z@polygons[[4]]@Polygons[[2]]@area/1000000
 p1 + p2    # value for 
 z@data$AREA[4]
 
-str(z@polygons)
-test1$c@data$AREA/1000000
-test[[1]]@data$AREA/1000000
-z@data$AREA
+# check to make sure ID numbers match
+sapply(slot(test1$c, "polygons"), function(x) slot(x, "ID"))
 
+test1$a@polygons[[16]]@ID
+test1$c@polygons[[4]]@ID
+test[[1]]@polygons[[4]]@ID
+z@polygons[[4]]@ID
+
+#test[[1]]@polygons[[5]]------
+# raw data
+str(test1$a@polygons[[20]])
+test1$a@polygons[[20]]@Polygons[[1]]@area/1000000
+test1$a@polygons[[20]]@Polygons[[2]]@area/1000000
+test1$a$AREA[20]/1000^2
+test1$c$AREA[5]/1000^2
+
+# polygons have been subsetted but AREA has not been corrected
+test1$c@polygons[[5]]@Polygons[[1]]@area/1000000
+test1$c@polygons[[5]]@Polygons[[2]]@area/1000000
+str(test1$c@polygons[[5]])
+test1$c@data$AREA[[5]]/1000^2
+
+# polygons have been subsetted but AREA has not been corrected
+test[[1]]@polygons[[5]]@Polygons[[1]]@area/1000000
+test[[1]]@polygons[[5]]@Polygons[[2]]@area/1000000
+str(test[[1]]@polygons)
+str(test[[1]]@polygons[[5]])
+test[[1]]@data$AREA[[5]]/1000^2
+
+# gArea - subsetted and corrected wtih gArea
+# this perfectly replicates the area for subarea 
 q1 <- z@polygons[[5]]@Polygons[[1]]@area/1000000
-q2 <- z@polygons[[5]]@Polygons[[2]]@area/1000000
+q2 <- z@polygons[[5]]@Polygons[[2]]@area/1000000 # this is a hole
+z@polygons[[5]]@Polygons[[2]]@hole
 q1 - q2    # value for z@data$AREA[1]
 
-z@data$AREA[5]
-test[[1]]@data$AREA/1000000
-z@polygons[[5]]@Polygons[[2]]@hole
+# check to make sure ID numbers match
+sapply(slot(test1$a, "polygons"), function(x) slot(x, "ID"))
+test1$a@polygons[[20]]@ID # ID 
+test1$c@polygons[[5]]@ID
+test[[1]]@polygons[[5]]@ID
+z@polygons[[5]]@ID
 
-#area of polygons is equal but the AREA is not equal bc in z, the AREA is computed based on the values of the polygons....so what is right?  Need to see it spatially
 
-# this is a spatial display of the polygons with water, ice, filters, subset of ice and each polygon
+### confirm that subsetting is accurately represented on a map
+#PLOT------------------
 
 # load water SPDF and convert to SP so that plot will work
+windows()
 load("sp_data/20160606.Rdata") # file doesnot exist - probably doesn't matter
 water <- spTransform(ice[ice$A_LEGEND != "Land", ], CRS("+proj=longlat +datum=WGS84"))
 water <- gUnaryUnion(water)
 
-# plot water and minlongs/lats as points 
+
+# LARGE SCALE - plot water and minlongs/lats as points ----
 # confirm that filters are working; check ice maps
 plot(water, xlim = c(-70, -48), ylim = c(40, 60), col = "lightblue", border = NA) 
 plot(filters, border = "red", add = TRUE) # plot main map with filter
@@ -181,111 +245,212 @@ str(zz, max.level = 3)
 plot(zz, border = "black", add = T)
 plot(zzz[4], border = "orange", add = T)
 
-
-plot(water, xlim = c(-61, -54), ylim = c(50, 55), col = "lightblue", border = NA) 
+# SMALL SCALE - plot water and minlongs/lats as points ----
+windows()
+plot(water, xlim = c(-61, -54), ylim = c(49, 57), col = "lightblue", border = NA) 
 plot(filters, border = "red", add = TRUE) # plot main map with filter
 # letters do not match order in the polygons nor does egg data match what is on the map
-plot(yy, border = "yellow", add = T)
-plot(zz, border = "black", add = T)
+plot(yy, border = "black", add = T)
+plot(zz, border = "white", add = T)
 
-plot(zzz[1], border = "grey", add = T)  # C filter?
-plot(zzz[2], border = "red", add = T)  # ???
-plot(zzz[3], border = "pink", add = T)  # E filter 1
+plot(zzz[1], border = "cyan", add = T)  # C filter?
+plot(zzz[2], border = "chartreuse", add = T, lwd=4)  # G  deep 
+plot(zzz[3], border = "deeppink", add = T)  # E filter 1
 plot(zzz[4], border = "orange", add = T) # F - northern
 plot(zzz[5], border = "blue", add = T)  # I
 plot(zzz[6], border = "dark green", add = T)  # H
-plot(zzz[7], border = "orange", add = T)  # F - southern
-plot(zzz[8], border = "orange", add = T)  # H
-plot(zzz[9], border = "pink", add = T)  # K
-plot(zzz[10], border = "orange", add = T)  # J
-plot(zzz[11], border = "orange", add = T)  # L
+plot(zzz[7], border = "seagreen1", add = T)  # F - southern
+plot(zzz[8], border = "maroon1", add = T, lwd=2)  # H
+plot(zzz[9], border = "olivedrab", add = T, lwd=2)  # K
+plot(zzz[10], border = "yellow", add = T)  # J
+plot(zzz[11], border = "yellow", add = T)  # L
+plot(zzz[12], border = "cyan", add = T) 
+plot(zzz[13], border = "chartreuse", add = T) 
+plot(zzz[14], border = "deeppink", add = T) # Northern Penn
+plot(zzz[15], border = "cyan", add = T, lwd=2) # north coast
+plot(zzz[16], border = "blue", add = T, lwd=4) # 
+plot(zzz[17], border = "yellow", add = T, lwd=4) 
+plot(zzz[18], border = "deeppink", add = T, lwd=4) 
+plot(zzz[19], border = "seagreen1", add = T, lwd=4) 
+plot(zzz[20], border = "orange", add = T, lwd=4) 
 
-# holes cannot be plotted - this indicates whether there is a hole in the polygon or not
-plot(zzz[5]@Polygons[[2]]@hole, border = "blue", add = T) # nonsense
-zzz[5]@Polygons[]
 
-z@data
+plot(water, xlim = c(-59, -55), ylim = c(49, 53), col = "lightblue", border = NA)
+# tried to plot the holes but it didn't work
+
 # plot polygon with specific ID
 class(water)
 class(filters)
 class(zz)
 methods(class = "Spatialpolygons")
 methods("plot")
-#################################### How do I get ID's to match up?????  
-str(z@polygons[[1]]@ID)
+#################################### 
+# show all areas-----
+
+# show all areas
+a <- sapply(slot(test1$a, "polygons"), function(x) slot(x, "area"))/1000^2
+
+b <- sapply(slot(test1$c, "polygons"), function(x) slot(x, "area"))/1000^2
+
+c <- sapply(slot(z, "polygons"), function(x) slot(x, "area"))/1000^2
+
+
+bc <- as.data.frame(cbind(b, c))
+
+abc <- left_join(a, b)
+
+str(test1$a@polygons[[9]])
+test1$a@polygons[[9]]@Polygons[[1]]@area/1000000
+test1$a$AREA[9]/1000^2
+
+# polygons have been subsetted but AREA has not been corrected
+test1$c@polygons[[4]]@Polygons[[1]]@area/1000000
+test1$c@polygons[[4]]@Polygons[[2]]@area/1000000
+str(test1$c@polygons[[1]])
+test1$c@data$AREA[[4]]/1000^2
+
+# polygons have been subsetted but AREA has not been corrected
+test[[1]]@polygons[[4]]@Polygons[[1]]@area/1000000
+test[[1]]@polygons[[4]]@Polygons[[2]]@area/1000000
+str(test[[1]]@polygons[[4]])
+test[[1]]@data$AREA[[4]]/1000^2
+
+# gArea - subsetted and corrected wtih gArea
+# this perfectly replicates the area for subarea    
+p1 <- z@polygons[[4]]@Polygons[[1]]@area/1000000
+p2 <- z@polygons[[4]]@Polygons[[2]]@area/1000000
+p1 + p2    # value for 
+z@data$AREA[4]
+
+# check to make sure ID numbers match
+sapply(slot(test1$a, "polygons"), function(x) slot(x, "ID"))
+test1$a@polygons[[9]]@ID
+test1$c@polygons[[1]]@ID
+test[[1]]@polygons[[1]]@ID
 z@polygons[[1]]@ID
-z@polygons[[1]]
-z@data
-str(test1[[1]]@polygons[[5]]@Polygons)
-test1[[1]]@polygons[[5]]@Polygons
 
+###############################
+# Eric's code----
+want_bin = test[[1]]$`BIN#`[6:10]
+> want_bin
+length(test1$c)
+[1] 14
+> length(want_poly)
+plot(test1$c[want_poly,])
+> plot(water, xlim = c(-70, -48), ylim = c(40, 60), col = "lightblue", border = NA)
+> plot(test1$c[want_poly,], add=T)
+> plot(test1$c[want_poly,], add=T,col="red")
+> a = test1$c[want_poly,]
+> a$AREA
+[1]   43918119  130360938  404375186 3606216830   31709556
+> a$AREA/1000^2
+[1]   43.91812  130.36094  404.37519 3606.21683   31.70956
+> plot(test1$c[want_poly,], add=T,col="red")
+> plot(a, add=T)
 
+############################################
+# compare AREA and area in dataframe and polygons while working through the funcitons.  This is what showed that SB was being subsetted improperly------
+z <- dates3
+i <- 9
+dates3[25]
 
+rm(ice)
+rm(egg)
+rm(sub.egg)
+rm(sub.egg1)
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3-test.R")
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
-#################################### Junk
-test[[1]]@data$AREA/1000000
+# 9604
+ice@data[c("AREA", "BIN#", "A_LEGEND", "ID")]
+ice@data[17, c("AREA", "BIN#", "A_LEGEND", "ID")]
+#ice@data$AREA[9]/1000^2
+str(ice@polygons[17])
+ice@data[17,]
 
+egg@data[c("AREA", "BIN#", "A_LEGEND", "ID")]
+egg@data[3, c("AREA", "BIN#", "A_LEGEND", "ID")]
+#egg@data$AREA[6]/1000^2
+str(egg@polygons[3])
 
-p12 <- test1[[1]]@polygons[[10]]@Polygons[[2]]@area
+# reduction in polygons is due to logical issues with SB - OK for now
+sub.egg@data[c("AREA", "BIN#", "A_LEGEND", "ID")]
+sub.egg@data[3, c("AREA", "BIN#", "A_LEGEND", "ID")]
+#sub.egg@data$AREA[3]/1000^2
+str(sub.egg@polygons[3])
 
-plot(test1[[10]])
-(p11 + p12 )/1000000
-test[[1]]@data$AREA[10]/1000000
+#subset
+sub.egg1@data[c("AREA", "BIN#", "A_LEGEND", "ID")]
+sub.egg1@data[1, c("AREA", "BIN#", "A_LEGEND", "ID")]
+#sub.egg1@data$AREA[3]/1000^2
+str(sub.egg1@polygons[1])
 
-#test - this is Subegg
-test$c
-str(test1$c, max.level = 5)
-str(test1$c@polygons[1])
-str(test1$c@polygons[[1]]@Polygons)
+#transform
+sub.egg1@data[c("AREA", "BIN#", "A_LEGEND", "ID")]
+sub.egg1@data$AREA[3]/1000^2
+str(sub.egg1@polygons[3])
 
-# this recreates the value for AREA[10]!!!!!!!!!!!
-p11 <- test1$c@polygons[[10]]@Polygons[[1]]@area
-p12 <- test1$c@polygons[[10]]@Polygons[[2]]@area
+z@data[c("AREA", "BIN#", "A_LEGEND", "ID")]
+z@data$AREA[1]
+str(z@polygons[1])
 
-
-(p11 + p12)/1000000
-test1$c@data$AREA[10]/1000000
-
-
-sub.egg1@data[, c("AREA", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD")]
-z <- sub.egg1
-y <- a
+# eggATTR.cols
+rm(x)
+rm(y)
 x <- sub.egg1
-x@data[, c("AREA", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD")]
-subarea[[1]][, c("AREA", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD")]
+
+x@data[c("AREA", "BIN#", "A_LEGEND", "ID")]
+x@data$AREA[3]
+str(x@polygons[3])
+x@data$AREA[1]
+str(x@polygons[1])
+
+#eggAttr.query - here is where the problems start!!! 10-filters becomaes 5-filters
+# look within query
+# had to work through these with the browser but it showed that some filters were being subsetted and that SB=0 was the problem
+x@data[c("AREA", "BIN#", "A_LEGEND", "ID")]
+x@data$AREA[1]
+str(x@polygons[1])
+
+# within eggAttr.query - but this gives the right answer
+x@data[c("AREA", "BIN#", "A_LEGEND", "ID")]
+x@data$AREA[1]
+str(x@polygons[1])
 
 
+y@data[c("AREA", "BIN#", "A_LEGEND", "ID")]
+y@data$AREA[1]
+str(y@polygons[1])
 
-#####################junk
-x <- test1$c
-x@data
-wtf <- withinPolyAreaC(x)
-wtf@data
-wtf@data[1, ]
+x <- sub.egg1
 
-x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/as.numeric(x$CT[i])
+##########################################################################
+rm(spdf)
+spdf <- extractSPDFfinal(dates3, 25, ct=m1$ct, sa=m1$sa, sb=m1$sb)
 
-x$AREA_SC[i] <- x$AREA[i] * as.numeric(x$CC[i])/as.numeric(x$CT[i])
+AREA <- sum(spdf[[1]]$AREA)/1000000
+iceAREA <- sum(spdf[[1]]$AREAice)/1000000
 
+# calculate total area from AREA of each ice type
+A <- sum(spdf[[1]]$AREA_SA)/1000000
+B <- sum(spdf[[1]]$AREA_SB)/1000000
+C <- sum(spdf[[1]]$AREA_SC)/1000000
+D <- sum(spdf[[1]]$AREA_SD)/1000000
 
+TOT <- sum(A, B, C, D)
 
-Sr1 = Polygon(cbind(c(2,4,4,1,2),c(2,3,5,4,2)))
-Sr2 = Polygon(cbind(c(5,4,2,5),c(2,3,2,2)))
-Sr3 = Polygon(cbind(c(4,4,5,10,4),c(5,3,2,5,5)))
-Sr4 = Polygon(cbind(c(5,6,6,5,5),c(4,4,3,3,4)), hole = TRUE)
-Srs1 = Polygons(list(Sr1), "s1")
-Srs2 = Polygons(list(Sr2), "s2")
-Srs3 = Polygons(list(Sr3, Sr4), "s3/4")
-SpP = SpatialPolygons(list(Srs1,Srs2,Srs3), 1:3)
-str(SpP)
-# plot single polygon
-par(mfrow=c(3,1))
-plot(SpP[1])
-plot(SpP[3])
+iceAREA/TOT # this compares favourably to AREA 
 
-# or using IDs: retrieve list of all IDs
-IDs = sapply(SpP@polygons, function(x) x@ID)
+# look at AREA and AREA[SX]
+compare <- spdf[[1]][, c("AREA", "AREAice", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "AREA_SA", "AREA_SB", "AREA_SC", "AREA_SD")]
+# sum the columns of AREA[SX]
+sumcols <- (spdf[[1]]$AREA_SA + spdf[[1]]$AREA_SB + spdf[[1]]$AREA_SC + spdf[[1]]$AREA_SD)
 
-# plot polygon with specific ID
-plot(SpP[which(IDs == 's2')])
-
+# compare the values of AREA and sumcols - should be equal 
+# note that this will change - sumcols should be a percentage of AREA corresponding to CT
+as.data.frame(cbind(compare, sumcols))
+as.data.frame(cbind(compare[,c("AREA", "AREAice")], sumcols))
+# These match suggesting that the AREA_SX is summing correctly (internally consistent)
+sum(sumcols)
+sum(compare[, c("AREA")])
+sum(compare[, c("AREAice")])
