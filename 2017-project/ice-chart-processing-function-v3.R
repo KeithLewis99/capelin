@@ -30,7 +30,7 @@
 #22) Ale's optimization functions
 
 
-#) LookAt function
+#) LookAt function - functions for looking at various stages of the egg data and checking that modifications are correct.
 
 
 # V1 - first attempt at taking Paul's code and making functions
@@ -188,11 +188,11 @@ eggAttr.query <- function(x = data, ct = NULL, sa = NULL, sb = NULL){
   if(is.null(sb)) sa <- unique(x$SB) #if all values of SB are desired
   x <- subset(x, subset = CT %in% ct & SA %in% sa | CT %in% ct & SB %in% sb)
   #x <- subset(x, subset = CT %in% ct & SA %in% sa & SB %in% sb)
-  if(nrow(x)==0) {
-    cols <- ncol(x)
-    x[1, ] <- rep(0, cols)
-  }
-  return(x)
+  #if(nrow(x)==0) {
+   #cols <- ncol(x)
+    #x[1, ] <- rep(0, cols)
+  #}
+  #return(x)
 }
 
 ###########################################################
@@ -251,7 +251,7 @@ iceTiming <- function(spdf){
 #'
 #' @examples
 #'
-withinPolyAreaA <- function(x = data, ct = ct, sa = sa, sb = sb) {
+withinPolyAreaA <- function(x = data, ct = NULL, sa = NULL, sb = NULL) {
   #browser()
   print("within1")
   
@@ -300,8 +300,7 @@ withinPolyAreaA <- function(x = data, ct = ct, sa = sa, sb = sb) {
     # fix this later
     
     # regular	
-  
-    else {
+     } else {
     x$AREA_SA[i] <- x$AREAice[i] * as.numeric(x$CA[i])/as.numeric(x$CT[i]) # calculate area for desired values of SA
     }
   }  
@@ -633,7 +632,7 @@ trendsCalc <- function(x, y, ct = NULL, sa = NULL, sb = NULL){
     x@data$AREA <- y * 1e-6 # replace polygon area (use square km)
     x@data$AREAice <- x@data$AREA*as.numeric(x@data$CT)/10
     #subarea <- iceArea(x@data)
-    subarea <- iceArea(x)
+    subarea <- iceArea(x, ct = ct, sa = sa, sb = sb)
     area <- subarea[[2]]
     volume <- iceVolume(x@data) 
     #minlat <- iceTiming(sub.egg)
@@ -667,7 +666,7 @@ calcLatLong <- function(sub.egg, ct = NULL, sa = NULL, sb = NULL) {
     area <- volume <- 0
     minlat <- 55
     minlong <- -56
-    sub.trend <- sp::spTransform(sub.egg, CRS(proj4string(ice)))
+    #sub.trend <- sp::spTransform(sub.egg, CRS(proj4string(ice)))
     
   } else {
     
@@ -680,7 +679,7 @@ calcLatLong <- function(sub.egg, ct = NULL, sa = NULL, sb = NULL) {
     #ice@bbox <- sub.egg1@bbox
     sub.egg1 <- sp::spTransform(sub.egg1, CRS(proj4string(ice)))
     sub.poly <- calcPolyA(sub.egg1)
-    sub.trend <- trendsCalc(sub.egg1, sub.poly)
+    sub.trend <- trendsCalc(sub.egg1, sub.poly, ct = ct, sa = sa, sb = sb)
     
     area <- sub.trend$area
     volume <- sub.trend$volume
