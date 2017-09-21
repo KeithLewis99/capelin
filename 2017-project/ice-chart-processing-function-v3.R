@@ -1025,6 +1025,43 @@ modelGraphs <- function(years){
     rm(mod1, mod2)
     
   }
+}
+
+
+############################################################
+#, operator1 = NULL, operator2 = NULL)
+##' Title---------------
+#'
+#' @return
+#' @export
+#'
+#' @examples
+iceMedian <- function(df, subset_yr, subset_ti, data1) {
+  #browser()
+  #print(yr)
+  #print(ti)
+  df1 <- subset(df, eval(parse(text = subset_yr)) & eval(parse(text = subset_ti)))
+  #df1 <- subset(df, paste("year", operator1, yr) & tice < ti)
+  #df1 <- subset(df, do.call(operator1, list(get(year), yr)))
+  #print(df1)
   
+  df2 <- df1 %>%
+    group_by(year) %>%
+    summarize(dminlats = median(minlats))
   
+  df3 <- df1 %>%
+    group_by(year) %>%
+    summarize(dtice = median(tice))
+  
+  df4 <- df1 %>%
+    group_by(year) %>%
+    summarize(darea = median(area))
+
+  df5 <- left_join(df2, df3, by = "year")
+  df5 <- left_join(df5, df4, by = "year")
+  
+  df6 <- subset(data1, eval(parse(text = subset_yr)))
+  df7 <- left_join(df6, df5, by = "year")
+  
+  return(list(data = df1, meds=df5, mall=df7))
 }
