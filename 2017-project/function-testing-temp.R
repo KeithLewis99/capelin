@@ -5,41 +5,43 @@
 rm(list=ls())
 load("output-processing/dates3.Rdata")
 load("output-processing/filters.Rdata")
-#source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
-#source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3-test.R")
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3-test1.R")
+load("output-processing/dates3all.Rdata")
+load("output-processing/subset-lists.Rdata")
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 options(stringsAsFactors = FALSE)
 setwd("D:/Keith/capelin/2017-project")
+options(scipen=999) 
 
 rm(test)
 rm(sub)
 rm(test1)
 rm(orig)
 
-z <- dates
-i <- 25
+z <- dates3
+i <- 1
 z <- sub.egg1
 x <- sub.egg1
 y <- a
 
-q <- c("1", "2", "3")
+my.polygon@bbox <- as.matrix(extent(my.raster))
+extent(sub.egg)
+extent(sub.egg1)
 
-i != q
 ## Compare the value of AREA and a = gArea------------
 # extract essence of sub.egg1
 test <- extractSubegg1(dates3, 25, ct=m1$ct, sa=m1$sa, sb=m1$sb)
 test <- extractSubegg1(dates3, 25, ct=m2$ct, sa=m2$sa, sb=m2$sb)
 
-test <- extractSPDFfinal(dates3, 77, ct=m1$ct, sa=m1$sa, sb=m1$sb)
-test <- extractSPDFfinal(dates3, 65, ct=m2$ct, sa=m2$sa, sb=m2$sb)
+test <- extractSPDFfinal(dates3, 25, ct=m1$ct, sa=m1$sa, sb=m1$sb)
+test <- extractSPDFfinal(dates3, 1, ct=m2$ct, sa=m2$sa, sb=m2$sb)
 test[[1]]@data
 sub <- test[[1]]@data[, c("AREA",  "AREAice", "A_LEGEND", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "SE","AREA_SA", "AREA_SB", "AREA_SC", "AREA_SD")] #
 #extract all sub.egg - remember that ice is unfiltered and will have lots more polygons
 head(sub, 20)
 sapply(slot(test[[1]], "polygons"), function(x) slot(x, "ID"))
 
-test1 <- lookAtIce(dates3, 65, ct=m1$ct, sa=m1$sa, sb=m1$sb)
-test1 <- lookAtIce(dates3, 77, ct=m2$ct, sa=m2$sa, sb=m2$sb)
+test1 <- lookAtIce(dates3, 592, ct=m1$ct, sa=m1$sa, sb=m1$sb)
+test1 <- lookAtIce(dates3, 1, ct=m2$ct, sa=m2$sa, sb=m2$sb)
 
 orig <- test1$c@data[, c("AREA", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "SE")]
 head(orig, 20)
@@ -87,7 +89,7 @@ sub.poly
 
 # this further breaks down the code to run it line by line
 z <- test1$c
-x <- z
+
 #z <- test[[1]]
 
   a <- try(gArea(z, byid = TRUE)) 
@@ -95,7 +97,7 @@ x <- z
 # from iceAREA  
   z@data$AREA <- a * 1e-6
   z@data$AREAice <- z@data$AREA*as.numeric(z@data$CT)/10
-  subarea <- iceArea(z@data, ct=m2$ct, sa=m2$sa, sb=m2$sb)
+  subarea <- iceArea(z, ct=m1$ct, sa=m1$sa, sb=m1$sb)
   options(scipen=999)  
 
 subarea[[1]][, c("AREA", "AREAice", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "AREA_SA", "AREA_SB", "AREA_SC", "AREA_SD")]  
