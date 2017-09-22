@@ -39,8 +39,8 @@ load("output-processing/ice-trends-2017-m2-all.Rdata")
 load("output-processing/filters.Rdata")
 
 
-##################################---------
-# check data to ensure proper subset
+##################################
+# check data to ensure proper subset---------
 # plots to determien if subsetting worked - alternate with minlats/minlongs
 m1 <- trends.m1[c("date", "area", "volume")]
 m2 <- trends.m2[c("date", "area", "volume")]
@@ -123,7 +123,7 @@ multiplot(p1.m2, p3.m2, p2.m2, cols=2)
 
 #m3-----
 #####################################################################
-# explore more rigorous method of determining relationship between tice and minlat
+# explore more rigorous method of determining relationship between tice and minlat-----
 
 #check max area
 
@@ -145,6 +145,19 @@ str(sub1991)
 summary(lm(dminlats~darea, data=sub1991$mall))
 summary(lm(dminlats~dtice, data=sub1991$mall))
 summary(lm(darea~dtice, data=sub1991$mall))
+
+p1.m1  <- ggplot(data = iceSum.m1, aes(x = area, y = tice)) + geom_point() + geom_smooth(method=lm)
+summary(lm(tice~area, data=iceSum.m1))
+
+# plot tice against ice area
+p2.m1 <- ggplot(data = iceSum.m1, aes(x = minlats, y = tice)) + geom_point() + geom_smooth(method=lm)
+summary(lm(tice~minlats, data=iceSum.m1))
+
+#plot ice area against minlats
+p3.m1 <- ggplot(data = iceSum.m1, aes(x = area, y = minlats)) + geom_point() + geom_smooth(method=lm)
+summary(lm(minlats~area, data=iceSum.m1))
+
+multiplot(p1.m1, p3.m1, p2.m1, cols=2)
 
 # scatter plot of date and minlats
 ggplot(data = sub1991$data, aes(x = date, y = minlats)) + geom_point() + geom_smooth(method=lm)
@@ -181,14 +194,14 @@ ggplot(data = sub1991.m2$data, aes(area)) +
 
 ##############################################################
 #####1992-2017------
-#m1
+##m1
 sub2017.m1 <- iceMedian(trends.m1, "year > 1991", "tice < 150", iceSum.m1)
 
 summary(lm(dminlats~darea, data=sub2017.m1$mall))
 summary(lm(dminlats~dtice, data=sub2017.m1$mall))
 summary(lm(darea~dtice, data=sub2017.m1$mall))
 
-# scatter plot of date and minlats
+# scatter plot of date and minlats------
 ggplot(data = sub2017.m1$data, aes(x = date, y = minlats)) + geom_point() + geom_smooth(method=lm)
 
 ggplot(data = sub2017.m1$data, aes(minlats)) + 
@@ -201,7 +214,7 @@ ggplot(data = sub2017$data, aes(area)) +
   facet_wrap(~ year) +
   geom_vline(data = sub2017.m1$mall, aes(xintercept = darea), colour = "red")
 
-#m2
+##m2
 sub2017.m2 <- iceMedian(trends.m1, "year > 1991", "tice < 150", iceSum.m1)
 
 summary(lm(dminlats~darea, data=sub2017.m2$mall))
@@ -220,6 +233,65 @@ ggplot(data = sub2017.m2$data, aes(area)) +
   geom_histogram(bins = 10) + 
   facet_wrap(~ year) +
   geom_vline(data = sub2017.m2$mall, aes(xintercept = darea), colour = "red")
+
+###############################################
+# all data - I haven't made this function subsettable yet
+
+count.year <- trends.m1 %>%
+  group_by(year) %>%
+  count()
+View(count.year)
+
+iceMedD5.m1 <- iceMedianD5(trends.m1)
+
+summary(lm(d5area~d5tice, data=iceMedD5.m1))
+summary(lm(d5minlats~d5tice, data=iceMedD5.m1))
+summary(lm(d5minlats~d5area, data=iceMedD5.m1))
+
+
+p1.m1  <- ggplot(data = iceMedD5.m1, aes(x = d5area, y = d5tice)) + geom_point() + geom_smooth(method=lm)
+#, colour = year < 1992)
+# plot tice against ice area
+p2.m1 <- ggplot(data = iceMedD5.m1, aes(x = d5minlats, y = d5tice)) + geom_point() + geom_smooth(method=lm)
+
+#plot ice area against minlats
+p3.m1 <- ggplot(data = iceMedD5.m1, aes(x = d5area, y = d5minlats)) + geom_point() + geom_smooth(method=lm)
+
+multiplot(p1.m1, p3.m1, p2.m1, cols=2)
+
+
+# scatter plot of date and minlats
+ggplot(data = trends.m1, aes(x = date, y = minlats)) + geom_point() + geom_smooth(method=lm)
+
+ggplot(data = trends.m1, aes(minlats)) + 
+  geom_histogram() + 
+  facet_wrap(~ year) +
+  geom_vline(data = iceMedD5.m1, aes(xintercept = d5minlats), colour = "red")
+
+ggplot(data = trends.m1, aes(area)) + 
+  geom_histogram(bins = 10) + 
+  facet_wrap(~ year) +
+  geom_vline(data = iceMedD5.m1, aes(xintercept = d5area), colour = "red")
+
+
+
+## testing
+subset(trends.m1, year == 2012)
+
+test <- trends.m1 %>%
+  group_by(year) %>%
+  arrange(minlats) %>%
+  slice(1:5) %>%
+  summarize(d5tice=median(tice))
+View(test)
+
+
+trends.m1 %>%
+  group_by(year) %>%
+  arrange(desc(area)) %>%
+  slice(1:5) %>%
+  summarize(d5area=median(area))
+
 
 ########################################################################################################
 ###This is how to make a map with a SPDF - much harder in ggplot - not sure its worth the effort
