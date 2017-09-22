@@ -1029,13 +1029,16 @@ modelGraphs <- function(years){
 
 
 ############################################################
-#, operator1 = NULL, operator2 = NULL)
-##' Title---------------
+##' iceMedian()---------------
 #'
-#' @return
+#' @param df the output of ice-chart-processing-data (e.g. trends.m1) and data1 is output from iceSummary()
+#' @return a list of:
+#' 1) the subsetted data
+#' 2) the median values of minlats, tice, and area
+#' 3) combines 2) with the values of iceSummary()
 #' @export
 #'
-#' @examples
+#' @examples sub1991 <- iceMedian(trends.m1, "year < 1992", "tice < 150", iceSum.m1)
 iceMedian <- function(df, subset_yr, subset_ti, data1) {
   #browser()
   #print(yr)
@@ -1067,15 +1070,15 @@ iceMedian <- function(df, subset_yr, subset_ti, data1) {
 }
 
 ##################################################################
-##' Title-----
+##' iceSummary()-----
 #'
-#' @param df 
+#' @param df the output of ice-chart-processing-data (e.g. trends.m1)
 #'
-#' @return
+#' @return a dataframe with the max of iceArea and minLat for a given year
 #' @export
 #'
-#' @examples
-iceSummary <- function(df=data){
+#' @examples iceSum.m1 <- iceSummary(trends.m1)
+iceSummary <- function(df){
   
   ##modify trends
   # add year
@@ -1083,24 +1086,56 @@ iceSummary <- function(df=data){
   
   # calculate the maximum area for ice by year
   df1 <- df[c("date", "area", "volume", "year")]
-  df1 <- df1 %>%
+  temp1 <- df1 %>%
     group_by(year) %>%
     slice(which.max(area)) 
   temp1 
-  
-  
+
   # calculate the minimum latitude for ice by year
   df2 <- df[c("date", "minlats", "minlongs", "year")]
-  df2 <- df2 %>%
+  temp2 <- df2 %>%
     group_by(year) %>%
     slice(which.min(minlats)) 
   
   # merge summarized dataframes
-  df3 <- full_join(df1, df2, by = "year")
+  df1 <- full_join(temp1, temp2, by = "year")
   
   #convert date.y to doy
-  df3$tice <- yday(df3$date.y)
-  return(df3)
+  df1$tice <- yday(df1$date.y)
+  return(df1)
+}
+
+##################################################################
+##' iceMedianD5()-------
+#'
+#' @param df the output of ice-chart-processing-data (e.g. trends.m1)
+#'
+#' @return the median values of minlats, tice, and area for the top 5 values
+#' @export
+#'
+#' @examples
+iceMedianD5 <- function(df){
+  
+  t1 <- df %>%
+    group_by(year) %>%
+    arrange(desc(area)) %>%
+    slice(1:5) %>%
+    summarize(d5area=median(area))
+
+  t2 <- df %>%
+    group_by(year) %>%
+    arrange(minlats) %>%
+    slice(1:5) %>%
+    summarize(d5tice=median(tice))
+
+  t3 <- df %>%
+    group_by(year) %>%
+    arrange(minlats) %>%
+    slice(1:5) %>%
+    summarize(d5minlats=median(minlats))
+  df1 <- full_join(t1, t2, by = "year")
+  df1 <- full_join(df1, t3, by = "year")
+  return(df1)
 }
 
 
