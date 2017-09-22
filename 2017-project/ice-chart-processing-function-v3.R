@@ -1065,3 +1065,43 @@ iceMedian <- function(df, subset_yr, subset_ti, data1) {
   
   return(list(data = df1, meds=df5, mall=df7))
 }
+
+##################################################################
+##' Title-----
+#'
+#' @param df 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+iceSummary <- function(df=data){
+  
+  ##modify trends
+  # add year
+  df$year <- year(df$date)
+  
+  # calculate the maximum area for ice by year
+  df1 <- df[c("date", "area", "volume", "year")]
+  df1 <- df1 %>%
+    group_by(year) %>%
+    slice(which.max(area)) 
+  temp1 
+  
+  
+  # calculate the minimum latitude for ice by year
+  df2 <- df[c("date", "minlats", "minlongs", "year")]
+  df2 <- df2 %>%
+    group_by(year) %>%
+    slice(which.min(minlats)) 
+  
+  # merge summarized dataframes
+  df3 <- full_join(df1, df2, by = "year")
+  
+  #convert date.y to doy
+  df3$tice <- yday(df3$date.y)
+  return(df3)
+}
+
+
+##################################################################
