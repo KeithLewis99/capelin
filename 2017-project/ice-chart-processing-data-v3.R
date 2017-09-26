@@ -43,18 +43,21 @@ source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
 #setwd("C:/Users/Paul/Documents/DFO/ice")
 setwd("D:/Keith/capelin/2017-project")
+
 library(RArcInfo)
 library(maptools)
 library(rgdal)
 library(rgeos)
 library(raster)
 library(data.table)
-library(ggplot2)
+#devtools::install_github("tidyverse/ggplot2")
 library(RColorBrewer)
 library(cleangeo)
-library(dplyr)
-library(tidyr)
+#library(ggplot2)
+#library(dplyr)
+#library(tidyr)
 library(broom)
+library(tidyverse)
 #library(doParallel)
 
 ## create dirs for data storage
@@ -104,7 +107,7 @@ dates <- dates[format(dates, "%m") %in% c("11", "12", "01", "02", "03", "04", "0
 ####################################################################
 #run one of next two lines
 dates <- dates[difftime(max(downloaded), dates, units = "days") < -1] #this line is for simply updating - assumes all past files are downloaded and only looks for new files on EC website past the terminal data supplied in line 92 above
-#dates <- dates[!as.Date(dates) %in% as.Date(downloaded)] #this line is for downloading all data from the EC website - takes A LONG TIME!!!!!
+dates <- dates[!as.Date(dates) %in% as.Date(downloaded)] #this line is for downloading all data from the EC website - takes A LONG TIME!!!!!
 dates <- format(dates, "%Y%m%d")
 dates
 
@@ -232,6 +235,27 @@ eastNF <- gIntersection(water, p2, byid = TRUE) # intesection of water (ocean su
 eastNF <- gBuffer(eastNF, width = 0.1) # add a small buffer
 plot(eastNF, border = "red", add = TRUE) # plots Trinity/Bonavista with border
 
+# Newfoundland North Coast and Bays
+plot(water, xlim = c(-53.45, -53.35), ylim = c(47.8, 50.5), col = "lightblue", border = NA)
+x <- c(-54.00649, -54.53953, -55.27395, -55.57009, -55.35687, -56.16237, -56.30451, -55.57009, -54.29078, -54.06572)
+y <- c(49.44365, 49.18022, 49.04850, 49.07949, 49.30418, 49.35842, 49.61410, 49.95501, 49.59860, 49.44365)
+p4 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
+proj4string(p4) <- proj4string(water)
+northNF <- gIntersection(water, p4, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
+northNF <- gBuffer(northNF, width = 0.1) # add a small buffer
+plot(northNF, border = "red", add = TRUE) # plots Trinity/Bonavista with border
+
+
+# SW of Fogo
+plot(water, xlim = c(-53.45, -53.35), ylim = c(47.8, 50.5), col = "lightblue", border = NA)
+x <- c(-54.00330, -53.54995, -53.40174, -53.85509, -54.01202)
+y <- c(49.39749, 49.23212, 49.24352, 49.45451, 49.41459)
+p41 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
+proj4string(p41) <- proj4string(water)
+swFogo <- gIntersection(water, p41, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
+swFogo <- gBuffer(swFogo, width = 0.1) # add a small buffer
+plot(swFogo, border = "red", add = TRUE) # plots Trinity/Bonavista with border
+
 # Gulf of St. Lawrence/Scotian Shelf Filter
 plot(water, xlim = c(-70, -62), ylim = c(40, 52), col = "lightblue", border = NA) # plot Gulf of St. Lawrense
 x <- c(-55.56948, -55.44441, -73.62120, -73.12092, -66.49223, -56.69511, -56.57004, -57.07032, -54.56892, -55.61117) # captured using locator()
@@ -257,13 +281,16 @@ plot(west, border = "red", add = TRUE) # plot red rec
 ## Ignoring Lake Melville made little difference
 filters <- gUnaryUnion(rbind(melville, north55))
 filters <- gUnaryUnion(rbind(filters, eastNF))
-#filters <- gUnaryUnion(rbind(filters, gulf))
 filters <- gUnaryUnion(rbind(filters, gulf))
+filters <- gUnaryUnion(rbind(filters, gulf))
+filters <- gUnaryUnion(rbind(filters, northNF))
+filters <- gUnaryUnion(rbind(filters, swFogo))
 filters <- gUnaryUnion(rbind(filters, west, makeUniqueIDs = T)) # there were nonunique IDs in this line - the addition of makeUniqueIDs seems to work.
 slot(filters@polygons[[1]], "ID") <- "- filters"
 plot(water, col = "lightblue", border = NA)
 plot(filters, border = "red", add = TRUE) # plot main map with filter
 
+save(filters, file = "output-processing/filters.Rdata")
 
 ## Area and volume calculations ------------------------------------------------
 # calculate the area of the sea ice and .....
@@ -273,89 +300,104 @@ load("ice_trends.Rdata")  # this is circular but is working under the assumption
 trends.calculated <- trends$date # this is from ice_trends.Rdata
 dates3 <- strptime(converted, "%Y%m%d.Rdata") # use this for the full run
 dates3 <- dates3[!format(dates3, "%Y%m%d") %in% format(trends.calculated, "%Y%m%d")] # these are dates that are not in ice_trends.Rdata- hence it is small
-
+save(dates3, file = "output-processing/dates3.Rdata")
+save(dates3, file = "output-processing/dates3all.Rdata")
 
 ## subset the ice data
 # create "model sets"
 
 ct <- c(1:10, 9.5)
-sa <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "1.", "4.", "7.", "8.", "9.") # don't have "ice of land origin" or "undetermined or unknown"
-m1 <- list(ct=ct, sa=sa)
+sa <- c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "1.", "4.", "7.", "8.", "9.") # don't have "ice of land origin" or "undetermined or unknown"
+sb <- c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "1.", "4.", "7.", "8.", "9.") # don't have "ice of land origin" or "undetermined or unknown"
+
+m1 <- list(ct=ct, sa=sa, sb=sb)
 m1
 
-ct <- c(3:10)
+ct <- c(3:10, 9.5)
 sa <- c("5", "6", "7", "8", "9", "1.", "4.", "7.")
-m2 <- list(ct=ct, sa=sa)
+sb <- c("5", "6", "7", "8", "9", "1.", "4.", "7.")
+m2 <- list(ct=ct, sa=sa, sb=sb)
 m2
 
 ct <- c(8, 9)
 sa <- c("5")
-m3 <- list(ct=ct, sa=sa)
+sb <- c("5")
+m3 <- list(ct=ct, sa=sa, sb=sb)
 m3
+
+# this was meant to make a mutually exclusive data set to compare m2 to m1.  However, this is not the case: see this example and work it out for m1, m2, m4
+# CT SA
+# 4   5
+# 2   5
+ct <- c(1, 2, 9.5)
+sa <- c("1", "2", "3", "4", "8.", "9.")
+sb <- c("1", "2", "3", "4", "8.", "9.")
+m4 <- list(ct=ct, sa=sa, sb=sb)
+m4
+
+save(m1, m2, m3, m4, file = "output-processing/subset-lists.Rdata")
 
 rm(ct)
 rm(sa)
+rm(sb)
 
-# use function to calc Area/Volumes of ice
-# this is just to test on small batches
+load("output-processing/dates3.Rdata")
+load("output-processing/filters.Rdata")
 source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
-trends_update_subset <- calcAreaVolLat(dates3[-c(23)], ct=m1$ct, sa=m1$sa)
-trends <- rbind(trends, na.omit(data.frame(date = dates3[1:10], 
-                                  area = trends_update_subset$areas, 
-                                  volume = trends_update_subset$volumes,
-                                  minlats = trends_update_subset$minlats,
-                                  minlongs = trends_update_subset$minlongs
-                                  )))  # it makes no sense to bind minlat to this because the original ice-trends.Rdata does not have this value - therefore, updating it makes no sense.
+trends_update.m1 <- calcAreaVolLat(dates3[25], ct=m1$ct, sa=m1$sa, sb=m1$sb)
+trends.m1 <- rbind(data.frame(date = dates3, 
+                           area = trends_update.m1$areas, 
+                           volume = trends_update.m1$volumes,
+                           minlats = trends_update.m1$minlats,
+                           minlongs = trends_update.m1$minlongs)) 
 
-trends_update_subset <- calcAreaVolume(dates3[1:10], ct=m1$ct, sa=m1$sa)
-trends <- rbind(data.frame(date = dates3[1:10], 
-                             area = trends_update_subset$areas, 
-                             volume = trends_update_subset$volumes,
-                             minlats = trends_update_subset$minlats,
-                             minlongs = trends_update_subset$minlongs))  # it makes no sense to bind minlat to th
-save(trends, file = "ice_trends_subset-test.Rdata")
-
-# test with NULL
-# works OK but seems to break if run more than once
-
-trends_update2 <- calcAreaVolume(dates3[c(-23)], ct=m1$ct, sa=m1$sa)
-trends.m1 <- rbind(data.frame(date = dates3[c(-23)], 
-                           area = trends_update2$areas, 
-                           volume = trends_update2$volumes,
-                           minlats = trends_update2$minlats,
-                           minlongs = trends_update2$minlongs)) 
+# it makes no sense to bind minlat to this because the original ice-trends.Rdata does not have this value - therefore, updating it makes no sense.
 
 # this gets errors if you subset on dates3 as in some of the tests here.  Works fine if calcAreaVolume done on full dates3 vector
+
 lookAt(trends.m1)
 trends.m1 <- trends.m1[order(trends.m1$date), ]
-save(trends.m1, file = "ice-trends-2017-m1-all.Rdata")
-save(trends.m1, file = "ice-trends-2017-m1-subset.Rdata")
+save(trends.m1, file = "output-processing/ice-trends-2017-m1-all.Rdata")
+save(trends.m1, file = "output-processing/ice-trends-2017-m1-subset.Rdata")
 
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
+# check to insure that subset is less than full set
+x <- trends_update.m1$areas - trends_update3$areas
+subset(x, x < 0)
 
-# test with all of date3
-# problem with 2002-07-15
-
-trends_update3 <- calcAreaVolume(dates3[2:100], ct=m2$ct, sa=m2$sa)
+trends_update3 <- calcAreaVolLat(dates3[25], ct=m2$ct, sa=m2$sa,  sb=m2$sb)
 trends.m2 <- rbind(data.frame(date = dates3, 
                            area = trends_update3$areas, 
                            volume = trends_update3$volumes, 
                            minlats = trends_update3$minlats,
                            minlongs = trends_update3$minlongs )) 
 trends.m2 <- trends.m2[order(trends.m2$date), ]
-save(trends.m2, file = "ice-trends-2017-m2-all.Rdata")
-save(trends.m2, file = "ice-trends-2017-m2-subset.Rdata")
-save(trends.m2, file = "ice-trends-2017-m2-all.Rdata")
+save(trends.m2, file = "output-processing/ice-trends-2017-m2-all.Rdata")
+save(trends.m2, file = "output-processing/ice-trends-2017-m2-subset.Rdata")
 
 # test with other values
 # works OK
-trends_update3 <- calcAreaVolume(dates3, ct=m3$ct, sa=m3$sa)
+trends_update.m3 <- calcAreaVolLat(dates3, ct=m3$ct, sa=m3$sa,  sb=m3$sb)
+trends.m3 <- rbind(data.frame(date = dates3, 
+                              area = trends_update.m3$areas, 
+                              volume = trends_update.m3$volumes,
+                              minlats = trends_update.m3$minlats,
+                              minlongs = trends_update.m3$minlongs)) 
+lookAt(trends.m3)
+trends.m3 <- trends.m3[order(trends.m3$date), ]
+save(trends.m3, file = "output-processing/ice-trends-2017-m3-all.Rdata")
+save(trends.m3, file = "output-processing/ice-trends-2017-m3-subset.Rdata")
 
+trends_update.m4 <- calcAreaVolLat(dates3, ct=m4$ct, sa=m4$sa,  sb=m4$sb)
+trends.m4 <- rbind(data.frame(date = dates3, 
+                              area = trends_update.m4$areas, 
+                              volume = trends_update.m4$volumes,
+                              minlats = trends_update.m4$minlats,
+                              minlongs = trends_update.m4$minlongs)) 
+lookAt(trends.m4)
+trends.m4 <- trends.m4[order(trends.m4$date), ]
+save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
 
-
-
-str(dates3)
 ## Annual maps -----------------------------------------------------------------
 
 # yr <- 2003
@@ -374,4 +416,4 @@ dates3[-c(23)]
 trends$area[format(trends$date, "%Y%m%d") == "19910401"] <- NA # polygons were miss-classified
 trends <- trends[trends$date > ISOdate(1969, 11, 1), ] # 1969 was a strange year - difficult to assess patterns/fit curve - unreliable data?
 trends <- na.omit(trends)
-save(trends, file = "ice_trends_2017.Rdata")
+save(trends, file = "\output-processing\ice_trends_2017.Rdata")
