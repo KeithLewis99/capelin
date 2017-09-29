@@ -12,6 +12,7 @@ options(stringsAsFactors = FALSE)
 setwd("D:/Keith/capelin/2017-project")
 options(scipen=999) 
 
+dates3[1180]
 rm(test)
 rm(sub)
 rm(test1)
@@ -31,9 +32,13 @@ extent(sub.egg1)
 # extract essence of sub.egg1
 test <- extractSubegg1(dates3, 25, ct=m1$ct, sa=m1$sa, sb=m1$sb)
 test <- extractSubegg1(dates3, 25, ct=m2$ct, sa=m2$sa, sb=m2$sb)
+test <- extractSubegg1(dates3, 25, ct=m3$ct, sa=m3$sa, sb=m3$sb)
 
-test <- extractSPDFfinal(dates3, 25, ct=m1$ct, sa=m1$sa, sb=m1$sb)
-test <- extractSPDFfinal(dates3, 1, ct=m2$ct, sa=m2$sa, sb=m2$sb)
+
+test1 <- extractSPDFfinal(dates3, 1180, ct=m1$ct, sa=m1$sa, sb=m1$sb)
+test2 <- extractSPDFfinal(dates3, 1180, ct=m2$ct, sa=m2$sa, sb=m2$sb)
+test3 <- extractSPDFfinal(dates3, 1180, ct=m3$ct, sa=m3$sa, sb=m3$sb)
+
 test[[1]]@data
 sub <- test[[1]]@data[, c("AREA",  "AREAice", "A_LEGEND", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "SE","AREA_SA", "AREA_SB", "AREA_SC", "AREA_SD")] #
 #extract all sub.egg - remember that ice is unfiltered and will have lots more polygons
@@ -41,7 +46,9 @@ head(sub, 20)
 sapply(slot(test[[1]], "polygons"), function(x) slot(x, "ID"))
 
 test1 <- lookAtIce(dates3, 592, ct=m1$ct, sa=m1$sa, sb=m1$sb)
-test1 <- lookAtIce(dates3, 1, ct=m2$ct, sa=m2$sa, sb=m2$sb)
+test2 <- lookAtIce(dates3, 1, ct=m2$ct, sa=m2$sa, sb=m2$sb)
+test3 <- lookAtIce(dates3, 1, ct=m2$ct, sa=m2$sa, sb=m2$sb)
+
 
 orig <- test1$c@data[, c("AREA", "CT", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "SE")]
 head(orig, 20)
