@@ -9,8 +9,9 @@
 
 ## Area analysis ---------------------------------------------------------------
 
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 library(data.table)
+library(ggplot2)
 
 load("ice_trends_2017.Rdata") # this is date, area, and volume
 trends <- data.table(trends) # shows head and tail of "trends"
@@ -63,6 +64,7 @@ adv.mag <- ret.mag <- amax <- tstart <- tend <- tmax <-
   raw.amax <- raw.tmax <- rep(NA, length(years)) # create a series of vectors filled with NA
 
 modelGraphs(years) # makes all the graphs
+
 # need something to calculate max of each curve and return the date
 # this is in the code - just need to return it
 # 
@@ -100,3 +102,4 @@ mice <- melt(pars, id.vars = "year", measure.vars = c("mag", "adv.mag", "ret.mag
              variable.name = "type", value.name = "magnitude")
 ggplot(mice, aes(x = year, y = magnitude, col = type)) + 
   geom_line(size = 0.7) + geom_point(size = 2)
+
