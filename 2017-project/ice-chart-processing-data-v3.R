@@ -38,7 +38,6 @@ rm(list=ls()) # Clear the workspace
 # devtools::install_github("eblondel/cleangeo") # for cleaning SpatialPolygon objects; also on CRAN
 options(stringsAsFactors = FALSE)
 
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
 #setwd("C:/Users/Paul/Documents/DFO/ice")
 setwd("D:/Keith/capelin/2017-project")
@@ -65,6 +64,7 @@ if(!dir.exists("e00_data")) dir.create("e00_data")
 if(!dir.exists("sp_data")) dir.create("sp_data")
 
 load("output-processing/filters.Rdata")
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
 
 ## Metadata --------------------------------------------------------------------
@@ -117,7 +117,7 @@ dates
 # error messages indicate maps that have not been or may never be created.  Can be ignored. See previous comment
 e00Download(dates)
 
-## e00 file conversion to Spatial Polygons Dataframe---------------------------------------------------------
+## e00 file conversion to Spatial Polygons Dataframe--------------------
 # e00 to avc_data (coverages) and then to SpatialPolygonsDAtaframe in sp_data
 
 ## note: had to run this across multiple sessions...too many open files.
@@ -136,6 +136,7 @@ dates1
 # helper function to minimize the code
 e00_to_SpatialPolygonDataframe(dates1)
 
+## remove problem files at this stage
 # note that there is no corresponding e00 file on the EC website.  PR suspects that it may be hidden.  More imortantly, there is one from 20070507 (one day before).  Eliminate file
 file.remove("e00_data/20070508.e00")
 file.remove("sp_data/20070508.Rdata")
@@ -211,9 +212,9 @@ sb <- c("5", "6", "7", "8", "9", "1.", "4.", "7.")
 m2 <- list(ct=ct, sa=sa, sb=sb)
 m2
 
-ct <- c(8, 9)
-sa <- c("5")
-sb <- c("5")
+ct <- c(7:10, 9.5)
+sa <- c("7", "8", "9", "1.", "4.", "7.")
+sb <- c("7", "8", "9", "1.", "4.", "7.")
 m3 <- list(ct=ct, sa=sa, sb=sb)
 m3
 
@@ -221,9 +222,9 @@ m3
 # CT SA
 # 4   5
 # 2   5
-ct <- c(1, 2, 9.5)
-sa <- c("1", "2", "3", "4", "8.", "9.")
-sb <- c("1", "2", "3", "4", "8.", "9.")
+ct <- c(7:10, 9.5)
+sa <- c("7", "8", "9", "1.", "4.", "7.")
+sb <- c("7", "8", "9", "1.", "4.", "7.")
 m4 <- list(ct=ct, sa=sa, sb=sb)
 m4
 
@@ -234,9 +235,12 @@ rm(sa)
 rm(sb)
 
 load("output-processing/dates3.Rdata")
+load("output-processing/dates3all.Rdata")
+load("output-processing/subset-lists.Rdata")
 #load("output-processing/filters.Rdata")
 source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
+## m1
 trends_update.m1 <- calcAreaVolLat(dates3[25], ct=m1$ct, sa=m1$sa, sb=m1$sb)
 trends.m1 <- rbind(data.frame(date = dates3, 
                            area = trends_update.m1$areas, 
@@ -251,24 +255,24 @@ trends.m1 <- rbind(data.frame(date = dates3,
 lookAt(trends.m1)
 trends.m1 <- trends.m1[order(trends.m1$date), ]
 save(trends.m1, file = "output-processing/ice-trends-2017-m1-all.Rdata")
-save(trends.m1, file = "output-processing/ice-trends-2017-m1-subset.Rdata")
+#save(trends.m1, file = "output-processing/ice-trends-2017-m1-subset.Rdata")
 
 # check to insure that subset is less than full set
 x <- trends_update.m1$areas - trends_update3$areas
 subset(x, x < 0)
 
-trends_update3 <- calcAreaVolLat(dates3[25], ct=m2$ct, sa=m2$sa,  sb=m2$sb)
+## m2
+trends_update.m2 <- calcAreaVolLat(dates3[25], ct=m2$ct, sa=m2$sa,  sb=m2$sb)
 trends.m2 <- rbind(data.frame(date = dates3, 
-                           area = trends_update3$areas, 
-                           volume = trends_update3$volumes, 
-                           minlats = trends_update3$minlats,
-                           minlongs = trends_update3$minlongs )) 
+                           area = trends_update.m2$areas, 
+                           volume = trends_update.m2$volumes, 
+                           minlats = trends_update.m2$minlats,
+                           minlongs = trends_update.m2$minlongs )) 
 trends.m2 <- trends.m2[order(trends.m2$date), ]
 save(trends.m2, file = "output-processing/ice-trends-2017-m2-all.Rdata")
-save(trends.m2, file = "output-processing/ice-trends-2017-m2-subset.Rdata")
+#save(trends.m2, file = "output-processing/ice-trends-2017-m2-subset.Rdata")
 
-# test with other values
-# works OK
+## m3
 trends_update.m3 <- calcAreaVolLat(dates3, ct=m3$ct, sa=m3$sa,  sb=m3$sb)
 trends.m3 <- rbind(data.frame(date = dates3, 
                               area = trends_update.m3$areas, 
@@ -278,8 +282,9 @@ trends.m3 <- rbind(data.frame(date = dates3,
 lookAt(trends.m3)
 trends.m3 <- trends.m3[order(trends.m3$date), ]
 save(trends.m3, file = "output-processing/ice-trends-2017-m3-all.Rdata")
-save(trends.m3, file = "output-processing/ice-trends-2017-m3-subset.Rdata")
+#save(trends.m3, file = "output-processing/ice-trends-2017-m3-subset.Rdata")
 
+## m4
 trends_update.m4 <- calcAreaVolLat(dates3, ct=m4$ct, sa=m4$sa,  sb=m4$sb)
 trends.m4 <- rbind(data.frame(date = dates3, 
                               area = trends_update.m4$areas, 
