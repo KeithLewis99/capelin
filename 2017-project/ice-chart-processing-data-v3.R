@@ -10,17 +10,16 @@
   #3) download the EC ice map files
   #4) convert e00 files
   #5) Cross-check coastline (map projection)
-  #6) Make filter polygons
-  #7) Area and volume calculations
+  #6) Area and volume calculations
 
 # Main issues (see README):
   #1) Few errors in downloading files from the internet or converting e00 to SpatialPolygonDataframe
   #2) Too many connections open when converting files
   #3) Lots of long loops that could be made into functions to simplify code. Done.
-  #4) can date computations be simplified with lubridate?
+  #4) can date computations be simplified with lubridate? yes but why change code now?
   #5) circular problem with ice_trends data. See explanation below
   #6) how to get into archive so that we can see what has been missed and why. Can get into archive.
-  #7) make sure that we can extract the same values as in Ale's paper to ensure this is accurately working (maxIce, tice)
+  #7) make sure that we can extract the same values as in Ale's paper to ensure this is accurately working (maxIce, tice) - done
 
 # rest to output file
 
@@ -64,6 +63,8 @@ library(tidyverse)
 if(!dir.exists("avc_data")) dir.create("avc_data")
 if(!dir.exists("e00_data")) dir.create("e00_data")
 if(!dir.exists("sp_data")) dir.create("sp_data")
+
+load("output-processing/filters.Rdata")
 
 
 ## Metadata --------------------------------------------------------------------
@@ -182,115 +183,6 @@ length(dates2)/length(converted) # conversion didn't work out for a small number
 # # looks like they improved their map data (and/or changed projections) 20070716...
 
 
-## Make filter polygons --------------------------------------------------------
-# purpose here is too .....filter certain areas where ice in bays and inlets (e.g. Lake Melville) might throw off the calculations
-
-## Any polygon will work
-load("sp_data/20160606.Rdata") # file doesnot exist - probably doesn't matter
-water <- spTransform(ice[ice$A_LEGEND != "Land", ], CRS("+proj=longlat +datum=WGS84")) # this is a SpatialPolygondDataFrame
-water <- gUnaryUnion(water) # this makes a Spatial Polygon
-
-## Lake Melvelle
-plot(water, xlim = c(-62, -56), ylim = c(53.05, 54.52), col = "lightblue", border = NA)
-x <- c(-58.26572, -58.18660, -57.68811, -59.42886,
-       -61.16169, -61.39115, -59.93525, -58.70091) # captured using locator function
-y <- c(54.25903, 54.21695, 54.12346, 52.94540, 
-       52.92670, 53.93646, 54.45069, 54.58626)
-p1 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
-proj4string(p1) <- proj4string(water) # set coordinates reference system
-melville <- gIntersection(water, p1, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
-melville <- gBuffer(melville, width = 0.1) # add a small buffer
-plot(melville, border = "red", add = TRUE) # plots Lake Melville with border
-
-# plot North Atlantic (Gulf of Maine to Labrador Sea)
-plot(water, col = "lightblue", border = NA) 
-north55 <- extent(water) # this makes the extent of water an object
-north55@ymin <- 55      # this uses the extent to make a rectangle that starts at 55 lat
-north55 <- as(north55, "SpatialPolygons") # makes north55 a SpatialPolygon
-proj4string(north55) <- proj4string(water)
-plot(north55, border = "red", add = TRUE) # plot red rectangle over norther Lab Sea (Latitude 55 deg???)
-
-
-# not needed
-# intesection of water (ocean surronding NL) and Lake Melville
-#eastcoast <- gIntersection(water, p1, byid = TRUE) 
-#eastcoast2 <- gIntersection(water, p2, byid = TRUE) 
-#eastcoast <- gBuffer(eastcoast, width = 0.1) # add a small buffer
-#plot(eastcoast, border = "red", add = TRUE) # plots Lake Melville with border
-
-#Eastern Newfoundland
-plot(water, xlim = c(-53.25, -53.23), ylim = c(46.75, 49.5), col = "lightblue", border = NA)
-x <- c(-52.79640, -52.91794, -53.07998, -53.24203, -53.52560, -53.93072,
-       -53.99148, -53.98136, -54.13327, -54.30545, -54.02187, -54.16366, 
-       -54.32570, -53.64714, -53.09011, -52.91794, -52.79640) 
-
-x<- c(-53.49140, -53.01775, -52.88416, -52.71413, -53.57641, -54.20794, -55.33742, -54.54800, -54.03792)# captured using locator()
-y <- c(47.75702, 47.52098, 47.39285, 47.51424, 47.50075, 47.72330,
-       47.92562, 48.21561, 48.33025, 48.40444, 48.60001, 48.72814,
-       48.78884, 49.20022, 48.64047, 48.11445, 47.76376)
-y <- c(49.25103, 48.65924, 48.12419, 47.75128, 46.66497, 46.81900, 47.00545, 47.71885, 49.42938)
-p2 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
-proj4string(p2) <- proj4string(water)
-eastNF <- gIntersection(water, p2, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
-eastNF <- gBuffer(eastNF, width = 0.1) # add a small buffer
-plot(eastNF, border = "red", add = TRUE) # plots Trinity/Bonavista with border
-
-# Newfoundland North Coast and Bays
-plot(water, xlim = c(-53.45, -53.35), ylim = c(47.8, 50.5), col = "lightblue", border = NA)
-x <- c(-54.00649, -54.53953, -55.27395, -55.57009, -55.35687, -56.16237, -56.30451, -55.57009, -54.29078, -54.06572)
-y <- c(49.44365, 49.18022, 49.04850, 49.07949, 49.30418, 49.35842, 49.61410, 49.95501, 49.59860, 49.44365)
-p4 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
-proj4string(p4) <- proj4string(water)
-northNF <- gIntersection(water, p4, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
-northNF <- gBuffer(northNF, width = 0.1) # add a small buffer
-plot(northNF, border = "red", add = TRUE) # plots Trinity/Bonavista with border
-
-
-# SW of Fogo
-plot(water, xlim = c(-53.45, -53.35), ylim = c(47.8, 50.5), col = "lightblue", border = NA)
-x <- c(-54.00330, -53.54995, -53.40174, -53.85509, -54.01202)
-y <- c(49.39749, 49.23212, 49.24352, 49.45451, 49.41459)
-p41 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
-proj4string(p41) <- proj4string(water)
-swFogo <- gIntersection(water, p41, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
-swFogo <- gBuffer(swFogo, width = 0.1) # add a small buffer
-plot(swFogo, border = "red", add = TRUE) # plots Trinity/Bonavista with border
-
-# Gulf of St. Lawrence/Scotian Shelf Filter
-plot(water, xlim = c(-70, -62), ylim = c(40, 52), col = "lightblue", border = NA) # plot Gulf of St. Lawrense
-x <- c(-55.56948, -55.44441, -73.62120, -73.12092, -66.49223, -56.69511, -56.57004, -57.07032, -54.56892, -55.61117) # captured using locator()
-y <- c(46.91320, 42.37340, 42.37340, 47.35539, 51.06977, 51.42352, 50.39175, 49.21258, 47.82706, 46.97216)
-p3 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
-proj4string(p3) <- proj4string(water)
-gulf <- gIntersection(water, p3, byid = TRUE) # intesection of water (ocean surronding NL) and Gulf of St. Lawrence
-gulf <- gBuffer(gulf, width = 0.1) # add a small buffer
-plot(gulf, border = "red", add = TRUE) # plots gulf with border
-
-# plot North Atlantic (Gulf of Maine to Labrador Sea)
-plot(water, col = "lightblue", border = NA) 
-west <- extent(water)           # this makes the rectangle
-west@ymin <- 41                 # this lowers the rectangle to 55 lat
-west@ymax <- 52                 # this lowers the rectangle to 55 lat
-west@xmin <- -72                # this lowers the rectangle to 55 lat
-west@xmax <- -56                # this lowers the rectangle to 55 lat
-west <- as(west, "SpatialPolygons")   # makes west a SpatialPolygon
-proj4string(west) <- proj4string(water)
-plot(west, border = "red", add = TRUE) # plot red rec
-
-
-## Ignoring Lake Melville made little difference
-filters <- gUnaryUnion(rbind(melville, north55))
-filters <- gUnaryUnion(rbind(filters, eastNF))
-filters <- gUnaryUnion(rbind(filters, gulf))
-filters <- gUnaryUnion(rbind(filters, gulf))
-filters <- gUnaryUnion(rbind(filters, northNF))
-filters <- gUnaryUnion(rbind(filters, swFogo))
-filters <- gUnaryUnion(rbind(filters, west, makeUniqueIDs = T)) # there were nonunique IDs in this line - the addition of makeUniqueIDs seems to work.
-slot(filters@polygons[[1]], "ID") <- "- filters"
-plot(water, col = "lightblue", border = NA)
-plot(filters, border = "red", add = TRUE) # plot main map with filter
-
-save(filters, file = "output-processing/filters.Rdata")
 
 ## Area and volume calculations ------------------------------------------------
 # calculate the area of the sea ice and .....
@@ -342,7 +234,7 @@ rm(sa)
 rm(sb)
 
 load("output-processing/dates3.Rdata")
-load("output-processing/filters.Rdata")
+#load("output-processing/filters.Rdata")
 source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
 trends_update.m1 <- calcAreaVolLat(dates3[25], ct=m1$ct, sa=m1$sa, sb=m1$sb)
@@ -413,6 +305,12 @@ save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
 ## Manual discard --------------------------------------------------------------
 dates3[-c(23)]
 
+# remove these dates before running due to fragments
+#"1991-02-18 NST", "1992-03-19 NST", "2001-04-09 NDT", "2007-04-23 NDT", "2015-04-27 NDT"
+
+dates3[-c(618, 656, 933, 1125, 1404)]
+
+dates3[1404]
 trends$area[format(trends$date, "%Y%m%d") == "19910401"] <- NA # polygons were miss-classified
 trends <- trends[trends$date > ISOdate(1969, 11, 1), ] # 1969 was a strange year - difficult to assess patterns/fit curve - unreliable data?
 trends <- na.omit(trends)
