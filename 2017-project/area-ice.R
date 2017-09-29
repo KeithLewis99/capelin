@@ -34,6 +34,7 @@ source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 #load("ice-trends-2017-m1-d3.Rdata") 
 load("output-processing/ice-trends-2017-m1-all.Rdata")
 load("output-processing/ice-trends-2017-m2-all.Rdata")
+load("output-processing/ice-trends-2017-m3-all.Rdata")
 #load("output-processing/ice-trends-2017-m1-subset.Rdata")
 #load("output-processing/ice-trends-2017-m2-subset.Rdata")
 load("output-processing/filters.Rdata")
@@ -44,6 +45,7 @@ load("output-processing/filters.Rdata")
 # plots to determien if subsetting worked - alternate with minlats/minlongs
 m1 <- trends.m1[c("date", "area", "volume")]
 m2 <- trends.m2[c("date", "area", "volume")]
+m3 <- trends.m3[c("date", "area", "volume")]
 
 # no value should be above the slope of 1
 mtest <-merge(m1, m2, by ="date")
@@ -51,28 +53,77 @@ head(mtest)
 plot(mtest$area.x, mtest$area.y)
 abline(a=0, b = 1, col="red", lwd=3)
 
+m2$area - m3$area
+
+subsetTestPlot(m1, m2, "date")
+subsetTestPlot(m2, m3, "date")
+
 # summary graphs
 trends.m1$year <- year(trends.m1$date)
-ggplot(data = trends.m1, aes(x = year, y = area, group = year)) + 
+trends.m2$year <- year(trends.m2$date)
+trends.m3$year <- year(trends.m3$date)
+
+p1 <- ggplot(data = trends.m1, aes(x = year, y = area, group = year)) + 
   geom_boxplot()
-ggplot(data = trends.m1, aes(x = year, y = minlats, group = year)) + 
+p2 <- ggplot(data = trends.m1, aes(x = year, y = minlats, group = year)) + 
+  geom_boxplot()
+p3 <- ggplot(data = trends.m2, aes(x = year, y = area, group = year)) + 
+  geom_boxplot()
+p4 <- ggplot(data = trends.m2, aes(x = year, y = minlats, group = year)) + 
+  geom_boxplot()
+p5 <- ggplot(data = trends.m3, aes(x = year, y = area, group = year)) + 
+  geom_boxplot()
+p6 <- ggplot(data = trends.m3, aes(x = year, y = minlats, group = year)) + 
   geom_boxplot()
 
+windows()
+multiplot(p1, p2, p3, p4, layout = matrix(c(2,3)))
+multiplot(p1, p2, p3, p4, cols=2)
 
-# generate summaries-------
+# generate summaries by merging max area with minlat and tice-------
 iceSum.m1 <- iceSummary(trends.m1)
 iceSum.m2 <- iceSummary(trends.m2)
+iceSum.m3 <- iceSummary(trends.m3)
 View(iceSum.m1)
-ggplot(data = iceSum.m1, aes(x = year, y = tice)) + 
+
+p1 <- ggplot(data = iceSum.m1, aes(x = year, y = tice)) + 
   geom_point()
 
-ggplot(data = iceSum.m1, aes(x = year, y = area)) + 
+p2 <- ggplot(data = iceSum.m1, aes(x = year, y = area)) + 
   geom_point()
+
+ggplot(data = iceSum.m2, aes(x = year, y = tice)) + 
+  geom_point()
+
+ggplot(data = iceSum.m2, aes(x = year, y = area)) + 
+  geom_point()
+
+ggplot(data = iceSum.m3, aes(x = year, y = tice)) + 
+  geom_point()
+
+ggplot(data = iceSum.m3, aes(x = year, y = area)) + 
+  geom_point()
+
+multiplot(p1, p2, p3, p4, cols = 2)
+
 range(iceSum.m1$area)
 range(iceSum.m1$area)[2]/range(iceSum.m1$area)[1]
 
 range(iceSum.m1$tice)
 range(iceSum.m1$tice)[2]/range(iceSum.m1$tice)[1]
+
+
+range(iceSum.m2$area)
+range(iceSum.m2$area)[2]/range(iceSum.m2$area)[1]
+
+range(iceSum.m2$tice)
+range(iceSum.m2$tice)[2]/range(iceSum.m2$tice)[1]
+
+range(iceSum.m3$area)
+range(iceSum.m3$area)[2]/range(iceSum.m3$area)[1]
+
+range(iceSum.m3$tice)
+range(iceSum.m3$tice)[2]/range(iceSum.m3$tice)[1]
 
 #######################################################################
 ##Create maps of the minlats-----------
@@ -141,6 +192,19 @@ summary(lm(minlats~area, data=iceSum.m2))
 multiplot(p1.m2, p3.m2, p2.m2, cols=2)
 
 #m3-----
+p1.m3  <- ggplot(data = iceSum.m3, aes(x = area, y = tice)) + geom_point() + geom_smooth(method=lm)
+summary(lm(tice~area, data=iceSum.m3))
+
+# plot tice against ice area
+p2.m3 <- ggplot(data = iceSum.m3, aes(x = minlats, y = tice)) + geom_point() + geom_smooth(method=lm)
+summary(lm(tice~minlats, data=iceSum.m3))
+
+#plot ice area against minlats
+p3.m3 <- ggplot(data = iceSum.m3, aes(x = area, y = minlats)) + geom_point() + geom_smooth(method=lm)
+summary(lm(minlats~area, data=iceSum.m3))
+
+multiplot(p1.m3, p3.m3, p2.m3, cols=2)
+
 #####################################################################
 # explore more rigorous method of determining relationship between tice and minlat-----
 
