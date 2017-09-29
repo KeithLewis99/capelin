@@ -9,7 +9,27 @@
 #1) Make filter polygons
 
 # Main issues:
+# none for now
 
+rm(list=ls()) # Clear the workspace
+
+## Set-up ----------------------------------------------------------------------
+
+# devtools::install_github("eblondel/cleangeo") # for cleaning SpatialPolygon objects; also on CRAN
+options(stringsAsFactors = FALSE)
+
+#setwd("C:/Users/Paul/Documents/DFO/ice")
+setwd("D:/Keith/capelin/2017-project")
+
+# this may be overkill on libraries but not sure what does what
+library(RArcInfo)
+library(maptools)
+library(rgdal)
+library(rgeos)
+library(raster)
+library(data.table)
+library(RColorBrewer)
+library(cleangeo)
 
 ## Make filter polygons --------------------------------------------------------
 # purpose here is too .....filter certain areas where ice in bays and inlets (e.g. Lake Melville) might throw off the calculations
