@@ -51,9 +51,28 @@ head(mtest)
 plot(mtest$area.x, mtest$area.y)
 abline(a=0, b = 1, col="red", lwd=3)
 
+# summary graphs
+trends.m1$year <- year(trends.m1$date)
+ggplot(data = trends.m1, aes(x = year, y = area, group = year)) + 
+  geom_boxplot()
+ggplot(data = trends.m1, aes(x = year, y = minlats, group = year)) + 
+  geom_boxplot()
+
+
 # generate summaries-------
 iceSum.m1 <- iceSummary(trends.m1)
 iceSum.m2 <- iceSummary(trends.m2)
+View(iceSum.m1)
+ggplot(data = iceSum.m1, aes(x = year, y = tice)) + 
+  geom_point()
+
+ggplot(data = iceSum.m1, aes(x = year, y = area)) + 
+  geom_point()
+range(iceSum.m1$area)
+range(iceSum.m1$area)[2]/range(iceSum.m1$area)[1]
+
+range(iceSum.m1$tice)
+range(iceSum.m1$tice)[2]/range(iceSum.m1$tice)[1]
 
 #######################################################################
 ##Create maps of the minlats-----------
