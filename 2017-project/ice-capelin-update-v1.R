@@ -11,7 +11,7 @@
 # This does an outstanding job except for 2013 and 2014 - why?  What covariates might explain the difference?
 
 setwd("D:/Keith/capelin/2017-project")
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v2.R")
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 library(plotrix)
 library(ggplot2)
 
@@ -138,6 +138,8 @@ for(i in 2:nrow(capelin)){
 }
 
 # new version of figure below
+#png(filename = "ice-capelin-update2.png",width = 1000, height = 1000, units = "px", pointsize = 20, bg = "white", res = NA, family = "", restoreConsole = TRUE, type = c("cairo-png")) 
+
 ggplot(capelin, aes(x = year, y = logdiff)) + 
   geom_point(pch = 16, size = 3) + 
   geom_hline(yintercept = 100, lty = 3) +
@@ -149,11 +151,9 @@ ggplot(capelin, aes(x = year, y = logdiff)) +
   theme_bw()
 
 #plot of logdiff in capelin from previous year    
-png(filename = "ice-capelin-update2.png",width = 1000, height = 1000, units = "px", pointsize = 20, bg = "white", res = NA, 
-family = "", restoreConsole = TRUE, type = c("cairo-png")) 
    with(capelin, plot(year,logdiff,xlab='year',ylab='L%',pch=16))
    abline(h=100,lty=3)
    abline(h=0)
    abline(h=-100,lty=3)
    
-dev.off()   
+#dev.off()   

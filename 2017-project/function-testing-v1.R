@@ -23,6 +23,18 @@ str(sub.egg@polygons[[1]]@Polygons[1])
 str(sub.egg@polygons[[1]]@Polygons[[1]])
 str(sub.egg@polygons[[1]]@Polygons[[1]]@area)
 
+# structure at various levels - prevents huge printouts with loads of redundancy
+plot(test)
+test <- water@polygons  
+str(water)
+str(water, max.level = 2)
+str(water, max.level = 3)
+str(water, max.level = 4)
+str(water, max.level = 5) # shows relevant structure, i.e, lenght of list
+str(water, max.level = 6) 
+str(water, max.level = 7)
+str(water, max.level = 8) # same as str(water)
+
 # see data
 sub.egg@data
 sub.egg@data$EGG_ATTR
@@ -141,53 +153,9 @@ test3 <- subset(sub.egg, E_CT == r)
 str(test3@data)
 test3$E_CT
 
-## test subsetting of the AreaVolume function------------------------------------------------------
-## subset the ice data
-# create "model sets"
-ct <- c(3:10)
-sa <- c("5", "6", "7", "8", "9", "1.", "4.", "7.")
-m1 <- list(ct=ct, sa=sa)
-m1
 
-ct <- c(8, 9)
-sa <- c("5")
-m2 <- list(ct=ct, sa=sa)
-m2
 
-ct <- NULL
-sa <- NULL
-m3 <- list(ct=ct, sa=sa)
-m3
-
-#lookAtSubEgg function-------------------
-test <- lookATSubEgg(dates3, 71)
-str(test$a@data)
-str(test$b)
-head(test$b, 30)
-str(test$a)
-
-# test eggAttr.within()
-test1 <- eggAttr.cols(test$b)
-head(test1)
-test1[c("AREA", "CA", "CB", "CC", "CD", "SA", "SB", "SC", "SD", "SE")]
-
-test2 <- eggAttr.query(test1, m3$ct, m3$sa)
-head(test2)
-head(str(test2))
-test2
-#eggAttr.within(test2)
-
-i=4
-k=1
-j=1
-z <- c("SA", "SB")
-w <- c("CA", "CB")
-name <- "x"
-x <- test2
-x$AREA_SA
-test2$AREA_SA
-str(x)
-# generalize to a range of columns
+# generalize to a range of columns-------------------
 # problem is that we need to loop over z, w, and i.  Perhaps this can be done with mapply but beyond me for now.
 x[[w[1]]]
 withinPolyArea_GEN <- function(x = data, name = name, cols = z, conc = w, sa = sa) {
@@ -208,10 +176,6 @@ withinPolyArea_GEN <- function(x = data, name = name, cols = z, conc = w, sa = s
     }
   return(x)
   }
-
- 
-test4 <- withinPolyArea_GEN(test2, "z", "w", sa)
-test4 <- mapply(withinPolyArea_GEN(test2, sa) SA, SB)
 
 
 # generalize to a range of columns - maaply-------------
@@ -266,6 +230,7 @@ withinPolyAreaALL <- function(x = data, sa = sa) {
   return(x)
 }
 
+#############################################
 test2 %>%
   mutate_at(.vars = z,
             .funs = withinPolyAreaALL)
@@ -285,7 +250,6 @@ x[[z[k]]][3]
 str(x[[z[k]]])
 
 
-
 test3 <- withinPolyAreaA(test2, sa)
 test3
 test3$AREA_NEW
@@ -297,6 +261,13 @@ AREA3 <- test2$AREA*(as.numeric(test2$CB)/10)
 test4 <- withinPolyArea_GEN(test2, sa)
 test4
 test4[c("AREA", "SA", "SB", "AREA_NEW")]
+
+x <- test$a
+x@data
+test
+test$a
+test$a@data
+iceArea(test$a@data, m1$ct, m1$sa)
 
 # for testing e00_to_SpatialPolygonDataframe()----------------------
 #i = "19730528"
@@ -313,10 +284,120 @@ test4[c("AREA", "SA", "SB", "AREA_NEW")]
 #test <- raster('20170626.e00')
 #test <- readGDAL('20170626.e00')
 
+# import the e00 data into R: all looks well ito of egg attribute - note HUGE number of polygons
+shape1 <- readOGR(dsn = "D:/Keith/ice/2017-project/e00_data_conversion", layer = "test3")
+str(shape1)
+str(shape1@data)
+shape1@data
+class(shape1)
+write.csv(shape1@data, "shapeflies.csv")
+out <- capture.output(str(shape1))
+write.csv(out, "str_test.csv")
 
-x <- test$a
-x@data
-test
-test$a
+# make shape1 a SPDF - shouldn't need this.
+shape.spdf <- SpatialPolygonsDataFrame(shape1, data = shape1@data)
+plot(shape.spdf)
+save(shape1, file = "D:/Keith/ice/2017-project/e00_data_conversion/20170213.Rdata")
+
+# calculate area using calAreaVolume - use data set that wouldn't load [1] and one that would [2]
+dates4 <- as.POSIXlt(c("2017-02-13 NST", "2017-02-20 NST"))
+y <- dates4
+i <- 1
+y[i]
+
+load(format(y[i], "sp_data/%Y%m%d.Rdata"))
+ice1 <- load(format(y[i], "sp_data/%Y%m%d.Rdata"))
+plot(ice)
+plot(ice1)
+plot(shape1)
+
+trends_update4 <- calcAreaVolume(dates4, ct=m1$ct, sa=m1$sa)
+
+
+#################################################################
+# area calculations
+test <- lookAtIce(dates3, 626) # does not work for 1
+str(test$a@data)
+str(test$b)
+head(test$b, 30)
+str(test$a, max.level = 2)
+class(test$a)
 test$a@data
-iceArea(test$a@data, m1$ct, m1$sa)
+
+gl <- iceArea(test$a@data, ct=m3$ct, sa=m3$ct)
+test$b
+
+
+m1$ct
+m1$sa
+gl[[1]]
+gl[[1]][, c("AREA", "EGG_ATTR", "CT", "CA", "CB", "SA", "SB", "AREA_SA", "AREA_SB")]
+gl[[1]][7,][c("AREA", "EGG_ATTR", "CT", "CA", "CB", "SA", "SB", "AREA_SA", "AREA_SB")]
+gl[[2]]
+
+
+sum(gl[[1]]$AREA_SA)
+area <- gl[[1]]$AREA_SA + gl[[1]]$AREA_SB + gl[[1]]$AREA_SC + gl[[1]]$AREA_SD
+etab <- eggAttr(gl[[1]]$EGG_ATTR)
+coverage <- as.numeric(gsub("\\+", ".5", etab$E_CT))/10
+
+
+a <- gl[[1]][7,]$AREA
+ca <- as.numeric(gl[[1]][7,]$CA)
+cb <- as.numeric(gl[[1]][7,]$CB)
+asa <- a*(ca/10)
+asb <- a*(cb/10)
+ar <- asa + asb
+etab <- eggAttr(gl[[1]][7,]$EGG_ATTR)
+coverage <- as.numeric(gsub("\\+", ".5", etab$E_CT))/10 
+
+icesum <- sum(ar * coverage, na.rm = TRUE)
+
+x$AREA_SA[i] <- x$AREA[i] * as.numeric(x$CA[i])/10
+
+
+###Look at coordinates, boundary boxes, and extents---------------------
+str(x)
+x@polygons[[1]]
+head(x@polygons[[1]]@Polygons[[1]]@coords)
+iceTiming(test$a)
+
+plot(x@bbox)
+class(x)
+x@proj4string
+coordinates(x)
+
+ie <- extent(ice)
+ibb <- ice@bbox
+plot(ie)
+se <- extent(temp.ls[[1]])
+plot(se, add=T)
+intersect(ie, se)
+gIntersects(ie, se)
+
+extent(ice)
+extent(sub.egg)
+extent(sub.egg1)
+extent(temp.ls[[1]])
+
+y <- spTransform(x[x$A_LEGEND != "Land", ], CRS("+proj=longlat +datum=WGS84"))
+ptest <- gUnaryUnion(test)
+plot(test)
+eastcoast <- gIntersection(water, test, byid = TRUE) 
+
+
+
+
+###Work with environments---------------------
+exists("i", globalenv())
+exists("water", globalenv())
+sys.frame()
+ls()
+ls.str()
+library(pryr)
+where("calcAreaVolLat")
+where("calcLatLong")
+
+
+
+
