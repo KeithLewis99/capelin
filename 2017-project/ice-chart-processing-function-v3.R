@@ -768,6 +768,15 @@ calcAreaVolLat <- function(y, ct = NULL, sa = NULL, sb = NULL) {
 ####################################################################################
 ##' multiplot()--------- 
 #' - like mfrow
+#' # Multiple plot function http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   library(grid)
   
@@ -1140,3 +1149,61 @@ iceMedianD5 <- function(df){
 
 
 ##################################################################
+##' subsetTestPlot()------
+#'
+#' @param df1 results of model 1
+#' @param df2 results of model 2
+#' @param date the date which is used to merge the datasets
+#'
+#' @return a graph of the two datasets with an abline - no values should be above the line
+#' @export
+#'
+#' @examples
+subsetTestPlot <- function(df1, df2, date){
+  mtest <- merge(df1, df2, by = eval(parse(text = date)))
+  plot(mtest$area.x, mtest$area.y)
+  abline(a=0, b = 1, col="red", lwd=3)  
+}
+
+##################################################################
+##' iceSummarylm()------------
+#'
+#' @param dataframe 
+#'
+#' @return - list of lm summaries
+#' @export
+#'
+#' @examples iceSummarylm (sub2017.m1)
+iceSummarylm <- function(df) {
+  a <- summary(lm(dminlats~darea, data=df$mall))
+  b <- summary(lm(dminlats~dtice, data=df$mall))
+  c <- summary(lm(darea~dtice, data=df$mall))  
+  return(list(minlats_v_area = a, minlats_v_tice = b, area_v_tice = c))
+}
+
+
+##################################################################
+##' datePlots()--------
+#'
+#' @param df 
+#'
+#' @return 1 graphs of date v minlats, and 2 faceted histograms of minlats by date
+#' @export
+#'
+#' @examples
+datePlots <- function(df){
+p1 <- ggplot(data = df$data, aes(x = date, y = minlats)) + 
+  geom_point() + 
+  geom_smooth(method=lm)
+  
+p2 <-   ggplot(data = df$data, aes(minlats)) + 
+    geom_histogram() + 
+    facet_wrap(~ year) +
+    geom_vline(data = df$mall, aes(xintercept = dminlats), colour = "red")
+  
+p3 <- ggplot(data = df$data, aes(area)) + 
+    geom_histogram(bins = 10) + 
+    facet_wrap(~ year) +
+    geom_vline(data = df$mall, aes(xintercept = darea), colour = "red")
+  return(list(p1=p1, p2=p2, p3=p3))
+}
