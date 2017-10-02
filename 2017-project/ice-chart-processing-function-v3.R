@@ -1123,28 +1123,34 @@ iceSummary <- function(df){
 #' @export
 #'
 #' @examples
-iceMedianD5 <- function(df){
+iceMedianD5 <- function(df, subset_yr, subset_ti, data1){
+  #browser()
+  df1 <- subset(df, eval(parse(text = subset_yr)) & eval(parse(text = subset_ti)))
   
-  t1 <- df %>%
+  t1 <- df1 %>%
     group_by(year) %>%
     arrange(desc(area)) %>%
     slice(1:5) %>%
     summarize(d5area=median(area))
 
-  t2 <- df %>%
+  t2 <- df1 %>%
     group_by(year) %>%
     arrange(minlats) %>%
     slice(1:5) %>%
     summarize(d5tice=median(tice))
 
-  t3 <- df %>%
+  t3 <- df1 %>%
     group_by(year) %>%
     arrange(minlats) %>%
     slice(1:5) %>%
     summarize(d5minlats=median(minlats))
-  df1 <- full_join(t1, t2, by = "year")
-  df1 <- full_join(df1, t3, by = "year")
-  return(df1)
+  
+  df2 <- left_join(t1, t2, by = "year")
+  df2 <- left_join(df2, t3, by = "year")
+  
+  df3 <- subset(data1, eval(parse(text = subset_yr)))
+  df4 <- left_join(df3, df2, by = "year")
+  return(list(data = df1, meds=df2, mall=df4))
 }
 
 
@@ -1174,16 +1180,17 @@ subsetTestPlot <- function(df1, df2, date){
 #' @export
 #'
 #' @examples iceSummarylm (sub2017.m1)
-iceSummarylm <- function(df) {
-  a <- summary(lm(dminlats~darea, data=df$mall))
-  b <- summary(lm(dminlats~dtice, data=df$mall))
-  c <- summary(lm(darea~dtice, data=df$mall))  
+iceSummarylm <- function(df, med = NULL, med1 = NULL) {
+  #browser()
+  a <- summary(lm(paste0(med, "minlats", " ~ ", med1, "area"), data=df$mall))
+  b <- summary(lm(paste0(med, "minlats", " ~ ", med, "tice"), data=df$mall))
+  c <- summary(lm(paste0(med1, "area", " ~ ", med, "tice"), data=df$mall))  
   return(list(minlats_v_area = a, minlats_v_tice = b, area_v_tice = c))
 }
 
 
 ##################################################################
-##' datePlots()--------
+##' iceDateScatter()--------
 #'
 #' @param df 
 #'
@@ -1191,7 +1198,9 @@ iceSummarylm <- function(df) {
 #' @export
 #'
 #' @examples
-datePlots <- function(df){
+#' 
+iceDateScatter <- function(df, d = NULL){
+  #browser()
 p1 <- ggplot(data = df$data, aes(x = date, y = minlats)) + 
   geom_point() + 
   geom_smooth(method=lm)
@@ -1199,11 +1208,39 @@ p1 <- ggplot(data = df$data, aes(x = date, y = minlats)) +
 p2 <-   ggplot(data = df$data, aes(minlats)) + 
     geom_histogram() + 
     facet_wrap(~ year) +
-    geom_vline(data = df$mall, aes(xintercept = dminlats), colour = "red")
+    geom_vline(data = df$mall, aes_string(xintercept = paste0(d, "minlats")), colour = "red")
   
 p3 <- ggplot(data = df$data, aes(area)) + 
     geom_histogram(bins = 10) + 
     facet_wrap(~ year) +
-    geom_vline(data = df$mall, aes(xintercept = darea), colour = "red")
+    geom_vline(data = df$mall, aes_string(xintercept = paste0(d, "area")), colour = "red")
   return(list(p1=p1, p2=p2, p3=p3))
+}
+
+##################################################################
+#' iceYearBox()----------
+#'
+#' @param df1 
+#' @param df2 
+#' @param df3 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+iceYearBox <- function(df1, df2, df3) {
+  p1 <- ggplot(data = df1, aes(x = year, y = area, group = year)) + 
+    geom_boxplot()
+  p2 <- ggplot(data = df1, aes(x = year, y = minlats, group = year)) + 
+    geom_boxplot()
+  p3 <- ggplot(data = df2, aes(x = year, y = area, group = year)) + 
+    geom_boxplot()
+  p4 <- ggplot(data = df2, aes(x = year, y = minlats, group = year)) + 
+    geom_boxplot()
+  p5 <- ggplot(data = df3, aes(x = year, y = area, group = year)) + 
+    geom_boxplot()
+  p6 <- ggplot(data = df3, aes(x = year, y = minlats, group = year)) + 
+    geom_boxplot()
+  windows()
+  multiplot(p1, p3, p5, p2, p4, p6, cols=2)
 }
