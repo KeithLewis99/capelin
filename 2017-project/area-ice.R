@@ -62,23 +62,11 @@ trends.m1$year <- year(trends.m1$date)
 trends.m2$year <- year(trends.m2$date)
 trends.m3$year <- year(trends.m3$date)
 
-p1 <- ggplot(data = trends.m1, aes(x = year, y = area, group = year)) + 
-  geom_boxplot()
-p2 <- ggplot(data = trends.m1, aes(x = year, y = minlats, group = year)) + 
-  geom_boxplot()
-p3 <- ggplot(data = trends.m2, aes(x = year, y = area, group = year)) + 
-  geom_boxplot()
-p4 <- ggplot(data = trends.m2, aes(x = year, y = minlats, group = year)) + 
-  geom_boxplot()
-p5 <- ggplot(data = trends.m3, aes(x = year, y = area, group = year)) + 
-  geom_boxplot()
-p6 <- ggplot(data = trends.m3, aes(x = year, y = minlats, group = year)) + 
-  geom_boxplot()
+#Boxplots
+iceYearBox(df1 = trends.m1, df2 = trends.m2, df3 = trends.m3)
 
-windows()
 
-multiplot(p1, p3, p5, p2, p4, p6, cols=2)
-
+# yearly summaries of minlat and tice
 # generate summaries by merging max area with minlat and tice-------
 iceSum.m1 <- iceSummary(trends.m1)
 iceSum.m2 <- iceSummary(trends.m2)
@@ -86,26 +74,32 @@ iceSum.m3 <- iceSummary(trends.m3)
 View(iceSum.m1)
 
 p1 <- ggplot(data = iceSum.m1, aes(x = year, y = tice)) + 
-  geom_point()
+  geom_point() + geom_smooth(method=lm)
 
 p2 <- ggplot(data = iceSum.m1, aes(x = year, y = area)) + 
-  geom_point()
+  geom_point() + geom_smooth(method=lm)
 
 p3 <- ggplot(data = iceSum.m2, aes(x = year, y = tice)) + 
-  geom_point()
+  geom_point() + geom_smooth(method=lm)
 
 p4 <- ggplot(data = iceSum.m2, aes(x = year, y = area)) + 
-  geom_point()
+  geom_point() + geom_smooth(method=lm)
 
 p5 <- ggplot(data = iceSum.m3, aes(x = year, y = tice)) + 
-  geom_point()
+  geom_point() + geom_smooth(method=lm)
 
 p6 <- ggplot(data = iceSum.m3, aes(x = year, y = area)) + 
-  geom_point()
+  geom_point() + geom_smooth(method=lm)
 
 multiplot(p1, p3, p5, p2, p4, p6, cols = 2)
 
+iceSum.m3 %>%
+  filter(year >= 1983) %>%
+ggplot(aes(x = year, y = area)) + 
+  geom_point() + geom_smooth(method=lm)
 
+
+# ranges and ratios
 area.range <- c(m1 = range(iceSum.m1$area), m2 = range(iceSum.m2$area), m3 = range(iceSum.m3$area))
 
 
@@ -237,11 +231,15 @@ trends.m1$year <- year(trends.m1$date)
 trends.m2$tice <- yday(trends.m2$date)
 trends.m2$year <- year(trends.m2$date)
 
+trends.m3$tice <- yday(trends.m3$date)
+trends.m3$year <- year(trends.m3$date)
+
+# Medians of all values
 #####1991-----
 #m1
 sub1991.m1 <- iceMedian(trends.m1, "year < 1992", "tice < 150", iceSum.m1)
 str(sub1991)
-iceSummarylm(sub1991)
+iceSummarylm(sub1991.m1)
 
 # graph these for this year but only repeat if reasonable r-squared values appear
 p1.m1  <- ggplot(data = iceSum.m1, aes(x = area, y = tice)) + geom_point() + geom_smooth(method=lm)
@@ -259,7 +257,7 @@ multiplot(p1.m1, p3.m1, p2.m1, cols=2)
 
 
 # scatter plot of date and minlats
-sub1991.m1.plot <- datePlots(sub1991.m1)
+sub1991.m1.plot <- iceDateScatter(sub1991.m1)
 sub1991.m1.plot$p1
 sub1991.m1.plot$p2
 sub1991.m1.plot$p3
@@ -268,7 +266,7 @@ sub1991.m1.plot$p3
 sub1991.m2 <- iceMedian(trends.m2, "year < 1992", "tice < 150", iceSum.m1)
 iceSummarylm(sub1991.m2)
 # scatter plot of date and minlats
-sub1991.m2.plot <- datePlots(sub1991.m2)
+sub1991.m2.plot <- iceDateScatter(sub1991.m2)
 sub1991.m2.plot$p1
 sub1991.m2.plot$p2
 sub1991.m2.plot$p3
@@ -278,7 +276,7 @@ sub1991.m2.plot$p3
 ##m1
 sub2017.m1 <- iceMedian(trends.m1, "year > 1991", "tice < 150", iceSum.m1)
 iceSummarylm(sub2017.m1)
-sub2017.m1.plot <- datePlots(sub2017.m1)
+sub2017.m1.plot <- iceDateScatter(sub2017.m1)
 sub2017.m1.plot$p1
 sub2017.m1.plot$p2
 sub2017.m1.plot$p3
@@ -287,7 +285,7 @@ sub2017.m1.plot$p3
 sub2017.m2 <- iceMedian(trends.m1, "year > 1991", "tice < 150", iceSum.m1)
 iceSummarylm(sub2017.m2)
 # scatter plot of date and minlats
-sub2017.m2.plot <- datePlots(sub2017.m2)
+sub2017.m2.plot <- iceDateScatter(sub2017.m2, d = "d")
 sub2017.m2.plot$p1
 sub2017.m2.plot$p2
 sub2017.m2.plot$p3
@@ -295,64 +293,109 @@ sub2017.m2.plot$p3
 ###############################################
 ###############################################
 ###############################################
-# all data - I haven't made this function subsettable yet
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
+# Median of the top 5 values
 
 count.year <- trends.m1 %>%
   group_by(year) %>%
   count()
 View(count.year)
 
+###1992-2017------
+##m1
+iceMedD5.m1 <- iceMedianD5(trends.m1, "year > 1991", "tice < 150", iceSum.m1)
+iceSummarylm(iceMedD5.m1, med = "d5", med1 = "d5")
 
-iceMedD5.m1 <- iceMedianD5(trends.m1)
-
-summary(lm(d5area~d5tice, data=iceMedD5.m1))
-summary(lm(d5minlats~d5tice, data=iceMedD5.m1))
-summary(lm(d5minlats~d5area, data=iceMedD5.m1))
-#iceSummarylm(iceMedD5.m1)
-
-p1.m1  <- ggplot(data = iceMedD5.m1, aes(x = d5area, y = d5tice)) + geom_point() + geom_smooth(method=lm)
+# figures
+p1.m1  <- ggplot(data = iceMedD5.m1$mall, aes(x = d5area, y = d5tice)) + geom_point() + geom_smooth(method=lm)
 #, colour = year < 1992)
 # plot tice against ice area
-p2.m1 <- ggplot(data = iceMedD5.m1, aes(x = d5minlats, y = d5tice)) + geom_point() + geom_smooth(method=lm)
+p2.m1 <- ggplot(data = iceMedD5.m1$mall, aes(x = d5minlats, y = d5tice)) + geom_point() + geom_smooth(method=lm)
 
 #plot ice area against minlats
-p3.m1 <- ggplot(data = iceMedD5.m1, aes(x = d5area, y = d5minlats)) + geom_point() + geom_smooth(method=lm)
+p3.m1 <- ggplot(data = iceMedD5.m1$mall, aes(x = d5area, y = d5minlats)) + geom_point() + geom_smooth(method=lm)
+
+multiplot(p1.m1, p3.m1, p2.m1, cols=2)
+
+
+
+# scatter plot of date and minlats
+sub2017.m2.plot <- iceDateScatter(iceMedD5.m1, d= "d5")
+sub2017.m2.plot$p1
+sub2017.m2.plot$p2
+sub2017.m2.plot$p3
+
+
+###1992-2017------
+##m2
+iceMedD5.m2 <- iceMedianD5(trends.m2, "year > 1991", "tice < 150", iceSum.m2)
+iceSummarylm(iceMedD5.m2, med = "d5", med1 = "d5")
+
+# figures
+p1.m1  <- ggplot(data = iceMedD5.m2$mall, aes(x = d5area, y = d5tice)) + geom_point() + geom_smooth(method=lm)
+#, colour = year < 1992)
+# plot tice against ice area
+p2.m1 <- ggplot(data = iceMedD5.m2$mall, aes(x = d5minlats, y = d5tice)) + geom_point() + geom_smooth(method=lm)
+
+#plot ice area against minlats
+p3.m1 <- ggplot(data = iceMedD5.m2$mall, aes(x = d5area, y = d5minlats)) + geom_point() + geom_smooth(method=lm)
 
 multiplot(p1.m1, p3.m1, p2.m1, cols=2)
 
 
 # scatter plot of date and minlats
-ggplot(data = trends.m1, aes(x = date, y = minlats)) + geom_point() + geom_smooth(method=lm)
+sub2017.m2.plot <- iceDateScatter(iceMedD5.m2, d= "d5")
+sub2017.m2.plot$p1
+sub2017.m2.plot$p2
+sub2017.m2.plot$p3
 
-ggplot(data = trends.m1, aes(minlats)) + 
-  geom_histogram() + 
-  facet_wrap(~ year) +
-  geom_vline(data = iceMedD5.m1, aes(xintercept = d5minlats), colour = "red")
+###pre-1992------
+##m1
+iceMedD5.m1 <- iceMedianD5(trends.m1, "year <= 1992", "tice < 150", iceSum.m1)
+iceSummarylm(iceMedD5.m1, med = "d5", med1 = "d5")
 
-ggplot(data = trends.m1, aes(area)) + 
-  geom_histogram(bins = 10) + 
-  facet_wrap(~ year) +
-  geom_vline(data = iceMedD5.m1, aes(xintercept = d5area), colour = "red")
+# figures
+p1.m1  <- ggplot(data = iceMedD5.m1$mall, aes(x = d5area, y = d5tice)) + geom_point() + geom_smooth(method=lm)
+#, colour = year < 1992)
+# plot tice against ice area
+p2.m1 <- ggplot(data = iceMedD5.m1$mall, aes(x = d5minlats, y = d5tice)) + geom_point() + geom_smooth(method=lm)
 
-# testing
-subset(trends.m1, year == 2012)
+#plot ice area against minlats
+p3.m1 <- ggplot(data = iceMedD5.m1$mall, aes(x = d5area, y = d5minlats)) + geom_point() + geom_smooth(method=lm)
 
-test <- trends.m1 %>%
-  group_by(year) %>%
-  arrange(minlats) %>%
-  slice(1:5) %>%
-  summarize(d5tice=median(tice))
-View(test)
-
-
-trends.m1 %>%
-  group_by(year) %>%
-  arrange(desc(area)) %>%
-  slice(1:5) %>%
-  summarize(d5area=median(area))
+multiplot(p1.m1, p3.m1, p2.m1, cols=2)
 
 
+
+# scatter plot of date and minlats
+sub1992.m2.plot <- iceDateScatter(iceMedD5.m1, d= "d5")
+sub1992.m2.plot$p1
+sub1992.m2.plot$p2
+sub1992.m2.plot$p3
+
+###1992-2017------
+##m2
+iceMedD5.m2 <- iceMedianD5(trends.m2, "year <= 1991", "tice < 150", iceSum.m2)
+iceSummarylm(iceMedD5.m2, med = "d5", med1 = "d5")
+
+# figures
+p1.m1  <- ggplot(data = iceMedD5.m2$mall, aes(x = d5area, y = d5tice)) + geom_point() + geom_smooth(method=lm)
+#, colour = year < 1992)
+# plot tice against ice area
+p2.m1 <- ggplot(data = iceMedD5.m2$mall, aes(x = d5minlats, y = d5tice)) + geom_point() + geom_smooth(method=lm)
+
+#plot ice area against minlats
+p3.m1 <- ggplot(data = iceMedD5.m2$mall, aes(x = d5area, y = d5minlats)) + geom_point() + geom_smooth(method=lm)
+
+multiplot(p1.m1, p3.m1, p2.m1, cols=2)
+
+
+# scatter plot of date and minlats
+sub1992.m2.plot <- iceDateScatter(iceMedD5.m2, d= "d5")
+sub1992.m2.plot$p1
+sub1992.m2.plot$p2
+sub1992.m2.plot$p3
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
+#######################################################################################################
 ########################################################################################################
 ###This is how to make a map with a SPDF - much harder in ggplot - not sure its worth the effort
 # add to data a new column termed "id" composed of the rownames of data
@@ -375,78 +418,8 @@ ggWater <- ggplot(data = waterDF, aes(x=long, y=lat, group=group)) +
   theme(panel.background = element_rect(fill = "white", colour = "grey"), panel.grid.major = element_line(colour = "grey90")) + theme_bw() 
 
 
-  guides(fill=FALSE)
-  
+guides(fill=FALSE)
+
 ggWater
 
 ########################################################################################################
-# filter by year
-
-
-
-trends.m1.1993 <- filter(trends.m1, year < 1994 & tice <150)
-str(trends.m1.1993)
-
-m1.mminlat <- trends.m1.1993 %>%
-  group_by(year) %>%
-  summarize(dmedian = median(minlats))
-
-m1.mtice <- trends.m1.1993 %>%
-  group_by(year) %>%
-  summarize(dtice = median(tice))
-
-m1.marea <- trends.m1.1993 %>%
-  group_by(year) %>%
-  summarize(darea = median(area))
-
-m1.med <- left_join(m1.mminlat, m1.mtice, by = "year")
-
-iceSum.m1.1993 <- filter(iceSum.m1, year < 1994)
-m1.all <- left_join(iceSum.m1.1993, m1.med, by = "year")
-
-yr <- 1994
-ti <- 150
-df <- trends.m1
-rm(yr, ti, df, df1)
-operator1 <- "<"
-do.call(operator1, list(get(t1), yr))
-
-########################################################################################################
-
-# create a new data set with max area of ice and minlat - to be plotted and compared to raw maps
-# change model name for ease
-trends <- trends.m1
-lookAt(trends)
-
-
-
-##modify trends
-# add year
-trends$year <- year(trends$date)
-trend.check <- filter(trends, year=="1992")
-test <- trend.check[order(trend.check$area), ]
-lookAt(trend.check)
-
-
-# calculate the maximum area for ice by year
-trends1 <- trends[c("date", "area", "volume", "year")]
-temp1 <- trends1 %>%
-  group_by(year) %>%
-  slice(which.max(area)) 
-temp1 
-
-
-# calculate the minimum latitude for ice by year
-trends2 <- trends[c("date", "minlats", "minlongs", "year")]
-temp2 <- trends2 %>%
-  group_by(year) %>%
-  slice(which.min(minlats)) 
-
-# merge summarized dataframes
-iceSum.m1 <- full_join(temp1, temp2, by = "year")
-
-#convert date.y to doy
-iceSum.m1$tice <- yday(iceSum.m1$date.y)
-lookAt(iceSum.m1)
-View(iceSum.m1)
-
