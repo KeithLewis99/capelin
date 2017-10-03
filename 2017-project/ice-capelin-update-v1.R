@@ -14,9 +14,32 @@ setwd("D:/Keith/capelin/2017-project")
 source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 library(plotrix)
 library(ggplot2)
-
+library(readr)
 
 capelin <- read.csv('capelin-ice-2014.csv',header=T)
+
+capelin_m1 <- read_csv("output-processing/capelin-m1.csv")
+capelin_m2 <- read_csv("output-processing/capelin-m2.csv")
+capelin_m3 <- read_csv("output-processing/capelin-m3.csv")
+
+## Ale original-------------
+capelin <- capelin[c("year", "maxarea", "minlat", "tice", "capelin", "capelinlb", "capelinub", "logcapelin", "logcapelinlb", "logcapelinub")]
+
+## m1-----------
+capelin_m1 <- capelin_m1[c("year", "area", "minlats", "tice", "capelin", "capelinlb", "capelinub", "logcapelin", "logcapelinlb", "logcapelinub")]
+capelin_m1 <- rename(capelin_m1, maxarea = area)
+capelin_m1 <- rename(capelin_m1, minlat = minlats)
+
+## m2-----------
+capelin_m2 <- capelin_m2[c("year", "area", "minlats", "tice", "capelin", "capelinlb", "capelinub", "logcapelin", "logcapelinlb", "logcapelinub")]
+capelin_m2 <- rename(capelin_m2, maxarea = area)
+capelin_m2 <- rename(capelin_m2, minlat = minlats)
+
+## m3-----------
+capelin_m3 <- capelin_m3[c("year", "area", "minlats", "tice", "capelin", "capelinlb", "capelinub", "logcapelin", "logcapelinlb", "logcapelinub")]
+capelin_m3 <- rename(capelin_m3, maxarea = area)
+capelin_m3 <- rename(capelin_m3, minlat = minlats)
+
 
 capelin$myear <- capelin$year
 capelin$myear[45:46] <- c(1960,1961)
@@ -27,6 +50,7 @@ CapelinDomeFit <- optim(par = c(1,200,0.6),
                         dataf = capelin[which(capelin$logcapelin!='NA'),
                         c('year','tice','logcapelin')],
                         fn = SSQCapelinDome, method=c("BFGS"))
+
 # before 2010
 CapelinDomeFitOld <- optim(par=c(0.2,180,0.6),
                         dataf = capelin[which(capelin$year < 2011 & capelin$logcapelin!='NA'),
@@ -35,19 +59,17 @@ CapelinDomeFitOld <- optim(par=c(0.2,180,0.6),
 
 ## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
 capelin$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par), dataf = capelin[,c('year','tice')])
+
 capelin$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par), dataf = capelin[,c('year','tice')])
 
 
-labtice <- expression(paste(italic(t[ice]), ' (day of year)')) # label for figures
 
 # attach the optimization curves of capelin abundance to ice data
-xtice <- expand.grid(year = c(1990,2000),tice = c(0:190,173.515,187.768))
+xtice <- expand.grid(year = c(1990,2000), tice = c(0:190,173.515,187.768))
 xtice <- xtice[order(xtice$tice),]
 xtice$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par),dataf = xtice)
 xtice$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par),dataf = xtice)
 #not sure what these are for but used in plots below but creates a data set where all values of year are the same????
-
-
 
 
 # make optimization graphs by year and in comparison to ice
@@ -61,72 +83,133 @@ regime2 <- xtice[which(xtice$year == 2000),]
 yearInt <- seq(1982, 2014, by=4)
 lnbiomassInt <- seq(0, 10, by=2)
 biomassInt <- seq(0, 8500)
+labtice <- expression(paste(italic(t[ice]), '(day of year)')) # label for figures
 
-p1 <- ggplot(capelin, aes(x = year, y = logcapelin)) + 
-  geom_errorbar(width = 0.3, colour = "black", aes(ymin=logcapelinlb, ymax=logcapelinub)) + 
-  geom_point(shape=16, size=3)  +
-  geom_line(aes(y=ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
-  geom_line(aes(y=ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
-  scale_y_continuous(limits = c(0,10), breaks = lnbiomassInt) +
-  scale_x_continuous(limits = c(1982,2014), breaks = yearInt) +
-  xlab('Year') +
-  ylab('ln (Capelin biomass (ktons))') + 
-  theme_bw()
-p1
-
-p2 <- ggplot(capelin, aes(x = year, y = capelin)) +
-  geom_errorbar(width = 0.3, colour = "black", aes(ymin=capelinlb, ymax=capelinub)) + 
-  geom_point(shape=16, size=3)  +
-  geom_line(aes(y=exp(ExpectedLogBiomass)), colour="red", linetype=1, size=1.25) +
-  geom_line(aes(y=exp(ExpectedLogBiomassOld)), colour="blue", linetype=1, size=1.25) +
-  #scale_y_continuous(limits = c(0,8500), breaks = biomassInt) +
-  scale_x_continuous(limits = c(1982,2014), breaks = yearInt) +
-  xlab('Year') +
-  ylab('Capelin biomass (ktons)') + 
-  theme_bw() +
-  annotate("text", x = 2008, y = 8400, label = "Model estimates to 2014") + # all following for the legend
-  annotate("text", x = 2008, y = 8000, label = "Model estimates to 2010") +
-  annotate("segment", x = 2001, xend = 2003, y = 8400, yend = 8400, colour = "red") +
-  annotate("segment", x = 2001, xend = 2003, y = 8000, yend = 8000, colour = "blue")
-p2
+## Ale's original-------------
+windows()
+optimGraphs(capelin, regime1, regime2, yearInt, lnbiomassInt)
 
 
-p3 <- ggplot() +
-  geom_line(data = regime1, aes(x = tice, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) + 
-  geom_line(data = regime2, aes(x = tice, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
-  geom_line(data = regime1, aes(x = tice, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
-  geom_line(data = regime2, aes(x = tice, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
-  geom_point(data = subset(capelin, year < 1991), aes(x = tice, y = logcapelin), shape=2, size=3) +
-  geom_point(data = subset(capelin, year > 1991), aes(x = tice, y = logcapelin), shape=15, size=3) + 
-  geom_errorbar(data = subset(capelin, year < 1991), aes(x = tice, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
-  geom_errorbar(data = subset(capelin, year > 1991), aes(x = tice, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
-  xlab("labtice") +
-  ylab("ln (Capelin biomass (ktons))") + 
-  ylim(0,9) +
-  theme_bw()
-p3
+## m1--------------
 
-ggplot() +
-  geom_line(data = regime1, aes(x = tice, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) + 
-  geom_line(data = regime2, aes(x = tice, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
-  geom_line(data = regime1, aes(x = tice, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
-  geom_line(data = regime2, aes(x = tice, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
-  geom_point(data = subset(capelin, year < 1991), aes(x = tice, y = capelin), shape=2, size=3) +
-  geom_point(data = subset(capelin, year > 1991), aes(x = tice, y = capelin), shape=15, size=3) + 
-  geom_errorbar(data = subset(capelin, year < 1991), aes(x = tice, ymin=capelinlb, ymax=capelinub), width = 0.3, colour = "black") +
-  geom_errorbar(data = subset(capelin, year > 1991), aes(x = tice, ymin=capelinlb, ymax=capelinub), width = 0.3, colour = "black") +
-  xlab("labtice") +
-  ylab("Capelin biomass (ktons)") + 
-  ylim(0,9) +
-  theme_bw()
+CapelinDomeFit1 <- optim(par = c(1,200,0.6),
+                        dataf = capelin_m1[which(capelin_m1$logcapelin!='NA'),
+                        c('year','tice','logcapelin')],
+                        fn = SSQCapelinDome1, method=c("BFGS"))
+
+# before 2010
+CapelinDomeFitOld1 <- optim(par=c(0.2,180,0.6),
+                            dataf = capelin_m1[which(capelin_m1$year < 2011 & x =                                      capelin_m1$logcapelin!='NA'),
+                            c('year','tice','logcapelin')],
+                            fn = SSQCapelinDome1, method=c("BFGS"))
+
+## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
+capelin_m1$ExpectedLogBiomass <- CapelinDome1(params = c(CapelinDomeFit1$par), dataf = capelin_m1[,c('year','tice')])
+
+capelin_m1$ExpectedLogBiomassOld <- CapelinDome1(params = c(CapelinDomeFitOld1$par), dataf = capelin_m1[,c('year','tice')])
 
 
-# make multiplot
-#pdf('ice-capelin-update-2014-new.pdf',height=9,width=9,pointsize =8)
-multiplot(p1, p3, p2, cols=2)
-#dev.off()
+labtice <- expression(paste(italic(t[ice]), '(day of year)')) # label for figures
+
+# attach the optimization curves of capelin abundance to ice data
+xtice <- expand.grid(year = c(1990,2000),tice = c(0:190,173.515,187.768))
+xtice <- xtice[order(xtice$tice),]
+xtice$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld1$par),dataf = xtice)
+xtice$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit1$par),dataf = xtice)
+#not sure what these are for but used in plots below but creates a data set where all values of year are the same????
 
 
+# make optimization graphs by year and in comparison to ice
+# plot of capelin biomass v. year with ice models  
+# plot data, CI, optimzation curves (red = 2014, blue = 2010), not sure what last line if for
+
+# set values
+regime1 <- xtice[which(xtice$year == 1990),]
+regime2 <- xtice[which(xtice$year == 2000),]
+
+yearInt <- seq(1982, 2018, by=4)
+lnbiomassInt <- seq(0, 10, by=2)
+biomassInt <- seq(0, 8500)
+windows()
+
+optimGraphs(capelin_m1, regime1, regime2, yearInt, lnbiomassInt)
+
+## m2--------------
+CapelinDomeFit1 <- optim(par = c(1,200,0.6),
+                        dataf = capelin_m2[which(capelin_m2$logcapelin!='NA'),
+                        c('year','tice','logcapelin')],
+                        fn = SSQCapelinDome1, method=c("BFGS"))
+
+# before 2010
+CapelinDomeFitOld1 <- optim(par=c(0.2,180,0.6),
+                            dataf = capelin_m2[which(capelin_m2$year < 2011 &                                         capelin_m2$logcapelin!='NA'),
+                            c('year','tice','logcapelin')],
+                            fn = SSQCapelinDome1, method=c("BFGS"))
+
+## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
+capelin_m2$ExpectedLogBiomass <- CapelinDome1(params = c(CapelinDomeFit1$par), dataf         = capelin_m2[,c('year','tice')])
+
+capelin_m2$ExpectedLogBiomassOld <- CapelinDome1(params = c(CapelinDomeFitOld1$par),          dataf = capelin_m2[,c('year','tice')])
+
+
+labtice <- expression(paste(italic(t[ice]), '(day of year)')) # label for figures
+
+# attach the optimization curves of capelin abundance to ice data
+xtice <- expand.grid(year = c(1990,2000),tice = c(0:190,173.515,187.768))
+xtice <- xtice[order(xtice$tice),]
+xtice$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld1$par),dataf = xtice)
+xtice$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit1$par),dataf = xtice)
+#not sure what these are for but used in plots below but creates a data set where all values of year are the same????
+
+
+# make optimization graphs by year and in comparison to ice
+# plot of capelin biomass v. year with ice models  
+# plot data, CI, optimzation curves (red = 2014, blue = 2010), not sure what last line if for
+
+windows()
+
+optimGraphs(capelin_m2, regime1, regime2, yearInt, lnbiomassInt)
+
+## m3--------------
+CapelinDomeFit1 <- optim(par = c(1,200,0.6),
+                         dataf = capelin_m3[which(capelin_m3$logcapelin!='NA'),
+                         c('year','tice','logcapelin')],
+                         fn = SSQCapelinDome1, method=c("BFGS"))
+
+
+
+
+# before 2010
+CapelinDomeFitOld1 <- optim(par=c(0.2,180,0.6), 
+                            dataf = capelin_m3[which(capelin_m3$year < 2011 & capelin_m3$logcapelin!='NA'),
+                            c('year','tice','logcapelin')],
+                            fn = SSQCapelinDome1, method=c("BFGS"))
+
+## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
+capelin_m3$ExpectedLogBiomass <- CapelinDome1(params = c(CapelinDomeFit1$par), dataf = capelin_m3[,c('year','tice')])
+
+capelin_m3$ExpectedLogBiomassOld <- CapelinDome1(params = c(CapelinDomeFitOld1$par), dataf = capelin_m3[,c('year','tice')])
+
+
+labtice <- expression(paste(italic(t[ice]), '(day of year)')) # label for figures
+
+# attach the optimization curves of capelin abundance to ice data
+xtice <- expand.grid(year = c(1990,2000),tice = c(0:190,173.515,187.768))
+xtice <- xtice[order(xtice$tice),]
+xtice$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld1$par),dataf = xtice)
+xtice$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit1$par),dataf = xtice)
+#not sure what these are for but used in plots below but creates a data set where all values of year are the same????
+
+
+# make optimization graphs by year and in comparison to ice
+# plot of capelin biomass v. year with ice models  
+# plot data, CI, optimzation curves (red = 2014, blue = 2010), not sure what last line if for
+
+# set values
+
+windows()
+
+optimGraphs(capelin_m3, regime1, regime2, yearInt, lnbiomassInt)
 #####################################################################################################
 #graphics.off()
 #####################################################################################################
