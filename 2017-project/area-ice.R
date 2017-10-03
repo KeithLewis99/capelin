@@ -94,7 +94,7 @@ p6 <- ggplot(data = iceSum.m3, aes(x = year, y = area)) +
 multiplot(p1, p3, p5, p2, p4, p6, cols = 2)
 
 iceSum.m3 %>%
-  filter(year >= 1983) %>%
+  filter(year >= 1993) %>%
 ggplot(aes(x = year, y = area)) + 
   geom_point() + geom_smooth(method=lm)
 
@@ -238,7 +238,7 @@ trends.m3$year <- year(trends.m3$date)
 #####1991-----
 #m1
 sub1991.m1 <- iceMedian(trends.m1, "year < 1992", "tice < 150", iceSum.m1)
-str(sub1991)
+str(sub1991.m1)
 iceSummarylm(sub1991.m1)
 
 # graph these for this year but only repeat if reasonable r-squared values appear
@@ -263,13 +263,17 @@ sub1991.m1.plot$p2
 sub1991.m1.plot$p3
 
 #m2--------
-sub1991.m2 <- iceMedian(trends.m2, "year < 1992", "tice < 150", iceSum.m1)
+sub1991.m2 <- iceMedian(trends.m2, "year < 1992", "tice < 150", iceSum.m2)
 iceSummarylm(sub1991.m2)
 # scatter plot of date and minlats
 sub1991.m2.plot <- iceDateScatter(sub1991.m2)
 sub1991.m2.plot$p1
 sub1991.m2.plot$p2
 sub1991.m2.plot$p3
+
+#m3--------
+sub1991.m3 <- iceMedian(trends.m3, "year < 1992", "tice < 150", iceSum.m3)
+iceSummarylm(sub1991.m3)
 
 ##############################################################
 #####1992-2017------
@@ -282,13 +286,17 @@ sub2017.m1.plot$p2
 sub2017.m1.plot$p3
 
 ##m2
-sub2017.m2 <- iceMedian(trends.m1, "year > 1991", "tice < 150", iceSum.m1)
+sub2017.m2 <- iceMedian(trends.m2, "year > 1991", "tice < 150", iceSum.m2)
 iceSummarylm(sub2017.m2)
 # scatter plot of date and minlats
 sub2017.m2.plot <- iceDateScatter(sub2017.m2, d = "d")
 sub2017.m2.plot$p1
 sub2017.m2.plot$p2
 sub2017.m2.plot$p3
+
+##m3
+sub2017.m3 <- iceMedian(trends.m3, "year > 1991", "tice < 150", iceSum.m3)
+iceSummarylm(sub2017.m3)
 
 ###############################################
 ###############################################
@@ -367,7 +375,7 @@ multiplot(p1.m1, p3.m1, p2.m1, cols=2)
 
 
 # scatter plot of date and minlats
-sub1992.m2.plot <- iceDateScatter(iceMedD5.m1, d= "d5")
+sub1992.m2.plot <- iceDateScatter(iceMedD5.m1, d = "d5")
 sub1992.m2.plot$p1
 sub1992.m2.plot$p2
 sub1992.m2.plot$p3
@@ -394,9 +402,22 @@ sub1992.m2.plot <- iceDateScatter(iceMedD5.m2, d= "d5")
 sub1992.m2.plot$p1
 sub1992.m2.plot$p2
 sub1992.m2.plot$p3
+
 source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
-#######################################################################################################
-########################################################################################################
+#######################################################################################
+
+iceSum.m1 <- iceSum.m1[c("year", "area", "minlats", "tice")]
+write.csv(iceSum.m1, file = "output-processing/capelin-m1.csv", row.names=F, na="")
+
+
+iceSum.m2 <- iceSum.m2[c("year", "area", "minlats", "tice")]
+write.csv(iceSum.m2, file = "output-processing/capelin-m2.csv", row.names=F, na="")
+
+iceSum.m3 <- iceSum.m3[c("year", "area", "minlats", "tice")]
+write.csv(iceSum.m3, file = "output-processing/capelin-m3.csv", row.names=F, na="")
+
+#######################################################################################
+#######################################################################################
 ###This is how to make a map with a SPDF - much harder in ggplot - not sure its worth the effort
 # add to data a new column termed "id" composed of the rownames of data
 # https://susanejohnston.wordpress.com/2012/07/03/creating-a-large-scale-map-using-ggplot2-a-step-by-step-guide/ for ggplot
