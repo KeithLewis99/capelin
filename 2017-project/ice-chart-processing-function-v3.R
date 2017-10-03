@@ -918,13 +918,27 @@ extractSPDFfinal <- function(z, i, ct = NULL, sa = NULL, sb = NULL){
 ### NA values of logcapelin (i.e. years when there were no capelin surveys) are not used during optimization
 
 ## Objective function - part of optimization function
+
 SSQCapelinDome <- function(params,dataf){
+  #browser()
   Alpha <- params[1]
   Beta <- params[2]
   Gamma <- params[3]
   year <- dataf[,1]
   tice <- dataf[,2]
   logcap <- dataf[,3]
+  ELogCapBiom <- ifelse(year<1991, Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma)
+  sum((logcap-ELogCapBiom)^2)
+}
+
+SSQCapelinDome1 <- function(params,dataf){
+  #browser()
+  Alpha <- params[1]
+  Beta <- params[2]
+  Gamma <- params[3]
+  year <- pull(dataf[,1])
+  tice <- pull(dataf[,2])
+  logcap <- pull(dataf[,3])
   ELogCapBiom <- ifelse(year<1991, Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma)
   sum((logcap-ELogCapBiom)^2)
 }
@@ -940,6 +954,15 @@ CapelinDome <- function(params,dataf){
   ELogCapBiom
 }
 
+CapelinDome1 <- function(params,dataf){
+  Alpha <- params[1]
+  Beta <- params[2]
+  Gamma <- params[3]
+  year <- pull(dataf[,1])
+  tice <- pull(dataf[,2])
+  ELogCapBiom <- ifelse(year<1991, Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma)
+  ELogCapBiom
+}
 
 #####################################################################################################
 ##' modelGraphs()-------------
@@ -1088,21 +1111,25 @@ iceMedian <- function(df, subset_yr, subset_ti, data1) {
 #'
 #' @examples iceSum.m1 <- iceSummary(trends.m1)
 iceSummary <- function(df){
-  
+  #browser()
   ##modify trends
   # add year
   df$year <- year(df$date)
+  #convert date.y to doy
+  df$jday <- yday(df$date)
   
   # calculate the maximum area for ice by year
-  df1 <- df[c("date", "area", "volume", "year")]
+  df1 <- df[c("date", "area", "volume", "year", "jday")]
   temp1 <- df1 %>%
+    filter(jday <= 150) %>%
     group_by(year) %>%
     slice(which.max(area)) 
   temp1 
 
   # calculate the minimum latitude for ice by year
-  df2 <- df[c("date", "minlats", "minlongs", "year")]
+  df2 <- df[c("date", "minlats", "minlongs", "year", "jday")]
   temp2 <- df2 %>%
+    filter(jday <= 150) %>%
     group_by(year) %>%
     slice(which.min(minlats)) 
   
@@ -1244,3 +1271,69 @@ iceYearBox <- function(df1, df2, df3) {
   windows()
   multiplot(p1, p3, p5, p2, p4, p6, cols=2)
 }
+
+
+##################################################################
+#' Title
+#'
+#' @param df 
+#' @param reg1 
+#' @param reg2 
+#' @param yearInt 
+#' @param lnbiomassInt 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+optimGraphs <- function(df, reg1, reg2, yearInt, lnbiomassInt){
+  
+  p1 <- ggplot(df, aes(x = year, y = logcapelin)) + 
+    geom_errorbar(width = 0.3, colour = "black", aes(ymin=logcapelinlb, ymax=logcapelinub)) + 
+    geom_point(shape=16, size=3)  +
+    geom_line(aes(y=ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
+    geom_line(aes(y=ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+    scale_y_continuous(limits = c(0,10), breaks = lnbiomassInt) +
+    scale_x_continuous(limits = c(1982,2018), breaks = yearInt) +
+    xlab('Year') +
+    ylab('ln (Capelin biomass (ktons))') + 
+    theme_bw()
+  
+  p2 <- ggplot(df, aes(x = year, y = capelin)) +
+    geom_errorbar(width = 0.3, colour = "black", aes(ymin=capelinlb, ymax=capelinub)) + 
+    geom_point(shape=16, size=3)  +
+    geom_line(aes(y=exp(ExpectedLogBiomass)), colour="red", linetype=1, size=1.25) +
+    geom_line(aes(y=exp(ExpectedLogBiomassOld)), colour="blue", linetype=1, size=1.25) +
+    #scale_y_continuous(limits = c(0,8500), breaks = biomassInt) +
+    scale_x_continuous(limits = c(1982,2018), breaks = yearInt) +
+    xlab('Year') +
+    ylab('Capelin biomass (ktons)') + 
+    theme_bw() +
+    annotate("text", x = 2008, y = 8400, label = "Model estimates to 2014") + # all following for the legend
+    annotate("text", x = 2008, y = 8000, label = "Model estimates to 2010") +
+    annotate("segment", x = 2001, xend = 2003, y = 8400, yend = 8400, colour = "red") +
+    annotate("segment", x = 2001, xend = 2003, y = 8000, yend = 8000, colour = "blue")
+  
+  
+  p3 <- ggplot() +
+    geom_line(data = reg1, aes(x = tice, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) + 
+    geom_line(data = reg2, aes(x = tice, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
+    geom_line(data = reg1, aes(x = tice, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+    geom_line(data = reg2, aes(x = tice, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+    geom_point(data = subset(df, year < 1991), aes(x = tice, y = logcapelin), shape=2, size=3) +
+    geom_point(data = subset(df, year > 1991), aes(x = tice, y = logcapelin), shape=15, size=3) + 
+    geom_errorbar(data = subset(df, year < 1991), aes(x = tice, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+    geom_errorbar(data = subset(df, year > 1991), aes(x = tice, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+    xlab("labtice") +
+    ylab("ln (Capelin biomass (ktons))") + 
+    ylim(0,9) +
+    theme_bw()
+  
+  # make multiplot
+  #pdf('ice-capelin-update-2014-new.pdf',height=9,width=9,pointsize =8)
+  multiplot(p1, p3, p2, cols=2)
+  #dev.off()
+  
+}
+# make optimization graphs by year and in comparison to ice
+
