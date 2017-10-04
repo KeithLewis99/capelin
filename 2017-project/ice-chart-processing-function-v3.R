@@ -1255,7 +1255,7 @@ p3 <- ggplot(data = df$data, aes(area)) +
 #' @export
 #'
 #' @examples
-iceYearBox <- function(df1, df2, df3) {
+iceYearBox <- function(df1, df2, df3, df4) {
   p1 <- ggplot(data = df1, aes(x = year, y = area, group = year)) + 
     geom_boxplot()
   p2 <- ggplot(data = df1, aes(x = year, y = minlats, group = year)) + 
@@ -1268,8 +1268,12 @@ iceYearBox <- function(df1, df2, df3) {
     geom_boxplot()
   p6 <- ggplot(data = df3, aes(x = year, y = minlats, group = year)) + 
     geom_boxplot()
+  p7 <- ggplot(data = df4, aes(x = year, y = area, group = year)) + 
+    geom_boxplot()
+  p8 <- ggplot(data = df4, aes(x = year, y = minlats, group = year)) + 
+    geom_boxplot()
   windows()
-  multiplot(p1, p3, p5, p2, p4, p6, cols=2)
+  multiplot(p1, p3, p5, p7, p2, p4, p6, p8, cols=2)
 }
 
 
@@ -1337,3 +1341,28 @@ optimGraphs <- function(df, reg1, reg2, yearInt, lnbiomassInt){
 }
 # make optimization graphs by year and in comparison to ice
 
+##################################################################
+##' iceScatterSummary()--------
+#'
+#' @param df 
+#'
+#' @return 1 graphs of date v minlats, and 2 faceted histograms of minlats by date
+#' @export
+#'
+#' @examples
+#' 
+iceScatterSummary <- function(df){
+  #browser()
+  p1.m1  <- ggplot(data = df, aes(x = area, y = tice)) + geom_point() + geom_smooth(method=lm)
+  s1 <- summary(lm(tice~area, data=df))
+  
+  # plot tice against ice area
+  p2.m1 <- ggplot(data = df, aes(x = minlats, y = tice)) + geom_point() + geom_smooth(method=lm)
+  s2 <- summary(lm(tice~minlats, data=df))
+  
+  #plot ice area against minlats
+  p3.m1 <- ggplot(data = df, aes(x = area, y = minlats)) + geom_point() + geom_smooth(method=lm)
+  s3 <- summary(lm(minlats~area, data=df))
+  
+  return(list(s1=s1, s2=s2, s3=s3, p1=p1, p2=p2, p3=p3))
+}
