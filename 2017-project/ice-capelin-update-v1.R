@@ -264,6 +264,14 @@ regime2 <- xtice[which(xtice$year == 2000),]
 windows()
 
 optimGraphs(capelin_m4, regime1, regime2, yearInt, lnbiomassInt)
+
+
+# AIC for models
+2*CapelinDomeFit$value+2*length(CapelinDomeFit$par)
+2*CapelinDomeFit1$value+2*length(CapelinDomeFit1$par)
+2*CapelinDomeFit2$value+2*length(CapelinDomeFit2$par)
+2*CapelinDomeFit3$value+2*length(CapelinDomeFit3$par)
+2*CapelinDomeFit4$value+2*length(CapelinDomeFit4$par)
 #####################################################################################################
 #graphics.off()
 #####################################################################################################
@@ -294,3 +302,79 @@ ggplot(capelin, aes(x = year, y = logdiff)) +
    abline(h=-100,lty=3)
    
 #dev.off()   
+   
+#####################################################################################################   
+   
+   
+## Ale's original-------------
+## Optimization - produces lists of the optimization curve for use in figures below
+# up to present
+   CapelinDomeFit_area <- optim(par = c(1,500,0.6),
+                           dataf = capelin[which(capelin$logcapelin!='NA'),
+                                           c('year','maxarea','logcapelin')],
+                           fn = SSQCapelinDome, method=c("BFGS"))
+   
+   # before 2010
+   CapelinDomeFitOld_area <- optim(par=c(0.2,500,0.6),
+                              dataf = capelin[which(capelin$year < 2011 & 
+                                                      capelin$logcapelin!='NA'),
+                                              c('year','maxarea','logcapelin')],
+                              fn = SSQCapelinDome, 
+                              method=c("BFGS"))
+   
+   ## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
+   capelin$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit_area$par), dataf = capelin[,c('year','maxarea')])
+   
+   capelin$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld_area$par), dataf = capelin[,c('year','maxarea')])
+   
+   
+   
+   # attach the optimization curves of capelin abundance to ice data
+   xarea <- expand.grid(year = c(1990,2000), area = c(0:500,573.515,587.768))
+   xarea <- xarea[order(xarea$area),]
+   xarea$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld_area$par),dataf = xarea)
+   xarea$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit_area$par),dataf = xarea)
+   #not sure what these are for but used in plots below but creates a data set where all values of year are the same????
+   
+   # make optimization graphs by year and in comparison to ice
+   # plot of capelin biomass v. year with ice models  
+   # plot data, CI, optimzation curves (red = 2014, blue = 2010), not sure what last line if for
+   
+   # set values
+   regime1 <- xarea[which(xarea$year == 1990),]
+   regime2 <- xarea[which(xarea$year == 2000),]
+   
+   yearInt <- seq(1982, 2018, by=4)
+   lnbiomassInt <- seq(0, 10, by=2)
+   biomassInt <- seq(0, 8500)
+   labtice <- expression(paste(italic(t[ice]), '(day of year)')) # label for figures
+   
+   windows()
+ggplot() +
+     geom_line(data = regime1, aes(x = area, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) + 
+     geom_line(data = regime2, aes(x = area, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
+     geom_line(data = regime1, aes(x = area, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+     geom_line(data = regime2, aes(x = area, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+     geom_point(data = subset(capelin, year < 1991), aes(x = maxarea, y = logcapelin), shape=2, size=3) +
+     geom_point(data = subset(capelin, year > 1991), aes(x = maxarea, y = logcapelin), shape=15, size=3) + 
+     geom_errorbar(data = subset(capelin, year < 1991), aes(x = maxarea, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+     geom_errorbar(data = subset(capelin, year > 1991), aes(x = maxarea, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+     xlab("maxarea") +
+     ylab("ln (Capelin biomass (ktons))") + 
+     ylim(0,9) +
+     theme_bw()   
+   
+   
+   # AIC for models
+   2* CapelinDomeFit_area$value+2*length(CapelinDomeFit_area$par)
+   
+   p1 <- ggplot(data = capelin, aes(x = maxarea, y = logcapelin)) + 
+     geom_point() + 
+     geom_smooth(method=lm)
+   
+   summary(lm(logcapelin ~ maxarea, data=capelin))
+   summary(lm(logcapelin ~ maxarea, data=capelin_m1))
+   summary(lm(logcapelin ~ maxarea, data=capelin_m2))
+   summary(lm(logcapelin ~ maxarea, data=capelin_m3))
+   summary(lm(logcapelin ~ maxarea, data=capelin_m4))
+   
