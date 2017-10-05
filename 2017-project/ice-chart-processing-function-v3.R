@@ -1226,7 +1226,7 @@ iceSummarylm <- function(df, med = NULL, med1 = NULL) {
 #'
 #' @examples
 #' 
-iceDateScatter <- function(df, d = NULL){
+iceDateScatter <- function(df, d = NULL, vline = NULL){
   #browser()
 p1 <- ggplot(data = df$data, aes(x = date, y = minlats)) + 
   geom_point() + 
@@ -1242,10 +1242,11 @@ p3 <- ggplot(data = df$data, aes(area)) +
     facet_wrap(~ year) +
     geom_vline(data = df$mall, aes_string(xintercept = paste0(d, "area")), colour = "red")
   return(list(p1=p1, p2=p2, p3=p3))
+  multiplot(p1, p3, p2, cols=2)
 }
 
 ##################################################################
-#' iceYearBox()----------
+##' iceYearBox()----------
 #'
 #' @param df1 
 #' @param df2 
@@ -1278,7 +1279,7 @@ iceYearBox <- function(df1, df2, df3, df4) {
 
 
 ##################################################################
-#' Title
+##' optimGraphs()------
 #'
 #' @param df 
 #' @param reg1 
@@ -1351,18 +1352,37 @@ optimGraphs <- function(df, reg1, reg2, yearInt, lnbiomassInt){
 #'
 #' @examples
 #' 
-iceScatterSummary <- function(df){
+iceScatterSummary <- function(df, x = NULL, x1 = NULL, y = NULL, y1 = NULL) {
   #browser()
-  p1.m1  <- ggplot(data = df, aes(x = area, y = tice)) + geom_point() + geom_smooth(method=lm)
-  s1 <- summary(lm(tice~area, data=df))
-  
+  p1  <- ggplot(data = df, aes_string(x = x, y = y)) + geom_point() + geom_smooth(method=lm)
+  s1 <- summary(lm(paste0(y, "~", x), data=df))
   # plot tice against ice area
-  p2.m1 <- ggplot(data = df, aes(x = minlats, y = tice)) + geom_point() + geom_smooth(method=lm)
-  s2 <- summary(lm(tice~minlats, data=df))
-  
+  p2 <- ggplot(data = df, aes_string(x = x1, y = y)) + geom_point() + geom_smooth(method=lm)
+  s2 <- summary(lm(paste0(y, "~", x1), data=df))
   #plot ice area against minlats
-  p3.m1 <- ggplot(data = df, aes(x = area, y = minlats)) + geom_point() + geom_smooth(method=lm)
-  s3 <- summary(lm(minlats~area, data=df))
-  
+  p3 <- ggplot(data = df, aes_string(x = x, y = y1)) + geom_point() + geom_smooth(method=lm)
+  s3 <- summary(lm(paste0(y1, "~", x), data=df))
   return(list(s1=s1, s2=s2, s3=s3, p1=p1, p2=p2, p3=p3))
+  multiplot(p1, p3, p2, cols=2)
 }
+
+##################################################################
+##' iceOuput()------
+#'
+#' @param df a list with areas, volumes, minlats, minlongs
+#'
+#' @return the dataframe from the list df
+#' @export
+#'
+#' @examples iceOutput(df)
+iceOuput <- function(df, date) {
+  #browser()
+  df1 <- rbind(data.frame(date = dates3, 
+                                area = df$areas, 
+                                volume = df$volumes,
+                                minlats = df$minlats,
+                                minlongs = df$minlongs)) 
+  df1 <- df1[order(df1$date), ]  
+  return(df1)
+}
+
