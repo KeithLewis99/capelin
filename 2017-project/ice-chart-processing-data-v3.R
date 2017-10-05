@@ -192,68 +192,29 @@ converted <- list.files("sp_data/", pattern = ".Rdata")
 load("ice_trends.Rdata")  # this is circular but is working under the assumption that code has been run in past years and that there is already and ice_trends.Rdata file.  So just load it and continue on with the code - it should only be a year out of date.
 trends.calculated <- trends$date # this is from ice_trends.Rdata
 dates3 <- strptime(converted, "%Y%m%d.Rdata") # use this for the full run
+save(dates3, file = "output-processing/dates3all.Rdata")
 dates3 <- dates3[!format(dates3, "%Y%m%d") %in% format(trends.calculated, "%Y%m%d")] # these are dates that are not in ice_trends.Rdata- hence it is small
 save(dates3, file = "output-processing/dates3.Rdata")
-save(dates3, file = "output-processing/dates3all.Rdata")
+
+
 
 ## subset the ice data
+
 # create "model sets"
-
-ct <- c(1:10, 9.5)
-sa <- c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "1.", "4.", "7.", "8.", "9.") # don't have "ice of land origin" or "undetermined or unknown"
-sb <- c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "1.", "4.", "7.", "8.", "9.") # don't have "ice of land origin" or "undetermined or unknown"
-
-m1 <- list(ct=ct, sa=sa, sb=sb)
-m1
-
-ct <- c(3:10, 9.5)
-sa <- c("5", "6", "7", "8", "9", "1.", "4.", "7.")
-sb <- c("5", "6", "7", "8", "9", "1.", "4.", "7.")
-m2 <- list(ct=ct, sa=sa, sb=sb)
-m2
-
-ct <- c(7:10, 9.5)
-sa <- c("7", "8", "9", "1.", "4.", "7.")
-sb <- c("7", "8", "9", "1.", "4.", "7.")
-m3 <- list(ct=ct, sa=sa, sb=sb)
-m3
-
-# this was meant to make a mutually exclusive data set to compare m2 to m1.  However, this is not the case: see this example and work it out for m1, m2, m4
-# CT SA
-# 4   5
-# 2   5
-ct <- c(7:10, 9.5)
-sa <- c("7", "8", "9", "1.", "4.", "7.")
-sb <- c("7", "8", "9", "1.", "4.", "7.")
-m4 <- list(ct=ct, sa=sa, sb=sb)
-m4
-
-save(m1, m2, m3, m4, file = "output-processing/subset-lists.Rdata")
-
-rm(ct)
-rm(sa)
-rm(sb)
-
-load("output-processing/dates3.Rdata")
+#load("output-processing/dates3.Rdata")
 load("output-processing/dates3all.Rdata")
 load("output-processing/subset-lists.Rdata")
-#load("output-processing/filters.Rdata")
+load("output-processing/filters.Rdata")
 source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
-
-## m1
-trends_update.m1 <- calcAreaVolLat(dates3[25], ct=m1$ct, sa=m1$sa, sb=m1$sb)
-trends.m1 <- rbind(data.frame(date = dates3, 
-                           area = trends_update.m1$areas, 
-                           volume = trends_update.m1$volumes,
-                           minlats = trends_update.m1$minlats,
-                           minlongs = trends_update.m1$minlongs)) 
 
 # it makes no sense to bind minlat to this because the original ice-trends.Rdata does not have this value - therefore, updating it makes no sense.
 
 # this gets errors if you subset on dates3 as in some of the tests here.  Works fine if calcAreaVolume done on full dates3 vector
 
+## m1
+trends_update.m1 <- calcAreaVolLat(dates3, ct=m1$ct, sa=m1$sa, sb=m1$sb)
+trends.m1 <- iceOuput(trends_update.m1, dates3)
 lookAt(trends.m1)
-trends.m1 <- trends.m1[order(trends.m1$date), ]
 save(trends.m1, file = "output-processing/ice-trends-2017-m1-all.Rdata")
 #save(trends.m1, file = "output-processing/ice-trends-2017-m1-subset.Rdata")
 
@@ -262,13 +223,9 @@ x <- trends_update.m1$areas - trends_update3$areas
 subset(x, x < 0)
 
 ## m2
-trends_update.m2 <- calcAreaVolLat(dates3[25], ct=m2$ct, sa=m2$sa,  sb=m2$sb)
-trends.m2 <- rbind(data.frame(date = dates3, 
-                           area = trends_update.m2$areas, 
-                           volume = trends_update.m2$volumes, 
-                           minlats = trends_update.m2$minlats,
-                           minlongs = trends_update.m2$minlongs )) 
-trends.m2 <- trends.m2[order(trends.m2$date), ]
+trends_update.m2 <- calcAreaVolLat(dates3, ct=m2$ct, sa=m2$sa,  sb=m2$sb)
+trends.m2 <- iceOuput(trends_update.m2, dates3)
+lookAt(trends.m2)
 save(trends.m2, file = "output-processing/ice-trends-2017-m2-all.Rdata")
 #save(trends.m2, file = "output-processing/ice-trends-2017-m2-subset.Rdata")
 
@@ -293,7 +250,8 @@ trends.m4 <- rbind(data.frame(date = dates3,
                               minlongs = trends_update.m4$minlongs)) 
 lookAt(trends.m4)
 trends.m4 <- trends.m4[order(trends.m4$date), ]
-save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
+#save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
+save(trends.m4, file = "output-processing/ice-trends-2017-m4-all.Rdata")
 
 ## Annual maps -----------------------------------------------------------------
 
@@ -311,11 +269,11 @@ save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
 dates3[-c(23)]
 
 # remove these dates before running due to fragments
-#"1991-02-18 NST", "1992-03-19 NST", "2001-04-09 NDT", "2007-04-23 NDT", "2015-04-27 NDT"
+#"1991-02-18 NST", "1992-03-19 NST", "2001-04-09 NDT", "2007-04-23 NDT", "2011-04-04", "2013-04-05", "2015-04-27 NDT"
 
-dates3[-c(618, 656, 933, 1125, 1404)]
+dates3[-c(618, 656, 933, 1125, 1257, 1328, 1404)]
 
-dates3[1404]
+dates3[1328]
 trends$area[format(trends$date, "%Y%m%d") == "19910401"] <- NA # polygons were miss-classified
 trends <- trends[trends$date > ISOdate(1969, 11, 1), ] # 1969 was a strange year - difficult to assess patterns/fit curve - unreliable data?
 trends <- na.omit(trends)
