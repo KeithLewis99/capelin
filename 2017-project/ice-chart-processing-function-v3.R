@@ -261,7 +261,7 @@ withinPolyAreaA <- function(x = data, ct = NULL, sa = NULL, sb = NULL) {
       x$AREA_SA[i] <- 0  # should this be NA????
       
     } else if (x$CA[i] == 0| x$CA[i]=="?"){ # if CA == 0, the below calc won't work - AREA=AREA_SA
-      print("CA = 0 or ?")
+      #print("CA = 0 or ?")
       x$AREA_SA[i] <- x$AREAice[i] 
       x$CA[i] <- x$CT[i]
       
@@ -1377,7 +1377,7 @@ iceScatterSummary <- function(df, x = NULL, x1 = NULL, y = NULL, y1 = NULL) {
 #' @examples iceOutput(df)
 iceOuput <- function(df, date) {
   #browser()
-  df1 <- rbind(data.frame(date = dates3, 
+  df1 <- rbind(data.frame(date = date, 
                                 area = df$areas, 
                                 volume = df$volumes,
                                 minlats = df$minlats,
