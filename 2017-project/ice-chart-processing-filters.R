@@ -94,7 +94,7 @@ y <- c(49.39749, 49.23212, 49.24352, 49.45451, 49.41459)
 p41 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
 proj4string(p41) <- proj4string(water)
 capeFreels <- gIntersection(water, p41, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
-swFogo <- gBuffer(capeFreels, width = 0.1) # add a small buffer
+capeFreels <- gBuffer(capeFreels, width = 0.1) # add a small buffer
 plot(capeFreels, border = "red", add = TRUE) # plots Trinity/Bonavista with border
 
 # Gulf of St. Lawrence/Scotian Shelf Filter
