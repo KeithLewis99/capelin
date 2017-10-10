@@ -41,14 +41,15 @@ False Northing: 0.00
     - Not clear why this is the case and both Paul Regular and I have tried to figure it out.  The code creates a avc_data folder with appropriate subfolders but only creates a few files.  
     - Dates are as follows: 19730528, 19780122, 19780423, 19830102, 19840313, 19900226, 19931213, 20110718, 20111114, 20111121, 20120723, 20120730, 20121126, 20131223, 20150216, 20151109, 20160208, 20161205, 20170213
     - Solution (thanks to Pete):
-      - Load files into QGIS.  
-      - Save teh PAL (polygon layer) as a shapefile.  
+      - Load files into QGIS.  Layer-> add Layer -> Add Vector Layer -> select file - select all
+      - Save teh PAL (polygon layer) as a shapefile.  Select all 4 layers in teh layer pannel -> right click "Save As"Layer -> name file and hit ok (use the defaults)
       - Import to R.  Now, it is a SPDF rather than a SLineDF.  Dataframe is there and can be querried.
       - Problems: doesn't plot well although all data is there. Have explored but not sure why
   + queries for ice volume
     - no action
   + errors:
    there appear to be two main types of errors---------------
+ # conversion errors - see spreadsheet - these don't really matter
  1) 4 errors for one file
 Error in e00toavc(e00file, file.path(avcdir, "bin")) : 
   ERROR 4: Unable to create coverage directory: avc_data/19730528/bin.
@@ -72,7 +73,8 @@ Error in file(con, "r") : cannot open the connection
 In addition: Warning message:
  In file(con, "r") :
   cannot open file 'e00_data/19730604.e00': Too many open files
-  
+
+calculation errors  
   3) [1] "1982-03-18 NST"
 Error in RGEOSBinTopoFunc(spgeom1, spgeom2, byid, id, drop_lower_td, unaryUnion_if_byid_false,  : 
   TopologyException: Input geom 0 is invalid: Self-intersection at or near point -57.942815797715888 54.922564573680816 at -57.942815797715888 54.922564573680816
@@ -81,10 +83,25 @@ Error in RGEOSBinTopoFunc(spgeom1, spgeom2, byid, id, drop_lower_td, unaryUnion_
 Error in RGEOSBinTopoFunc(spgeom1, spgeom2, byid, id, drop_lower_td, unaryUnion_if_byid_false,  : 
   TopologyException: Input geom 0 is invalid: Self-intersection at or near point -50.184149377353116 48.265060927600707 at -50.184149377353116 48.265060927600707
   
+  [1] "1988-03-06 NST"
+Error in RGEOSBinTopoFunc(spgeom1, spgeom2, byid, id, drop_lower_td, unaryUnion_if_byid_false,  : 
+  TopologyException: Input geom 0 is invalid: Self-intersection at or near point -53.98627133956596 49.656478912159606 at -53.98627133956596 49.656478912159606
+  
+  [1] "1992-02-20 NST"
+Error in RGEOSBinTopoFunc(spgeom1, spgeom2, byid, id, drop_lower_td, unaryUnion_if_byid_false,  : 
+  TopologyException: Input geom 0 is invalid: Self-intersection at or near point -63.997875049438377 46.957036130392055 at -63.997875049438377 46.957036130392055
+In addition: Warning message:
+In iceVolume(x@data) : NAs introduced by coercion
+
+[1] "2012-01-30 NST"
+Error in RGEOSBinTopoFunc(spgeom1, spgeom2, byid, id, drop_lower_td, unaryUnion_if_byid_false,  : 
+  TopologyException: Input geom 0 is invalid: Self-intersection at or near point -58.466159741596755 57.632328446064101 at -58.466159741596755 57.632328446064101
+
   [1] "within1"
-[1] "2012-04-02 NDT"
+[1] "2012-04-02 NDT" (note that error and warning only occur in this month)
 Error in RGEOSBinTopoFunc(spgeom1, spgeom2, byid, id, drop_lower_td, unaryUnion_if_byid_false,  : 
   TopologyException: Input geom 0 is invalid: Self-intersection at or near point -62.102833099999998 57.543979810000003 at -62.102833099999998 57.543979810000003
+
 In addition: Warning messages:
 1: In gBuffer(egg, byid = TRUE, width = 0) :
   Spatial object is not projected; GEOS expects planar coordinates
@@ -100,6 +117,8 @@ In addition: Warning messages:
   Polygons object missing comment attribute ignoring hole(s). See function createSPComment.
   
   4) probably 1986-12-30 (one earlier than this too)
+
+This appears at the end of all calculations
   [1] "within1"
 Warning messages:
 1: In gBuffer(egg, byid = TRUE, width = 0) :
@@ -112,6 +131,8 @@ Warning messages:
   Polygons object missing comment attribute ignoring hole(s). See function createSPComment.
 5: In gBuffer(egg, byid = TRUE, width = 0) :
   Polygons object missing comment attribute ignoring hole(s). See function createSPComment.
+
+However, these have no visible effect on the calculations aside from skewing the medians somewhat
 
 ## Notes on Area calculations 
 * Unresolved:
