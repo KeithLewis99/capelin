@@ -63,7 +63,6 @@ if(!dir.exists("avc_data")) dir.create("avc_data")
 if(!dir.exists("e00_data")) dir.create("e00_data")
 if(!dir.exists("sp_data")) dir.create("sp_data")
 
-load("output-processing/filters.Rdata")
 source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
 
@@ -117,12 +116,17 @@ dates
 # error messages indicate maps that have not been or may never be created.  Can be ignored. See previous comment
 e00Download(dates)
 
+## remove problem files at this stage
+file.remove("e00_data/20070508.e00")
+
 ## e00 file conversion to Spatial Polygons Dataframe--------------------
 # e00 to avc_data (coverages) and then to SpatialPolygonsDAtaframe in sp_data
 
 ## note: had to run this across multiple sessions...too many open files.
 ##       don't know how to close the connections open by RArcInfo..grrrrr
 
+
+## convert e00 files to RData--------------
 # this is just to refersh the download file to ensure that all dates accounted for
 downloaded <- list.files("e00_data/", pattern = ".e00") # this code assumes at least one e00 file in directory, i.e., seed the directory
 downloaded <- downloaded[downloaded != "test.e00"]
@@ -135,55 +139,36 @@ dates1
 
 # helper function to minimize the code
 e00_to_SpatialPolygonDataframe(dates1)
-
-## remove problem files at this stage
-# note that there is no corresponding e00 file on the EC website.  PR suspects that it may be hidden.  More imortantly, there is one from 20070507 (one day before).  Eliminate file
-file.remove("e00_data/20070508.e00")
-file.remove("sp_data/20070508.Rdata")
-unlink("avc_data/20070508")
-
+# see "code-map-check.xlsx: unconverted maps"
 
 # refresh converted and calculate percentage of files that did not convert to a SPDF
 converted <- list.files("sp_data/", pattern = ".Rdata")
 converted <- strptime(converted, "%Y%m%d.Rdata")
 dates2 <- downloaded[!downloaded %in% converted] # files left to convert
-length(dates2)/length(converted) # conversion didn't work out for a small number of e00 files
+length(dates2)/length(converted) # conversion didn't work out for a small number of e00 files  - See "code-map-check.xlsx:unconverted maps" for details
 
 
-## Cross-check coastline (map projection) --------------------------------------
+## remove problem files at this stage
+# note that there is no corresponding e00 file on the EC website.  PR suspects that it may be hidden.  More imortantly, there is one from 20070507 (one day before).  Eliminate file
+file.remove("sp_data/20070508.Rdata")
+unlink("avc_data/20070508") # not sure why we removed this folder but it is a fragment and not needed
 
-# ## load trusted map data to cross-check coastline against
-# can <- getData("GADM", country = "CAN", level = 1)
-# nl <- can[can$NAME_1 == "Newfoundland and Labrador", ]
-# plot(nl)
-# nf <- crop(nl, extent(c(-60.12000, -51.24861, 46.06806, 51.94517))) # Newfoundland
-# plot(nf)
-# bell <- crop(nl, extent(c(-53.03932, -52.89715, 47.58573, 47.66841))) # Bell Island
-# plot(bell)
-# 
-# ## cycle through a subset of the converted ice charts and Bell Island coastline
-# converted <- list.files("sp_data/", pattern = ".Rdata")
-# dates <- strptime(converted, "%Y%m%d.Rdata")
-# #dates <- dates[round(seq(1, length(dates), length.out = 20))] # size up a sub-sample of the files
-# yrs <- as.numeric(format(dates, "%Y"))
-# #dates <- dates[2005 <= yrs & yrs <= 2006]
-# dates <- dates[yrs == 2007]
-# for(i in seq_along(dates)) {
-#   load(format(dates[i], "sp_data/%Y%m%d.Rdata"))
-#   chart.nl <- ice[ice$A_LEGEND == "Land", ]
-#   chart.nl <- spTransform(chart.nl, CRS(proj4string(nl)))
-#   par(mfcol = c(1, 2), mar = c(3, 3, 0, 0), oma = c(0, 0, 3, 1))
-#   plot(nf, col = "grey", border = NA, axes = TRUE)
-#   plot(chart.nl, border = "black", add = TRUE)
-#   box()
-#   plot(bell, col = "grey", border = NA, axes = TRUE)
-#   plot(chart.nl, border = "black", add = TRUE)
-#   title(main = dates[i], outer = TRUE)
-#   box()
-# }
-# # looks like they improved their map data (and/or changed projections) 20070716...
+# remove these dates before running due to fragments, i.e., ice fragments that came very low or where there was some question what tice was.  See "code-map-check.xlsx:area-tice" for details
+#"1991-02-18 NST", "1992-03-19 NST", "2001-04-09 NDT", "2007-04-23 NDT", "2011-04-04", "2013-04-15", "2015-04-27 NDT"
+file.remove("sp_data/19910218.Rdata")
+file.remove("sp_data/19920319.Rdata")
+file.remove("sp_data/20010409.Rdata")
+file.remove("sp_data/20070423.Rdata")
+file.remove("sp_data/20110404.Rdata")
+file.remove("sp_data/20130415.Rdata")
+file.remove("sp_data/20150427.Rdata")
 
-
+# second round of removals
+file.remove("sp_data/19920402.Rdata")
+file.remove("sp_data/20070507.Rdata")
+file.remove("sp_data/20130422.Rdata")
+file.remove("sp_data/20150323.Rdata")
+file.remove("sp_data/20110214.Rdata")
 
 ## Area and volume calculations ------------------------------------------------
 # calculate the area of the sea ice and .....
@@ -195,8 +180,6 @@ dates3 <- strptime(converted, "%Y%m%d.Rdata") # use this for the full run
 save(dates3, file = "output-processing/dates3all.Rdata")
 dates3 <- dates3[!format(dates3, "%Y%m%d") %in% format(trends.calculated, "%Y%m%d")] # these are dates that are not in ice_trends.Rdata- hence it is small
 save(dates3, file = "output-processing/dates3.Rdata")
-
-
 
 ## subset the ice data
 
@@ -215,7 +198,7 @@ source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 trends_update.m1 <- calcAreaVolLat(dates3, ct=m1$ct, sa=m1$sa, sb=m1$sb)
 trends.m1 <- iceOuput(trends_update.m1, dates3)
 lookAt(trends.m1)
-save(trends.m1, file = "output-processing/ice-trends-2017-m1-all.Rdata")
+save(trends.m1, file = "output-processing/ice-trends-2017-m1-alla.Rdata")
 #save(trends.m1, file = "output-processing/ice-trends-2017-m1-subset.Rdata")
 
 # check to insure that subset is less than full set
@@ -231,27 +214,31 @@ save(trends.m2, file = "output-processing/ice-trends-2017-m2-all.Rdata")
 
 ## m3
 trends_update.m3 <- calcAreaVolLat(dates3, ct=m3$ct, sa=m3$sa,  sb=m3$sb)
-trends.m3 <- rbind(data.frame(date = dates3, 
-                              area = trends_update.m3$areas, 
-                              volume = trends_update.m3$volumes,
-                              minlats = trends_update.m3$minlats,
-                              minlongs = trends_update.m3$minlongs)) 
+trends.m3 <- iceOuput(trends_update.m3, dates3)
 lookAt(trends.m3)
-trends.m3 <- trends.m3[order(trends.m3$date), ]
 save(trends.m3, file = "output-processing/ice-trends-2017-m3-all.Rdata")
 #save(trends.m3, file = "output-processing/ice-trends-2017-m3-subset.Rdata")
 
 ## m4
 trends_update.m4 <- calcAreaVolLat(dates3, ct=m4$ct, sa=m4$sa,  sb=m4$sb)
-trends.m4 <- rbind(data.frame(date = dates3, 
-                              area = trends_update.m4$areas, 
-                              volume = trends_update.m4$volumes,
-                              minlats = trends_update.m4$minlats,
-                              minlongs = trends_update.m4$minlongs)) 
+trends.m4 <- iceOuput(trends_update.m4, dates3)
 lookAt(trends.m4)
-trends.m4 <- trends.m4[order(trends.m4$date), ]
 #save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
 save(trends.m4, file = "output-processing/ice-trends-2017-m4-all.Rdata")
+
+## m5
+trends_update.m5 <- calcAreaVolLat(dates3, ct=m5$ct, sa=m5$sa,  sb=m5$sb)
+trends.m5 <- iceOuput(trends_update.m5, dates3)
+lookAt(trends.m5)
+#save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
+save(trends.m5, file = "output-processing/ice-trends-2017-m5-all.Rdata")
+
+## m6
+trends_update.m6 <- calcAreaVolLat(dates3, ct=m6$ct, sa=m6$sa,  sb=m6$sb)
+trends.m6 <- iceOuput(trends_update.m6, dates3)
+lookAt(trends.m6)
+#save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
+save(trends.m6, file = "output-processing/ice-trends-2017-m6-all.Rdata")
 
 ## Annual maps -----------------------------------------------------------------
 
@@ -268,8 +255,7 @@ save(trends.m4, file = "output-processing/ice-trends-2017-m4-all.Rdata")
 ## Manual discard --------------------------------------------------------------
 dates3[-c(23)]
 
-# remove these dates before running due to fragments
-#"1991-02-18 NST", "1992-03-19 NST", "2001-04-09 NDT", "2007-04-23 NDT", "2011-04-04", "2013-04-05", "2015-04-27 NDT"
+
 
 dates3[-c(618, 656, 933, 1125, 1257, 1328, 1404)]
 
