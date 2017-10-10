@@ -89,8 +89,8 @@ plot(northNF, border = "red", add = TRUE) # plots Trinity/Bonavista with border
 
 # Cape Freels to Musgrave Harbour
 plot(water, xlim = c(-53.45, -53.35), ylim = c(47.8, 50.5), col = "lightblue", border = NA)
-x <- c(-54.00330, -53.54995, -53.40174, -53.85509, -54.01202)
-y <- c(49.39749, 49.23212, 49.24352, 49.45451, 49.41459)
+x <- c(-54.12189, -53.10497, -53.46905, -53.90846, -54.48597, -54.57385, -54.13444)
+y <- c(49.74124, 49.27318, 48.92007, 48.92007, 49.15821, 49.47026, 49.70018)
 p41 <- SpatialPolygons(list(Polygons(list(Polygon(cbind(x, y))), ID = "LM")))
 proj4string(p41) <- proj4string(water)
 capeFreels <- gIntersection(water, p41, byid = TRUE) # intesection of water (ocean surronding NL) and Lake Melville
