@@ -1189,13 +1189,13 @@ iceMedianD5 <- function(df, subset_yr, subset_ti, data1){
 #' @param date the date which is used to merge the datasets
 #'
 #' @return a graph of the two datasets with an abline - no values should be above the line
-#' @export
 #'
-#' @examples
+#' @examples subsetTestPlot(m1, m2, "date")
 subsetTestPlot <- function(df1, df2, date){
   mtest <- merge(df1, df2, by = eval(parse(text = date)))
   plot(mtest$area.x, mtest$area.y)
-  abline(a=0, b = 1, col="red", lwd=3)  
+  abline(a=0, b = 1, col="red", lwd=3)
+  print(mtest)
 }
 
 ##################################################################
@@ -1251,14 +1251,16 @@ p3 <- ggplot(data = df$data, aes(area)) +
 #' @param df1 
 #' @param df2 
 #' @param df3 
+#' @param title of the plots
 #'
 #' @return
 #' @export
 #'
 #' @examples
-iceYearBox <- function(df1, df2, df3, df4) {
+iceYearBox <- function(df1, df2, df3, title) {
   p1 <- ggplot(data = df1, aes(x = year, y = area, group = year)) + 
-    geom_boxplot()
+    geom_boxplot() +
+    ggtitle(title)
   p2 <- ggplot(data = df1, aes(x = year, y = minlats, group = year)) + 
     geom_boxplot()
   p3 <- ggplot(data = df2, aes(x = year, y = area, group = year)) + 
@@ -1269,12 +1271,8 @@ iceYearBox <- function(df1, df2, df3, df4) {
     geom_boxplot()
   p6 <- ggplot(data = df3, aes(x = year, y = minlats, group = year)) + 
     geom_boxplot()
-  p7 <- ggplot(data = df4, aes(x = year, y = area, group = year)) + 
-    geom_boxplot()
-  p8 <- ggplot(data = df4, aes(x = year, y = minlats, group = year)) + 
-    geom_boxplot()
   windows()
-  multiplot(p1, p3, p5, p7, p2, p4, p6, p8, cols=2)
+  multiplot(p1, p3, p5, p2, p4, p6, cols=2)
 }
 
 
