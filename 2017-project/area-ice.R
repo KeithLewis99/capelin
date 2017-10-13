@@ -79,9 +79,11 @@ ss5 <- subsetTestPlot(m5, m6, "date")
 ss6 <- subsetTestPlot(m4, m6, "date")
 
 # value is the x axis first.  So m1-m2 is x=m1 and y = m2
-cowplot::plot_grid(ss1, ss2, ss3, ss4, ss5, ss6, labels = c("m1-2", "m2-3", "m3-4", "m3-5", "m5-6", "m4-6"), ncol=2)
+testSubset <- cowplot::plot_grid(ss1, ss2, ss3, ss4, ss5, ss6, labels = c("m1-2", "m2-3", "m3-4", "m3-5", "m5-6", "m4-6"), ncol=2)
+ggsave("figs/1-testSubset.pdf")
 
 #Boxplots-----
+# save manually
 iceYearBox(df1 = trends.m1, df2 = trends.m2, df3 = trends.m3, title = "m1-m3")
 iceYearBox(df1 = trends.m4, df2 = trends.m5, df3 = trends.m6, title = "m4-m6")
 
@@ -135,8 +137,10 @@ p11 <- ggplot(data = iceSum.m6, aes(x = year, y = tice)) +
 p12 <- ggplot(data = iceSum.m6, aes(x = year, y = area)) + 
   geom_point() + geom_smooth(method=lm)
 
-multiplot(p1, p3, p5, p2, p4, p6, cols = 2)
-multiplot(p7, p9, p11, p8, p10, p12, cols = 2)
+areaMaxScatterm1m3 <- multiplot(p1, p3, p5, p2, p4, p6, cols = 2)
+ggsave("figs/4-areaMaxScatterm1m3.pdf")
+areaMaxScatterm4m6 <- multiplot(p7, p9, p11, p8, p10, p12, cols = 2)
+ggsave("figs/5-areaMaxScatterm4m5.pdf")
 
 # filter so that 0 values are removed
 si1 <- iceSum.m4 %>%
@@ -149,7 +153,8 @@ si2 <- iceSum.m6 %>%
   ggplot(aes(x = year, y = area)) + 
   geom_point() + geom_smooth(method=lm) + ggtitle("m6 > 1983")
 
-cowplot::plot_grid(si1, si2, ncol=2)
+areaMaxScatterm4m6 <- cowplot::plot_grid(si1, si2, ncol=2)
+ggsave("figs/6-areaMaxScatterm4m6.pdf")
 
 # ranges and ratios----------
 area.range.low <- c(m1 = range(iceSum.m1$area)[1], 
@@ -198,6 +203,7 @@ tice.ratio <- c(m1 = range(iceSum.m1$tice)[2]/range(iceSum.m1$tice)[1],
 )
 
 ice.ranges.ratios <- cbind(ice.ranges, area.ratio, tice.ratio)
+write.csv(iceSum.m1, file = "output-processing/ice-ranges-ratios.csv", row.names=F, na="")
 
 #######################################################################
 ##Create maps of the minlats-----------
@@ -205,6 +211,18 @@ ice.ranges.ratios <- cbind(ice.ranges, area.ratio, tice.ratio)
 load("sp_data/20160606.Rdata") # file doesnot exist - probably doesn't matter
 water <- spTransform(ice[ice$A_LEGEND != "Land", ], CRS("+proj=longlat +datum=WGS84"))
 water <- gUnaryUnion(water)
+
+
+#m1 - plot for presentaiton only - save manually
+par(mfrow=c(1,2))
+plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
+plot(filters, border = "red", add = TRUE)  # plot main map with filter
+points(iceSum.m1$minlongs, iceSum.m1$minlats)
+
+# plot all points
+plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
+plot(filters, border = "red", add = TRUE)  # plot main map with filter
+points(trends.m1$minlongs, trends.m1$minlats)
 
 # plot water and minlongs/lats as points 
 # confirm that filters are working; check ice maps
@@ -278,42 +296,55 @@ par(mfrow=c(1,1))
 #m1
 # plot tice against ice area
 iceCorr.m1 <- iceScatterSummary(iceSum.m1, "area", "minlats", "tice", "minlats")
-multiplot(iceCorr.m1$p1, iceCorr.m1$p3, iceCorr.m1$p2, cols=2)
-lmoutputSummary(iceCorr.m1)
+relMax.m1 <- multiplot(iceCorr.m1$p1, iceCorr.m1$p3, iceCorr.m1$p2, cols=2)
+ggsave("figs/8-relMax-m1.pdf")
+iceCorr.m1.rsq <- lmoutputSummary(iceCorr.m1)
+write.csv(iceCorr.m1.rsq, file = "output-processing/iceCorr-m1-rsq.csv", row.names=F, na="")
 
-source("D:/Keith/capelin/2017-project/area-ice-function.R")
 #m2
 # plot tice against ice area
 iceCorr.m2 <- iceScatterSummary(iceSum.m2, "area", "minlats", "tice", "minlats")
-multiplot(iceCorr.m2$p1, iceCorr.m2$p3, iceCorr.m2$p2, cols=2)
-lmoutputSummary(iceCorr.m2)
+relMax.m2 <- multiplot(iceCorr.m2$p1, iceCorr.m2$p3, iceCorr.m2$p2, cols=2)
+ggsave("figs/9-relMax-m2.pdf")
+iceCorr.m2.rsq <- lmoutputSummary(iceCorr.m2)
+write.csv(iceCorr.m2.rsq, file = "output-processing/iceCorr-m2-rsq.csv", row.names=F, na="")
+
 
 #m3
 iceCorr.m3 <- iceScatterSummary(iceSum.m3, "area", "minlats", "tice", "minlats")
-multiplot(iceCorr.m3$p1, iceCorr.m3$p3, iceCorr.m3$p2, cols=2)
-lmoutputSummary(iceCorr.m3)
+relMax.m3 <- multiplot(iceCorr.m3$p1, iceCorr.m3$p3, iceCorr.m3$p2, cols=2)
+ggsave("figs/10-relMax-m3.pdf")
+iceCorr.m3.rsq <- lmoutputSummary(iceCorr.m3)
+write.csv(iceCorr.m3.rsq, file = "output-processing/iceCorr-m3-rsq.csv", row.names=F, na="")
 
 #m4
 iceCorr.m4 <- iceScatterSummary(iceSum.m4, "area", "minlats", "tice", "minlats")
-multiplot(iceCorr.m4$p1, iceCorr.m4$p3, iceCorr.m4$p2, cols=2)
-lmoutputSummary(iceCorr.m4)
+relMax.m4 <- multiplot(iceCorr.m4$p1, iceCorr.m4$p3, iceCorr.m4$p2, cols=2)
+ggsave("figs/11-relMax-m4.pdf")
+iceCorr.m4.rsq <- lmoutputSummary(iceCorr.m4)
+write.csv(iceCorr.m4.rsq, file = "output-processing/iceCorr-m4-rsq.csv", row.names=F, na="")
 
 #m5
 iceCorr.m5 <- iceScatterSummary(iceSum.m5, "area", "minlats", "tice", "minlats")
-multiplot(iceCorr.m5$p1, iceCorr.m5$p3, iceCorr.m5$p2, cols=2)
-lmoutputSummary(iceCorr.m5)
+relMax.m5 <- multiplot(iceCorr.m5$p1, iceCorr.m5$p3, iceCorr.m5$p2, cols=2)
+ggsave("figs/12-relMax-m5.pdf")
+iceCorr.m5.rsq <- lmoutputSummary(iceCorr.m5)
+write.csv(iceCorr.m5.rsq, file = "output-processing/iceCorr-m5-rsq.csv", row.names=F, na="")
 
 #m6
 iceCorr.m6 <- iceScatterSummary(iceSum.m6, "area", "minlats", "tice", "minlats")
-multiplot(iceCorr.m6$p1, iceCorr.m6$p3, iceCorr.m6$p2, cols=2)
-lmoutputSummary(iceCorr.m6)
+relMax.m6 <- multiplot(iceCorr.m6$p1, iceCorr.m6$p3, iceCorr.m6$p2, cols=2)
+ggsave("figs/13-relMax-m6.pdf")
+iceCorr.m6.rsq <- lmoutputSummary(iceCorr.m6)
+write.csv(iceCorr.m6.rsq, file = "output-processing/iceCorr-m6-rsq.csv", row.names=F, na="")
+
 
 #####################################################################
 # explore more rigorous method of determining relationship between tice and minlat-----
-#check max area
+# calculate tice and year
 
 str(trends.m1)
-# calculate tice and year-----
+
 trends.m1$tice <- yday(trends.m1$date)
 trends.m1$year <- year(trends.m1$date)
 
@@ -338,8 +369,8 @@ trends.m6$year <- year(trends.m6$date)
 sub1991.m1 <- iceMedian(trends.m1, "year < 1992", "tice < 150", iceSum.m1) # list of three dataframes
 str(sub1991.m1)
 sub1991.m1.sum <- iceSummarylm(sub1991.m1) # lm Summaries of yearly median values
-lmoutputSummary(sub1991.m1.sum) # rsqared values only
-
+sub1991.m1.rsq <- lmoutputSummary(sub1991.m1.sum) # rsqared values only
+write.csv(sub1991.m1.rsq, file = "output-processing/sub1991-m1-rsq.csv", row.names=F, na="")
 
 # graph these for this model but only repeat if reasonable r-squared values appear
 p1.m1  <- ggplot(data = sub1991.m1$mall, aes(x = area, y = tice)) + geom_point() + geom_smooth(method=lm) + ggtitle("medians-m1")
@@ -354,19 +385,23 @@ p3.m1 <- ggplot(data = sub1991.m1$mall, aes(x = area, y = minlats)) + geom_point
 summary(lm(minlats~area, data=sub1991.m1$mall))
 
 # plot of media values
-multiplot(p1.m1, p3.m1, p2.m1, cols=2)
-
+relMeds1991m1m3 <- multiplot(p1.m1, p3.m1, p2.m1, cols=2)
+ggsave("figs/14-relMeds1991.pdf")
 
 # scatter plots of all dates
 sub1991.m1.plot <- iceDateScatter(sub1991.m1) 
 sub1991.m1.plot$p1
+ggsave("figs/15-minlatMedYear1991m1.pdf")
 sub1991.m1.plot$p2
+ggsave("figs/16-minlatMedHistoFacet1991m1.pdf")
 sub1991.m1.plot$p3
+ggsave("figs/17-areaMedHistoFacet1991m1.pdf")
 
 #m2
 sub1991.m2 <- iceMedian(trends.m2, "year < 1992", "tice < 150", iceSum.m2)
 sub1991.m2.sum <- iceSummarylm(sub1991.m2)
-lmoutputSummary(sub1991.m2.sum)
+sub1991.m2.rsq <- lmoutputSummary(sub1991.m2.sum)
+write.csv(sub1991.m2.rsq, file = "output-processing/sub1991-m2-rsq.csv", row.names=F, na="")
 
 # scatter plot of date and minlats
 sub1991.m2.plot <- iceDateScatter(sub1991.m2)
@@ -377,31 +412,48 @@ sub1991.m2.plot$p3
 #m3
 sub1991.m3 <- iceMedian(trends.m3, "year < 1992", "tice < 150", iceSum.m3)
 sub1991.m3.sum <- iceSummarylm(sub1991.m3)
-lmoutputSummary(sub1991.m3.sum)
+sub1991.m3.rsq <- lmoutputSummary(sub1991.m3.sum)
+write.csv(sub1991.m3.rsq, file = "output-processing/sub1991-m3-rsq.csv", row.names=F, na="")
 
 #m4
 sub1991.m4 <- iceMedian(trends.m4, "year < 1992", "tice < 150", iceSum.m4)
 sub1991.m4.sum <- iceSummarylm(sub1991.m4)
-lmoutputSummary(sub1991.m4.sum)
+sub1991.m4.rsq <- lmoutputSummary(sub1991.m4.sum)
+write.csv(sub1991.m4.rsq, file = "output-processing/sub1991-m4-rsq.csv", row.names=F, na="")
 
 #m5
 sub1991.m5 <- iceMedian(trends.m5, "year < 1992", "tice < 150", iceSum.m5)
 sub1991.m5.sum <- iceSummarylm(sub1991.m5)
-lmoutputSummary(sub1991.m5.sum)
+sub1991.m5.rsq <- lmoutputSummary(sub1991.m5.sum)
+write.csv(sub1991.m5.rsq, file = "output-processing/sub1991-m5-rsq.csv", row.names=F, na="")
+
 
 #m6
 sub1991.m6 <- iceMedian(trends.m6, "year < 1992", "tice < 150", iceSum.m6)
 sub1991.m6.sum <- iceSummarylm(sub1991.m6)
-lmoutputSummary(sub1991.m6.sum)
+sub1991.m6.rsq <- lmoutputSummary(sub1991.m6.sum)
+write.csv(sub1991.m6.rsq, file = "output-processing/sub1991-m6-rsq.csv", row.names=F, na="")
 
 ##############################################################
 #####1992-2017------
 ##m1
 sub2017.m1 <- iceMedian(trends.m1, "year > 1991", "tice < 150", iceSum.m1)
 sub2017.m1.sum <- iceSummarylm(sub2017.m1)
-lmoutputSummary(sub2017.m1.sum)
+sub2017.m1.rsq <- lmoutputSummary(sub2017.m1.sum)
+write.csv(sub2017.m1.rsq, file = "output-processing/sub2017-m1-rsq.csv", row.names=F, na="")
 
 p1.m1  <- ggplot(data = sub2017.m1$mall, aes(x = minlats, y = tice)) + geom_point() + geom_smooth(method=lm) + ggtitle("medians-m1")
+# plot tice against ice area
+p2.m1 <- ggplot(data = sub2017.m1$mall, aes(x = minlats, y = tice)) + geom_point() + geom_smooth(method=lm)
+summary(lm(tice~minlats, data=sub2017.m1$mall))
+
+#plot ice area against minlats
+p3.m1 <- ggplot(data = sub2017.m1$mall, aes(x = area, y = minlats)) + geom_point() + geom_smooth(method=lm)
+summary(lm(minlats~area, data=sub2017.m1$mall))
+
+# plot of median values
+relMaxs2017m1 <- multiplot(p1.m1, p3.m1, p2.m1, cols=2)
+ggsave("figs/18-relMeds2017m1.pdf")
 
 sub2017.m1.plot <- iceDateScatter(sub2017.m1)
 sub2017.m1.plot$p1
@@ -411,7 +463,9 @@ sub2017.m1.plot$p3
 ##m2
 sub2017.m2 <- iceMedian(trends.m2, "year > 1991", "tice < 150", iceSum.m2)
 sub2017.m2.sum <- iceSummarylm(sub2017.m2)
-lmoutputSummary(sub2017.m2.sum)
+sub2017.m2.rsq <- lmoutputSummary(sub2017.m2.sum)
+write.csv(sub2017.m2.rsq, file = "output-processing/sub2017-m2-rsq.csv", row.names=F, na="")
+
 # scatter plot of date and minlats
 sub2017.m2.plot <- iceDateScatter(sub2017.m2, d = "d")
 sub2017.m2.plot$p1
@@ -421,23 +475,26 @@ sub2017.m2.plot$p3
 ##m3
 sub2017.m3 <- iceMedian(trends.m3, "year > 1991", "tice < 150", iceSum.m3)
 sub2017.m3.sum <- iceSummarylm(sub2017.m3)
-lmoutputSummary(sub2017.m3.sum)
+sub2017.m3.rsq <- lmoutputSummary(sub2017.m3.sum)
+write.csv(sub2017.m3.rsq, file = "output-processing/sub2017-m3-rsq.csv", row.names=F, na="")
 
 ##m4
 sub2017.m4 <- iceMedian(trends.m4, "year > 1991", "tice < 150", iceSum.m4)
 sub2017.m4.sum <- iceSummarylm(sub2017.m4)
-lmoutputSummary(sub2017.m4.sum)
-
+sub2017.m4.rsq <- lmoutputSummary(sub2017.m4.sum)
+write.csv(sub2017.m4.rsq, file = "output-processing/sub2017-m4-rsq.csv", row.names=F, na="")
 
 ##m5
 sub2017.m5 <- iceMedian(trends.m5, "year > 1991", "tice < 150", iceSum.m5)
 sub2017.m5.sum <- iceSummarylm(sub2017.m5)
-lmoutputSummary(sub2017.m5.sum)
+sub2017.m5.rsq <- lmoutputSummary(sub2017.m5.sum)
+write.csv(sub2017.m5.rsq, file = "output-processing/sub2017-m5-rsq.csv", row.names=F, na="")
 
 ##m6
 sub2017.m6 <- iceMedian(trends.m6, "year > 1991", "tice < 150", iceSum.m6)
 sub2017.m6.sum <- iceSummarylm(sub2017.m6)
-lmoutputSummary(sub2017.m6.sum)
+sub2017.m6.rsq <- lmoutputSummary(sub2017.m6.sum)
+write.csv(sub2017.m6.rsq, file = "output-processing/sub2017-m6-rsq.csv", row.names=F, na="")
 
 ###############################################
 ###############################################
@@ -449,34 +506,37 @@ count.year <- trends.m1 %>%
   count()
 View(count.year)
 
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 ###1992-2017------
 ##m1
 iceMedD5p2017.m1 <- iceMedianD5(trends.m1, "year > 1991", "tice < 150", iceSum.m1)
 iceMedD5p2017.m1.sum <-iceSummarylm(iceMedD5p2017.m1, med = "d5", med1 = "d5")
-lmoutputSummary(iceMedD5p2017.m1.sum)
+iceMedD5p2017.m1.rsq <- lmoutputSummary(iceMedD5p2017.m1.sum)
+write.csv(iceMedD5p2017.m1.rsq, file = "output-processing/iceMedD5p2017-m1-rsq.csv", row.names=F, na="")
 
 # figures
 plotMedD5p2017.m1 <- iceScatterSummary(iceMedD5p2017.m1$mall, "d5area", "d5minlats", "d5tice", "d5minlats")
-multiplot(plotMedD5p2017.m1$p1, plotMedD5p2017.m1$p3, plotMedD5p2017.m1$p2, cols=2)
+relD5Med2017m1 <- multiplot(plotMedD5p2017.m1$p1, plotMedD5p2017.m1$p3, plotMedD5p2017.m1$p2, cols=2)
+ggsave("figs/19-relD5Med2017m1.pdf")
 
 # scatter plot of date and minlats
 windows()
-sub2017.m2.plot <- iceDateScatter(iceMedD5p2017.m1, d= "d5")
+sub2017.m1.plot <- iceDateScatter(iceMedD5p2017.m1, d= "d5")
 
-sub2017.m2.plot$p1
-sub2017.m2.plot$p2
-sub2017.m2.plot$p3
+sub2017.m1.plot$p1
+sub2017.m1.plot$p2
+sub2017.m1.plot$p3
 
 ###1992-2017------
 ##m2
 iceMedD5p2017.m2 <- iceMedianD5(trends.m2, "year > 1991", "tice < 150", iceSum.m2)
 iceMedD5p2017.m2.sum <- iceSummarylm(iceMedD5p2017.m2, med = "d5", med1 = "d5")
-lmoutputSummary(iceMedD5p2017.m2.sum)
+iceMedD5p2017.m2.rsq <- lmoutputSummary(iceMedD5p2017.m2.sum)
+write.csv(iceMedD5p2017.m2.rsq, file = "output-processing/iceMedD5p2017-m2-rsq.csv", row.names=F, na="")
 
 # figures
 plotMedD5p2017.m2 <- iceScatterSummary(iceMedD5p2017.m2$mall, "d5area", "d5minlats", "d5tice", "d5minlats")
-multiplot(plotMedD5p2017.m2$p1, plotMedD5p2017.m2$p3, plotMedD5p2017.m2$p2, cols=2)
+relD5Med2017m2 <- multiplot(plotMedD5p2017.m2$p1, plotMedD5p2017.m2$p3, plotMedD5p2017.m2$p2, cols=2)
+ggsave("figs/20-relD5Med2017m2.pdf")
 
 # scatter plot of date and minlats
 sub2017.m2.plot <- iceDateScatter(iceMedD5p2017.m2, d= "d5")
@@ -488,11 +548,13 @@ sub2017.m2.plot$p3
 ##m3
 iceMedD5p2017.m3 <- iceMedianD5(trends.m3, "year > 1991", "tice < 150", iceSum.m3)
 iceMedD5p2017.m3.sum <- iceSummarylm(iceMedD5p2017.m3, med = "d5", med1 = "d5")
-lmoutputSummary(iceMedD5p2017.m3.sum)
+iceMedD5p2017.m3.rsq <- lmoutputSummary(iceMedD5p2017.m3.sum)
+write.csv(iceMedD5p2017.m3.rsq, file = "output-processing/iceMedD5p2017-m3-rsq.csv", row.names=F, na="")
 
 # figures
 plotMedD5p2017.m3 <- iceScatterSummary(iceMedD5p2017.m3$mall, "d5area", "d5minlats", "d5tice", "d5minlats")
-multiplot(plotMedD5p2017.m3$p1, plotMedD5p2017.m3$p3, plotMedD5p2017.m3$p2, cols=2)
+relD5Med2017m3 <- multiplot(plotMedD5p2017.m3$p1, plotMedD5p2017.m3$p3, plotMedD5p2017.m3$p2, cols=2)
+ggsave("figs/21-relD5Med2017m3.pdf")
 
 # scatter plot of date and minlats
 sub2017.m3.plot <- iceDateScatter(iceMedD5p2017.m3, d= "d5")
@@ -504,11 +566,13 @@ sub2017.m3.plot$p3
 ##m4
 iceMedD5p2017.m4 <- iceMedianD5(trends.m4, "year > 1991", "tice < 150", iceSum.m4)
 iceMedD5p2017.m4.sum <- iceSummarylm(iceMedD5p2017.m4, med = "d5", med1 = "d5")
-lmoutputSummary(iceMedD5p2017.m4.sum)
+iceMedD5p2017.m4.rsq <- lmoutputSummary(iceMedD5p2017.m4.sum)
+write.csv(iceMedD5p2017.m4.rsq, file = "output-processing/iceMedD5p2017-m4-rsq.csv", row.names=F, na="")
 
 # figures
 plotMedD5p2017.m4 <- iceScatterSummary(iceMedD5p2017.m4$mall, "d5area", "d5minlats", "d5tice", "d5minlats")
-multiplot(plotMedD5p2017.m4$p1, plotMedD5p2017.m4$p3, plotMedD5p2017.m4$p2, cols=2)
+relD5Med2017m4 <- multiplot(plotMedD5p2017.m4$p1, plotMedD5p2017.m4$p3, plotMedD5p2017.m4$p2, cols=2)
+ggsave("figs/22-relD5Med2017m4.pdf")
 
 # scatter plot of date and minlats
 sub2017.m4.plot <- iceDateScatter(iceMedD5p2017.m4, d= "d5")
@@ -519,12 +583,14 @@ sub2017.m4.plot$p3
 ##m5
 iceMedD5p2017.m5 <- iceMedianD5(trends.m5, "year > 1991", "tice < 150", iceSum.m5)
 iceMedD5p2017.m5.sum <- iceSummarylm(iceMedD5p2017.m5, med = "d5", med1 = "d5")
-lmoutputSummary(iceMedD5p2017.m5.sum)
+iceMedD5p2017.m5.rsq <- lmoutputSummary(iceMedD5p2017.m5.sum)
+write.csv(iceMedD5p2017.m5.rsq, file = "output-processing/iceMedD5p2017-m5-rsq.csv", row.names=F, na="")
 
-##m5
+##m6
 iceMedD5p2017.m6 <- iceMedianD5(trends.m6, "year > 1991", "tice < 150", iceSum.m6)
 iceMedD5p2017.m6.sum <- iceSummarylm(iceMedD5p2017.m6, med = "d5", med1 = "d5")
-lmoutputSummary(iceMedD5p2017.m6.sum)
+iceMedD5p2017.m6.rsq <- lmoutputSummary(iceMedD5p2017.m6.sum)
+write.csv(iceMedD5p2017.m6.rsq, file = "output-processing/iceMedD5p2017-m6-rsq.csv", row.names=F, na="")
 
 ##########################################################################################
 ###pre-1992------
@@ -603,32 +669,12 @@ lmoutputSummary(iceMedD5p1992.m6.sum)
 
 
 #######################################################################################
+#######Max values-----------
 
-iceSum.m1 <- iceSum.m1[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m1, file = "output-processing/capelin-m1.csv", row.names=F, na="")
-
-
-iceSum.m2 <- iceSum.m2[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m2, file = "output-processing/capelin-m2.csv", row.names=F, na="")
-
-iceSum.m3 <- iceSum.m3[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m3, file = "output-processing/capelin-m3.csv", row.names=F, na="")
-
-iceSum.m4 <- iceSum.m4[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m4, file = "output-processing/capelin-m4.csv", row.names=F, na="")
-
-iceSum.m5 <- iceSum.m5[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m5, file = "output-processing/capelin-m5.csv", row.names=F, na="")
-
-iceSum.m6 <- iceSum.m6[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m6, file = "output-processing/capelin-m6.csv", row.names=F, na="")
-
-#######Median values-----------
 # need to change all fo these values from here to below
 iceSum.m1 <- iceSum.m1[c("year", "area", "minlats", "tice")]
 write.csv(iceSum.m1, file = "output-processing/capelin-m1.csv", row.names=F, na="")
 
-
 iceSum.m2 <- iceSum.m2[c("year", "area", "minlats", "tice")]
 write.csv(iceSum.m2, file = "output-processing/capelin-m2.csv", row.names=F, na="")
 
@@ -643,27 +689,85 @@ write.csv(iceSum.m5, file = "output-processing/capelin-m5.csv", row.names=F, na=
 
 iceSum.m6 <- iceSum.m6[c("year", "area", "minlats", "tice")]
 write.csv(iceSum.m6, file = "output-processing/capelin-m6.csv", row.names=F, na="")
+
+#######################################################################################
+#######Median values-----------
+## < 1992
+sub1991.m1a <- sub1991.m1$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub1991.m1a, file = "output-processing/sub1991-m1.csv", row.names=F, na="")
+
+sub1991.m2a <- sub1991.m2$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub1991.m2a, file = "output-processing/sub1991-m2.csv", row.names=F, na="")
+
+sub1991.m3a <- sub1991.m3$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub1991.m3a, file = "output-processing/sub1991-m3.csv", row.names=F, na="")
+
+sub1991.m4a <- sub1991.m4$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub1991.m4a, file = "output-processing/sub1991-m4.csv", row.names=F, na="")
+
+sub1991.m5a <- sub1991.m5$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub1991.m5a, file = "output-processing/sub1991-m5.csv", row.names=F, na="")
+
+sub1991.m6a <- sub1991.m6$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub1991.m6a, file = "output-processing/sub1991-m6.csv", row.names=F, na="")
+
+## > 1992
+sub2017.m1a <- sub2017.m1$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub2017.m1a, file = "output-processing/sub2017-m1.csv", row.names=F, na="")
+
+sub2017.m2a <- sub2017.m2$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub2017.m2a, file = "output-processing/sub2017-m2.csv", row.names=F, na="")
+
+sub2017.m3a <- sub2017.m3$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub2017.m3a, file = "output-processing/sub2017-m3.csv", row.names=F, na="")
+
+sub2017.m4a <- sub2017.m4$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub2017.m4a, file = "output-processing/sub2017-m4.csv", row.names=F, na="")
+
+sub2017.m5a <- sub2017.m5$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub2017.m5a, file = "output-processing/sub2017-m5.csv", row.names=F, na="")
+
+sub2017.m6a <- sub2017.m6$mall[c("year", "darea", "dminlats", "dtice")]
+write.csv(sub2017.m6a, file = "output-processing/sub2017-m6.csv", row.names=F, na="")
 
 #######D5Median values-----------
-iceMedD5b1992.m1 <- iceMedD5$med
-#[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m1, file = "output-processing/capelin-m1.csv", row.names=F, na="")
+# <1992
+iceMedD5p1992.m1a <- iceMedD5p1992.m1$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p1992.m1a, file = "output-processing/iceMedD5p1992-m1a.csv", row.names=F, na="")
 
+iceMedD5p1992.m2a <- iceMedD5p1992.m2$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p1992.m2a, file = "output-processing/iceMedD5p1992-m2a.csv", row.names=F, na="")
 
-iceSum.m2 <- iceSum.m2[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m2, file = "output-processing/capelin-m2.csv", row.names=F, na="")
+iceMedD5p1992.m3a <- iceMedD5p1992.m3$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p1992.m3a, file = "output-processing/iceMedD5p1992-m3a.csv", row.names=F, na="")
 
-iceSum.m3 <- iceSum.m3[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m3, file = "output-processing/capelin-m3.csv", row.names=F, na="")
+iceMedD5p1992.m4a <- iceMedD5p1992.m4$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p1992.m4a, file = "output-processing/iceMedD5p1992-m4a.csv", row.names=F, na="")
 
-iceSum.m4 <- iceSum.m4[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m4, file = "output-processing/capelin-m4.csv", row.names=F, na="")
+iceMedD5p1992.m5a <- iceMedD5p1992.m5$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p1992.m5a, file = "output-processing/iceMedD5p1992-m5a.csv", row.names=F, na="")
 
-iceSum.m5 <- iceSum.m5[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m5, file = "output-processing/capelin-m5.csv", row.names=F, na="")
+iceMedD5p1992.m6a <- iceMedD5p1992.m6$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p1992.m6a, file = "output-processing/iceMedD5p1992-m6a.csv", row.names=F, na="")
 
-iceSum.m6 <- iceSum.m6[c("year", "area", "minlats", "tice")]
-write.csv(iceSum.m6, file = "output-processing/capelin-m6.csv", row.names=F, na="")
+# >1992
+iceMedD5p2017.m1a <- iceMedD5p2017.m1$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p2017.m1a, file = "output-processing/iceMedD5p2017-m1a.csv", row.names=F, na="")
+
+iceMedD5p2017.m2a <- iceMedD5p2017.m2$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p2017.m2a, file = "output-processing/iceMedD5p2017-m2a.csv", row.names=F, na="")
+
+iceMedD5p2017.m3a <- iceMedD5p2017.m3$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p2017.m3a, file = "output-processing/iceMedD5p2017-m3a.csv", row.names=F, na="")
+
+iceMedD5p2017.m4a <- iceMedD5p2017.m4$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p2017.m4a, file = "output-processing/iceMedD5p2017-m4a.csv", row.names=F, na="")
+
+iceMedD5p2017.m5a <- iceMedD5p2017.m5$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p2017.m5a, file = "output-processing/iceMedD5p2017-m5a.csv", row.names=F, na="")
+
+iceMedD5p2017.m6a <- iceMedD5p2017.m6$mall[c("year", "d5area", "d5minlats", "d5tice")]
+write.csv(iceMedD5p2017.m6a, file = "output-processing/iceMedD5p2017-m6a.csv", row.names=F, na="")
 
 #######################################################################################
 #######################################################################################
