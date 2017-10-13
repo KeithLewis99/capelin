@@ -328,7 +328,7 @@ iceScatterSummary <- function(df, x = NULL, x1 = NULL, y = NULL, y1 = NULL) {
   #plot ice area against minlats
   p3 <- ggplot(data = df, aes_string(x = x, y = y1)) + geom_point() + geom_smooth(method=lm)
   s3 <- summary(lm(paste0(y1, "~", x), data=df))
-  return(list(s1=s1, s2=s2, s3=s3, p1=p1, p2=p2, p3=p3))
+  return(list(minlats_v_area = s1, minlats_v_tice = s2, area_v_tice = s3, p1=p1, p2=p2, p3=p3))
   multiplot(p1, p3, p2, cols=2)
 }
 
@@ -353,7 +353,7 @@ iceOuput <- function(df, date) {
 }
 
 ##################################################################
-#' Title
+##' lmoutputSummary()------
 #'
 #' @param ls - a list of summary(lm(formula)) returned from iceScatterSummary() for the comparison of area v tice, minlats v tice, and area v minlats
 #'
@@ -362,10 +362,11 @@ iceOuput <- function(df, date) {
 #'
 #' @examples lmoutputSummary(ls)
 lmoutputSummary <- function(ls) {
-  print(attr(terms(iceCorr.m1$s1), "variables"))
-    print(ls$s1$r.squared)
-    print(attr(terms(iceCorr.m1$s2), "variables"))
-  print(ls$s2$r.squared)
-  print(attr(terms(iceCorr.m1$s3), "variables"))
-  print(ls$s3$r.squared)
+  a <- "minlats_v_area"
+  b <- "minlats_v_tice"
+  c <- "area_v_tice"
+  comp <- rbind(a, b, c)
+  rsq_val <- rbind(ls$minlats_v_area$r.squared, ls$minlats_v_tice$r.squared, ls$area_v_tice$r.squared)
+  out <- cbind(comp = comp, rsq_val = round(rsq_val, 3))
+  return(out)
 }
