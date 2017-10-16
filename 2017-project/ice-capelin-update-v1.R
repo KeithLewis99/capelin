@@ -14,25 +14,28 @@ rm(list=ls())
 
 
 setwd("D:/Keith/capelin/2017-project")
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
+source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
 library(plotrix)
 library(ggplot2)
 library(readr)
-
+library(dplyr)
+library(purrr)
 capelin <- read.csv('capelin-ice-2014.csv',header=T)
 
 capelin_m1 <- read_csv("output-processing/capelin-m1.csv")
 capelin_m2 <- read_csv("output-processing/capelin-m2.csv")
 capelin_m3 <- read_csv("output-processing/capelin-m3.csv")
 capelin_m4 <- read_csv("output-processing/capelin-m4.csv")
+capelin_m5 <- read_csv("output-processing/capelin-m5.csv")
+capelin_m6 <- read_csv("output-processing/capelin-m6.csv")
 
+  
 ## Ale original-------------
 capelin <- capelin[c("year", "maxarea", "minlat", "tice", "capelin", "capelinlb", "capelinub", "logcapelin", "logcapelinlb", "logcapelinub")]
 
+capelin_join <- capelin[c("year", "capelin", "capelinlb", "capelinub", "logcapelin", "logcapelinlb", "logcapelinub")]
 ## m1-----------
-capelin_m1 <- capelin_m1[c("year", "area", "minlats", "tice", "capelin", "capelinlb", "capelinub", "logcapelin", "logcapelinlb", "logcapelinub")]
-capelin_m1 <- rename(capelin_m1, maxarea = area)
-capelin_m1 <- rename(capelin_m1, minlat = minlats)
+capelin_m1 <- left_join(capelin_m1, capelin_join, by = "year")
 
 ## m2-----------
 capelin_m2 <- capelin_m2[c("year", "area", "minlats", "tice", "capelin", "capelinlb", "capelinub", "logcapelin", "logcapelinlb", "logcapelinub")]
@@ -306,7 +309,7 @@ ggplot(capelin, aes(x = year, y = logdiff)) +
 #####################################################################################################   
    
    
-## Ale's original-------------
+## Ale's original changed from tice to area-------------
 ## Optimization - produces lists of the optimization curve for use in figures below
 # up to present
    CapelinDomeFit_area <- optim(par = c(1,500,0.6),
@@ -378,3 +381,28 @@ ggplot() +
    summary(lm(logcapelin ~ maxarea, data=capelin_m3))
    summary(lm(logcapelin ~ maxarea, data=capelin_m4))
    
+   
+   
+################################################
+   data_path <- "output-processing"
+   files <- list.files(data_path)
+   pattern <- grep("capelin", files, value = T)
+   
+   files
+   test <- files %>%
+     map(~ read_csv(file.path(data_path, .))) %>%
+     reduce(rbind)
+   
+   
+   
+   calcAreaVolLat <- function(y, ct = NULL, sa = NULL, sb = NULL) 
+     #browser()
+     #my.env <- new.env()
+     year <- maxarea <- minlats <- tice <-  capelin <-  capelinlb <-  capelinub <-  logcapelin <-  logcapelinlb <- logcapelinub <- 
+       areas <- rep(NA, length(pattern)) # create an empty object
+     
+     for (i in seq_along(pattern)) {
+       ## load map data
+       print(pattern[i])                   #start here when making single object for testing
+     }
+     
