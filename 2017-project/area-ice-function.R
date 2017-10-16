@@ -227,7 +227,7 @@ subsetTestPlot <- function(df1, df2, date){
   p <- ggplot(mtest, aes(area.x, area.y)) +
           geom_point() + 
           geom_abline(aes(intercept = 0, slope = 1), colour = "red", size = 2)
-    windows()
+    #windows()
     return(p)
 }
 
@@ -265,17 +265,16 @@ p1 <- ggplot(data = df$data, aes(x = date, y = minlats)) +
   geom_point() + 
   geom_smooth(method=lm)
   
-p2 <-   ggplot(data = df$data, aes(minlats)) + 
-    geom_histogram() + 
-    facet_wrap(~ year) +
-    geom_vline(data = df$mall, aes_string(xintercept = paste0(d, "minlats")), colour = "red")
+p2 <- ggplot() + 
+  geom_violin(data = sub1991.m1$data, aes(x = year, y = minlats, group = year)) +
+  geom_point(data = sub1991.m1$mall, aes(x=year, y = dminlats), colour = "red")
+
   
-p3 <- ggplot(data = df$data, aes(area)) + 
-    geom_histogram(bins = 10) + 
-    facet_wrap(~ year) +
-    geom_vline(data = df$mall, aes_string(xintercept = paste0(d, "area")), colour = "red")
-  return(list(p1=p1, p2=p2, p3=p3))
-  multiplot(p1, p3, p2, cols=2)
+p3 <- ggplot() + 
+  geom_violin(data = sub1991.m1$data, aes(x = year, y = area, group = year)) +
+  geom_point(data = sub1991.m1$mall, aes(x = year, y = darea), colour = "red")
+
+return(list(p1=p1, p2=p2, p3=p3))
 }
 
 ##################################################################
@@ -292,8 +291,7 @@ p3 <- ggplot(data = df$data, aes(area)) +
 #' @examples
 iceYearBox <- function(df1, df2, df3, title) {
   p1 <- ggplot(data = df1, aes(x = year, y = area, group = year)) + 
-    geom_boxplot() +
-    ggtitle(title)
+    geom_boxplot()
   p2 <- ggplot(data = df1, aes(x = year, y = minlats, group = year)) + 
     geom_boxplot()
   p3 <- ggplot(data = df2, aes(x = year, y = area, group = year)) + 
@@ -304,8 +302,10 @@ iceYearBox <- function(df1, df2, df3, title) {
     geom_boxplot()
   p6 <- ggplot(data = df3, aes(x = year, y = minlats, group = year)) + 
     geom_boxplot()
-  windows()
-  multiplot(p1, p3, p5, p2, p4, p6, cols=2)
+  #windows()
+  #return(list(p1=p1, p2=p2, p3=p3, p4=p4, p5=p5, p6=p6))
+  cowplot::plot_grid(p1, p2, p3, p4, p5, p6, labels = c("m1", "", "m2", "", "m3", ""), ncol=2)
+  #multiplot(p1, p3, p5, p2, p4, p6, cols=2)
 }
 
 ##################################################################
