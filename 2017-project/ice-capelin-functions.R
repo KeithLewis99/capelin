@@ -20,46 +20,28 @@
 ## Objective function - part of optimization function
 
 SSQCapelinDome <- function(params,dataf){
-  browser()
+  #browser()
+     dataf <- as.data.frame(dataf) # needed because optim doesn't work with tibbles.....grrrrrrrr!!!!!
   Alpha <- params[1]
   Beta <- params[2]
   Gamma <- params[3]
   year <- dataf[,1]
   tice <- dataf[,2]
-  logcap <- dataf[,3] #observed
-  ELogCapBiom <- ifelse(year<1991, Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma) # expected
-  sum((logcap-ELogCapBiom)^2) # sum of squares
-}
-
-SSQCapelinDome1 <- function(params,dataf){
-  browser()
-  Alpha <- params[1]
-  Beta <- params[2]
-  Gamma <- params[3]
-  year <- pull(dataf[,1])
-  tice <- pull(dataf[,2])
-  logcap <- pull(dataf[,3])
+  logcap <- dataf[,3]
+  # this is based on MSY
   ELogCapBiom <- ifelse(year<1991, Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma)
   sum((logcap-ELogCapBiom)^2)
 }
 
 ## Function to obtain Expected Log Capelin Biomass         
 CapelinDome <- function(params,dataf){
+     #browser()
+     dataf <- as.data.frame(dataf)
   Alpha <- params[1]
   Beta <- params[2]
   Gamma <- params[3]
   year <- dataf[,1]
   tice <- dataf[,2]
-  ELogCapBiom <- ifelse(year<1991, Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma)
-  ELogCapBiom
-}
-
-CapelinDome1 <- function(params,dataf){
-  Alpha <- params[1]
-  Beta <- params[2]
-  Gamma <- params[3]
-  year <- pull(dataf[,1])
-  tice <- pull(dataf[,2])
   ELogCapBiom <- ifelse(year<1991, Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma)
   ELogCapBiom
 }
@@ -318,22 +300,21 @@ loadSubsetDatasets <- function(df, pat, N){
 #' @examples calcFit(cape$capelin_m1)
 #' note that this returns a warning "Unknown or uninitialised column: 'par'." which apparently is a tibble problem!!
 calcFit <- function(df) {
-  browser()
+  #browser()
   CapelinDomeFit <- optim(par = c(1,200,0.6),
-                           dataf = df[which(df$logcapelin!='NA'),
-                                      c('year','tice','logcapelin')],
-                           fn = SSQCapelinDome1, method=c("BFGS"))
+                          dataf = df[which(df$logcapelin!='NA'), c('year','tice','logcapelin')],
+                           fn = SSQCapelinDome, method=c("BFGS"))
   
   # before 2010
   CapelinDomeFitOld <- optim(par=c(0.2,180,0.6),
-                              dataf = df[which(df$year < 2011 & df$logcapelin!='NA'),
-                                         c('year','tice','logcapelin')],
-                              fn = SSQCapelinDome1, method=c("BFGS"))
+                         dataf = df[which(df$year < 2011 & df$logcapelin!='NA'),
+                         c('year','tice','logcapelin')],
+                         fn = SSQCapelinDome, method=c("BFGS"))
   
   ## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
-  df$ExpectedLogBiomass <- CapelinDome1(params = c(df$par), dataf = df[,c('year','tice')])
+  df$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par), dataf = df[,c('year','tice')])
   
-  df$ExpectedLogBiomassOld <- CapelinDome1(params = c(CapelinDomeFitOld$par), dataf = df[,c('year','tice')])
+  df$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par), dataf = df[,c('year','tice')])
   
   # attach the optimization curves of capelin abundance to ice data
   xtice <- expand.grid(year = c(1990,2000),tice = c(0:190,173.515,187.768))
