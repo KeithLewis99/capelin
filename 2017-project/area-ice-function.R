@@ -370,3 +370,58 @@ lmoutputSummary <- function(ls) {
   out <- cbind(comp = comp, rsq_val = round(rsq_val, 3))
   return(out)
 }
+
+##################################################################
+##' area_ticeScatter()-----
+#'
+#' @param df1 max value
+#' @param df2 median value
+#' @param df3 median of top 5 values
+#'
+#' @return graphs of max/median/d5median v. tice
+#' @export
+#'
+#' @examples atScat.m1 <- area_ticeScatter(iceSum.m1, iceMed.m1, iceMedD5.m1, "tice", "area", "m1")
+#' ggsave("figs/41-atScat.m1.pdf")    
+area_ticeScatter <- function(df1, df2, df3, x, y, sub_val){
+     p1 <- ggplot(data = df1, aes_string(x=x, y=y)) + 
+          geom_point() +         
+          geom_smooth(method=lm)  +
+          ggtitle(paste(sub_val))
+     p2 <- ggplot(data = df2$mall, aes_string(x=x, y=y)) +  
+          geom_point() +         
+          geom_smooth(method=lm)
+     p3 <- ggplot(data = df3$mall, aes_string(x=x, y=y)) +  
+          geom_point() +         
+          geom_smooth(method=lm)
+    out_plot <- cowplot::plot_grid(p1, p2, p3, labels = c("max", "med", "d5med"), ncol=2)
+}
+
+##################################################################
+##' area_ticeRsq()------
+#'
+#' @param df1 max value
+#' @param df2 median value
+#' @param df3 median of top 5 values
+#' @param x values to be pasted in as the x value in the lm
+#' @param y values to be pasted in as the y value in the lm
+#'
+#' @return
+#' @export
+#'
+#' @examples area_ticeRsq(iceSum.m1, iceMed.m1, iceMedD5.m1, x = "tice", y = "area")
+area_ticeRsq <- function(df1, df2, df3, x, y) {
+     #browser()
+     s1 <- summary(lm(paste0(y, "~", x), data=df1))
+     # plot tice against ice area
+     s2 <- summary(lm(paste0("d", y, "~", "d", x), data=df2$mall))
+     #plot ice area against minlats
+     s3 <- summary(lm(paste0("d5", y, "~", "d5", x), data=df3$mall))
+     a <- "Max"
+     b <- "Median"
+     c <- "d5Median"
+     comp <- rbind(a, b, c)
+     rsq_val <- rbind(s1$r.squared, s2$r.squared, s3$r.squared)
+     out <- cbind(comp = comp, rsq_val = round(rsq_val, 3))
+     return(out)
+}
