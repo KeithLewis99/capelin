@@ -326,3 +326,42 @@ calcFit <- function(df) {
   regime2 <- xtice[which(xtice$year == 2000),]
 return(list(df = df, cdf = CapelinDomeFit, regime1 = regime1, regime2 = regime2))  
 }
+
+
+###############################################################
+##' loadSubsetDatasets()-----
+#'
+#' @param df - the capelin dataset
+#' @param name - name of output list
+#' @param pat - a pattern of file names
+#' @param N - the number of files
+#' @param var1 - area, darea, d5area
+#' @param var2 - minlats, dminlats, d5minlats
+#' @param nvar1 - new name of var1 
+#' @param nvar2 - new name of var2
+#'
+#' @return a list of dataframes with the summaries of year, area, minlats, tice, and capelin info for each subset (m1-m6)
+#' @export
+#'
+#' @examples cape <- loadSubsetDatasets(capelin_join, pattern, 6, area, maxarea, minlats, minlat)
+loadSubsetDatasets1 <- function(df, name, pat, N, var1 = NULL, var2 = NULL, nvar1 = NULL, nvar2 = NULL){
+     #browser()
+     #var1 <- enquo(var1)
+     #nvar1 <- enquo(nvar1)
+     name <- paste0(name, 1:N) # create names of dataframes
+     x <- vector("list", N) # create a list to fill
+     for (i in seq_along(pat)) {
+          print(pat[i])   # print to see what has been loaded
+          cap <- read_csv(paste0("output-processing/", pat[i])) 
+          cap <- left_join(cap, df, by = "year")
+          #cap <- rename(.dots = setNames(var1, nvar1))
+          cap <- rename(cap, !!nvar1 := !!var1)  # !! unquotes the input but the code is not valid.  The ":=" makes it valid.....somehow
+          cap <- rename(cap, !!nvar2 := !!var2) 
+          x[[i]] <- cap # put cap in list
+          #x[[name]] <- x
+     }
+     names(x) <- paste(name) #name elements of list
+     return(x)
+}     
+
+eval(parse(text = subset_yr))
