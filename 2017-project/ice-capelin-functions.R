@@ -364,4 +364,90 @@ loadSubsetDatasets1 <- function(df, name, pat, N, var1 = NULL, var2 = NULL, nvar
      return(x)
 }     
 
-eval(parse(text = subset_yr))
+###############################################################
+
+
+# prints plots from a list in sequence
+testPlot <- function(ls1, titlenames){
+     #browser()
+     for(i in 1:length(ls1)){
+          df1 <- as.data.frame(ls1[[i]])     
+          p1 <- ggplot(data = df1,
+                  aes(x = max_area, y = capelin)) +
+                    geom_point() + 
+                    ggtitle(paste(titlenames[i]))
+     print(p1)
+     }
+}
+
+
+###############################################
+##' capelinAreaPlot()-----
+#'
+#' @param ls1 list of max area
+#' @param ls2 list of med area
+#' @param ls3 list of median of top 5 values
+#' @param i the subset m1-m6
+#' @param titlenames m1-m6
+#'
+#' @return cowplot of capelin v area
+#' @export
+#'
+#' @examples capelinAreaPlot(cape, med_cape_all, d5med_cape_all, 1, titlenames)
+capelinAreaPlot <- function(ls1, ls2, ls3, i, titlenames) {
+     df1 <- as.data.frame(ls1[[i]])
+     df2 <- as.data.frame(ls2[[i]])
+     df3 <- as.data.frame(ls3[[i]])
+     p1 <- ggplot(data = df1,
+                  aes(x = max_area, y = capelin)) +
+          geom_point() + 
+          ggtitle(paste(titlenames[i]))
+     p2 <- ggplot(data = df2,
+                  aes(x = med_area, y = capelin)) +
+          geom_point() + 
+          ggtitle(paste(titlenames[i]))
+     p3 <- ggplot(data = df3,
+                  aes(x = d5med_area, y = capelin)) +
+          geom_point() + 
+          ggtitle(paste(titlenames[i]))
+     
+     cowplot::plot_grid(p1, p2, p3, nrow=1)    
+}
+
+###############################################
+# need to generalize by list and by subset
+
+#' Title
+#'
+#' @param ls1 - list (max_area, med, d5med)
+#' @param ls2 - as above but <= 1991
+#' @param ls3 - as above but > 1991
+#' @param xaxis - column for xaxis
+#' @param yaxis - column for yaxis
+#' @param i - subset
+#' @param titlenames - names of subset 
+#'
+#' @return - graphs
+#' @export
+#'
+#' @examples testAnotherPlot(cape, cape_1991, cape_2017, "max_area", "logcapelin", 1, titlenames)
+
+lnCapelinArea <- function(ls1, ls2, ls3, xaxis, yaxis, i, titlenames){
+     #browser()
+     df1 <- as.data.frame(ls1[[i]])
+     df2 <- as.data.frame(ls2[[i]])
+     df3 <- as.data.frame(ls3[[i]])
+     p1 <- ggplot(data = df1,
+                  aes_string(x = xaxis, y = yaxis)) +
+          geom_point() + 
+          ggtitle(paste(titlenames[i]))
+     p2 <- ggplot(data = df2,
+                  aes_string(x = xaxis, y = yaxis)) +
+          geom_point() + 
+          ggtitle(paste(titlenames[i]))
+     p3 <- ggplot(data = df3,
+                  aes_string(x = xaxis, y = yaxis)) +
+          geom_point() + 
+          ggtitle(paste(titlenames[i]))
+     cowplot::plot_grid(p1, p2, p3, nrow=1)
+}
