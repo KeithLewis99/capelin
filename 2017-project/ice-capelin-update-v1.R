@@ -42,7 +42,7 @@ data_path <- "output-processing"
 files <- list.files(data_path)
 pattern <- grep("capelin", files, value = T)
 # read the datasets and join them to capelin_join
-cape <- loadSubsetDatasets1(df = capelin_join, name = "capelin_m", pat = pattern, 6)
+cape <- loadSubsetDatasets1(df = capelin_join, name = "capelin_m", pat = pattern, 6, var1 = "area", var2 = "minlats", nvar1 = "max_area", nvar2 = "minlats")
 
 ###############################################################################
 ## common features to all plots------
@@ -127,7 +127,7 @@ optim_m5$cdf$value
 optim_m6$cdf$value
 
 
-
+########################################################################
 
 # look at files in "output-processing" and create a file pattern
 data_path <- "output-processing"
@@ -135,18 +135,60 @@ files <- list.files(data_path)
 pattern <- grep("sub1991-m+[^rsq].csv", files, value = T)
 # read the datasets and join them to capelin_join
 
-med_cape <- loadSubsetDatasets1(df = capelin_join, name = "med_m", pat = pattern, N = 6, var1 = "darea", var2 = "dminlats", nvar1 = "med_area", nvar2 = "minlats")
+med_cape_1991 <- loadSubsetDatasets1(df = capelin_join, name = "med_m", pat = pattern, N = 6, var1 = "darea", var2 = "dminlats", nvar1 = "med_area", nvar2 = "minlats")
 
-ggplot(data = cape$capelin_m1, aes(x = year, y = capelin)) +
-     geom_point()
+pattern <- grep("sub2017-m+[^rsq].csv", files, value = T)
+med_cape_2017 <- loadSubsetDatasets1(df = capelin_join, name = "med_m", pat = pattern, N = 6, var1 = "darea", var2 = "dminlats", nvar1 = "med_area", nvar2 = "minlats")
 
-ggplot(data = med_cape$med_m1, aes(x = year, y = capelin)) +
-     geom_point()
 
-ggplot(data = d5med_cape$d5med_m1, aes(x = year, y = capelin)) +
-     geom_point()
+pattern <- grep("iceMedD5p2017-m.a", files, value = T)
 
+d5med_cape_2017 <- loadSubsetDatasets1(df = capelin_join, name = "d5med_m", pat = pattern, N = 6, var1 = "d5area", var2 = "d5minlats", nvar1 = "d5med_area", nvar2 = "minlats")
+
+pattern <- grep("iceMedD5p1992-m.a", files, value = T)
+
+d5med_cape_1992 <- loadSubsetDatasets1(df = capelin_join, name = "d5med_m", pat = pattern, N = 6, var1 = "d5area", var2 = "d5minlats", nvar1 = "d5med_area", nvar2 = "minlats")
+
+View(d5med_cape_all$d5med_m1)
+# need to merge these
+med_cape_all <- map2(med_cape_1991, med_cape_2017, bind_rows)
+
+d5med_cape_all <- map2(d5med_cape_1992, d5med_cape_2017, bind_rows)
+
+
+
+titlenames <- c("m1", "m2", "m3", "m4", "m5", "m6")
 source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
+
+for(i in 1:length(titlenames)){
+     mm <- capelinAreaPlot(ls1=cape, ls2=med_cape_all, ls3=d5med_cape_all, 
+                              i, titlenames=titlenames)
+     ggsave(mm, filename = paste0("figs/capelinArea/", titlenames[i], ".pdf"))
+}
+
+# seperate cape into time components
+cape_1991 <- map(cape, ~filter(.x, year <= 1991))
+cape_2017 <- map(cape, ~filter(.x, year > 1991))
+
+titlenames <- c("m1-maxarea", "m2-maxarea", "m3-maxarea", "m4-maxarea", "m5-maxarea", "m6-maxarea")
+for(i in 1:length(titlenames)){
+     mm <- lnCapelinArea(cape, cape_1991, cape_2017, "max_area", "logcapelin", 1, titlenames)
+     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
+}
+
+titlenames <- c("m1-medarea", "m2-medarea", "m3-medarea", "m4-medarea", "m5-medarea", "m6-medarea")
+for(i in 1:length(titlenames)){
+     mm <- lnCapelinArea(med_cape_all, med_cape_1991, med_cape_2017, "med_area", "logcapelin", 1, titlenames)
+     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
+}
+
+titlenames <- c("m1-d5medarea", "m2-d5medarea", "m3-d5medarea", "m4-d5medarea", "m5-d5medarea", "m6-d5medarea")
+for(i in 1:length(titlenames)){
+     mm <- lnCapelinArea(d5med_cape_all, d5med_cape_1992, d5med_cape_2017, "d5med_area", "logcapelin", 1, titlenames)
+     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
+}
+
+
 #####################################################################################################
 #graphics.off()
 #####################################################################################################
