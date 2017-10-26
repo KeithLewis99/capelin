@@ -415,9 +415,7 @@ capelinAreaPlot <- function(ls1, ls2, ls3, i, titlenames) {
 }
 
 ###############################################
-# need to generalize by list and by subset
-
-#' Title
+##' lnCapelinArea()----
 #'
 #' @param ls1 - list (max_area, med, d5med)
 #' @param ls2 - as above but <= 1991
@@ -451,3 +449,16 @@ lnCapelinArea <- function(ls1, ls2, ls3, xaxis, yaxis, i, titlenames){
           ggtitle(paste(titlenames[i]))
      cowplot::plot_grid(p1, p2, p3, nrow=1)
 }
+###############################################
+
+calcFit_all <- function(df, titlenames) {
+     #browser()
+     optim_ls <- rep(list(list()), length(titlenames))
+     names(optim_ls) <- titlenames
+     for(i in 1:length(cape)){
+          df1 <- as.data.frame(cape[[i]])
+          optim <- calcFit(df1)
+          optim_ls[[i]] <- optim
+     }
+     return(list(optim_ls=optim_ls))
+}     
