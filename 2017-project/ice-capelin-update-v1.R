@@ -20,9 +20,9 @@ library(readr)
 library(dplyr)
 library(purrr)
 
-## read in data-----
+## read in source code-----
 source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
-## Ale original
+## load Ale original data----
 capelin <- read.csv('capelin-ice-2014.csv',header=T)
 # get rid of extra columns in csv file
 capelin <- capelin[c("year", "maxarea", "minlat", "tice", "capelin", "capelinlb", "capelinub", "logcapelin", "logcapelinlb", "logcapelinub")]
@@ -36,13 +36,76 @@ capelin[c(47, 48, 49), 8] <- matrix(c(log(662), NA, log(158)), ncol = 1)
 # data set for joining to m1-m6 datasets
 capelin_join <- capelin[c("year", "capelin", "capelinlb", "capelinub", "logcapelin", "logcapelinlb", "logcapelinub")]
 
-
+### load files generated in area-ice----
+## max area
 # look at files in "output-processing" and create a file pattern
 data_path <- "output-processing"
 files <- list.files(data_path)
 pattern <- grep("capelin", files, value = T)
 # read the datasets and join them to capelin_join
 cape <- loadSubsetDatasets1(df = capelin_join, name = "capelin_m", pat = pattern, 6, var1 = "area", var2 = "minlats", nvar1 = "max_area", nvar2 = "minlats")
+
+# seperate cape into time components
+cape_1991 <- map(cape, ~filter(.x, year <= 1991))
+cape_2017 <- map(cape, ~filter(.x, year > 1991))
+
+## med area -----
+pattern <- grep("sub1991-m+[^rsq].csv", files, value = T)
+# read the datasets and join them to capelin_join
+
+med_cape_1991 <- loadSubsetDatasets1(df = capelin_join, name = "med_m", pat = pattern, N = 6, var1 = "darea", var2 = "dminlats", nvar1 = "med_area", nvar2 = "minlats")
+
+pattern <- grep("sub2017-m+[^rsq].csv", files, value = T)
+med_cape_2017 <- loadSubsetDatasets1(df = capelin_join, name = "med_m", pat = pattern, N = 6, var1 = "darea", var2 = "dminlats", nvar1 = "med_area", nvar2 = "minlats")
+
+## D5 med area----
+pattern <- grep("iceMedD5p2017-m.a", files, value = T)
+
+d5med_cape_2017 <- loadSubsetDatasets1(df = capelin_join, name = "d5med_m", pat = pattern, N = 6, var1 = "d5area", var2 = "d5minlats", nvar1 = "d5med_area", nvar2 = "minlats")
+
+pattern <- grep("iceMedD5p1992-m.a", files, value = T)
+
+d5med_cape_1992 <- loadSubsetDatasets1(df = capelin_join, name = "d5med_m", pat = pattern, N = 6, var1 = "d5area", var2 = "d5minlats", nvar1 = "d5med_area", nvar2 = "minlats")
+
+
+# merge these lists by data-----
+med_cape_all <- map2(med_cape_1991, med_cape_2017, bind_rows)
+
+d5med_cape_all <- map2(d5med_cape_1992, d5med_cape_2017, bind_rows)
+
+########################################################################
+## EXPLORATORY PLOTS------
+## plots - capelin v. area
+titlenames <- c("m1", "m2", "m3", "m4", "m5", "m6")
+source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
+
+for(i in 1:length(titlenames)){
+     mm <- capelinAreaPlot(ls1=cape, ls2=med_cape_all, ls3=d5med_cape_all, 
+                           i, titlenames=titlenames)
+     ggsave(mm, filename = paste0("figs/capelinArea/", titlenames[i], ".pdf"))
+}
+
+## plots - lncapelin v. maxarea
+titlenames <- c("m1-maxarea", "m2-maxarea", "m3-maxarea", "m4-maxarea", "m5-maxarea", "m6-maxarea")
+for(i in 1:length(titlenames)){
+     mm <- lnCapelinArea(cape, cape_1991, cape_2017, "max_area", "logcapelin", 1, titlenames)
+     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
+}
+
+## plots - lncapelin v. medarea
+titlenames <- c("m1-medarea", "m2-medarea", "m3-medarea", "m4-medarea", "m5-medarea", "m6-medarea")
+for(i in 1:length(titlenames)){
+     mm <- lnCapelinArea(med_cape_all, med_cape_1991, med_cape_2017, "med_area", "logcapelin", 1, titlenames)
+     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
+}
+
+## plots - lncapelin v. d5med-area
+titlenames <- c("m1-d5medarea", "m2-d5medarea", "m3-d5medarea", "m4-d5medarea", "m5-d5medarea", "m6-d5medarea")
+for(i in 1:length(titlenames)){
+     mm <- lnCapelinArea(d5med_cape_all, d5med_cape_1992, d5med_cape_2017, "d5med_area", "logcapelin", 1, titlenames)
+     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
+}
+
 
 ###############################################################################
 ## common features to all plots------
@@ -68,126 +131,46 @@ optim_Ale <- calcFit(capelin_ale)
 optimGraphs(optim_Ale$df, optim_Ale$regime1, optim_Ale$regime2, yearInt, lnbiomassInt, "max-values:Ale")
 ggsave("figs/u1-maxAle.pdf")
 
-## m1--------------
+# max area
 yearInt <- seq(1982, 2018, by=4)
-
-optim_m1 <- calcFit(cape$capelin_m1)
-
-#windows()
-#note that multiple windows can be opened but cowplot does not seem to recognize the news windoes and plots to the old one.  if you want to see plots in multiple widows, use multiplot but cannot label
-optimGraphs(optim_m1$df, optim_m1$regime1, optim_m1$regime2, yearInt, lnbiomassInt,  "max-values:m1")
-
-ggsave("figs/u2-maxm1.pdf")
-
-## m2--------------
-#source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
-optim_m2 <- calcFit(cape$capelin_m2)
-
-optimGraphs(optim_m2$df, optim_m2$regime1, optim_m2$regime2, yearInt, lnbiomassInt,  "max-values:m2")
-
-ggsave("figs/u3-maxm2.pdf")
-
-## m3--------------
-optim_m3 <- calcFit(cape$capelin_m3)
-
-optimGraphs(optim_m3$df, optim_m3$regime1, optim_m3$regime2, yearInt, lnbiomassInt,  "max-values:m3")
-
-ggsave("figs/u4-maxm3.pdf")
-
-## m4--------------
-optim_m4 <- calcFit(cape$capelin_m4)
-
-optimGraphs(optim_m4$df, optim_m4$regime1, optim_m4$regime2, yearInt, lnbiomassInt,  "max-values:m4")
-
-ggsave("figs/u5-maxm4.pdf")
-
-## m5--------------
-optim_m5 <- calcFit(cape$capelin_m5)
-
-optimGraphs(optim_m5$df, optim_m5$regime1, optim_m5$regime2, yearInt, lnbiomassInt,  "max-values:m5")
-
-ggsave("figs/u6-maxm5.pdf")
-
-## m6--------------
-optim_m6 <- calcFit(cape$capelin_m6)
-windows()
-optimGraphs(optim_m6$df, optim_m6$regime1, optim_m6$regime2, yearInt, lnbiomassInt,  "max-values:m6")
-
-ggsave("figs/u7-maxm6.pdf")
-
-# compare Sums of Squares
-2*optim_Ale$cdf$value+2*length(optim_Ale$cdf$par)
-
-
-optim_m1$cdf$value
-optim_m2$cdf$value
-optim_m3$cdf$value
-optim_m4$cdf$value
-optim_m5$cdf$value
-optim_m6$cdf$value
-
-
-########################################################################
-
-# look at files in "output-processing" and create a file pattern
-data_path <- "output-processing"
-files <- list.files(data_path)
-pattern <- grep("sub1991-m+[^rsq].csv", files, value = T)
-# read the datasets and join them to capelin_join
-
-med_cape_1991 <- loadSubsetDatasets1(df = capelin_join, name = "med_m", pat = pattern, N = 6, var1 = "darea", var2 = "dminlats", nvar1 = "med_area", nvar2 = "minlats")
-
-pattern <- grep("sub2017-m+[^rsq].csv", files, value = T)
-med_cape_2017 <- loadSubsetDatasets1(df = capelin_join, name = "med_m", pat = pattern, N = 6, var1 = "darea", var2 = "dminlats", nvar1 = "med_area", nvar2 = "minlats")
-
-
-pattern <- grep("iceMedD5p2017-m.a", files, value = T)
-
-d5med_cape_2017 <- loadSubsetDatasets1(df = capelin_join, name = "d5med_m", pat = pattern, N = 6, var1 = "d5area", var2 = "d5minlats", nvar1 = "d5med_area", nvar2 = "minlats")
-
-pattern <- grep("iceMedD5p1992-m.a", files, value = T)
-
-d5med_cape_1992 <- loadSubsetDatasets1(df = capelin_join, name = "d5med_m", pat = pattern, N = 6, var1 = "d5area", var2 = "d5minlats", nvar1 = "d5med_area", nvar2 = "minlats")
-
-View(d5med_cape_all$d5med_m1)
-# need to merge these
-med_cape_all <- map2(med_cape_1991, med_cape_2017, bind_rows)
-
-d5med_cape_all <- map2(d5med_cape_1992, d5med_cape_2017, bind_rows)
-
-
-
-titlenames <- c("m1", "m2", "m3", "m4", "m5", "m6")
-source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
-
-for(i in 1:length(titlenames)){
-     mm <- capelinAreaPlot(ls1=cape, ls2=med_cape_all, ls3=d5med_cape_all, 
-                              i, titlenames=titlenames)
-     ggsave(mm, filename = paste0("figs/capelinArea/", titlenames[i], ".pdf"))
-}
-
-# seperate cape into time components
-cape_1991 <- map(cape, ~filter(.x, year <= 1991))
-cape_2017 <- map(cape, ~filter(.x, year > 1991))
+optim_ls <- calcFit_all(cape, titlenames)
+str(test, max.level = 3)  
 
 titlenames <- c("m1-maxarea", "m2-maxarea", "m3-maxarea", "m4-maxarea", "m5-maxarea", "m6-maxarea")
-for(i in 1:length(titlenames)){
-     mm <- lnCapelinArea(cape, cape_1991, cape_2017, "max_area", "logcapelin", 1, titlenames)
-     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
+for(i in 1:length(optim_ls$optim_ls)){
+     df1 <- as.data.frame(optim_ls$optim_ls[[i]]$df)
+     df2 <- as.data.frame(optim_ls$optim_ls[[i]]$regime1)
+     df3 <- as.data.frame(optim_ls$optim_ls[[i]]$regime2)
+     mm <- optimGraphs(df1, df2, df3, yearInt, lnbiomassInt,  titlenames[i])
+     ggsave(mm, filename = paste0("figs/optimization/max", titlenames[i], ".pdf"), width=10, height=8, units="in")
 }
+
+# compare Sums of Squares
+#2*optim_Ale$cdf$value+2*length(optim_Ale$cdf$par)
+
+for(i in 1:length(optim_ls$optim_ls)){
+     print(optim_ls$optim_ls[[i]]$cdf$value)
+}
+
+
+# med area
+optim_ls <- calcFit_all(med_cape_all, titlenames)
 
 titlenames <- c("m1-medarea", "m2-medarea", "m3-medarea", "m4-medarea", "m5-medarea", "m6-medarea")
-for(i in 1:length(titlenames)){
-     mm <- lnCapelinArea(med_cape_all, med_cape_1991, med_cape_2017, "med_area", "logcapelin", 1, titlenames)
-     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
+for(i in 1:length(optim_ls$optim_ls)){
+     df1 <- as.data.frame(optim_ls$optim_ls[[i]]$df)
+     df2 <- as.data.frame(optim_ls$optim_ls[[i]]$regime1)
+     df3 <- as.data.frame(optim_ls$optim_ls[[i]]$regime2)
+     mm <- optimGraphs(df1, df2, df3, yearInt, lnbiomassInt,  titlenames[i])
+     ggsave(mm, filename = paste0("figs/optimization/med", titlenames[i], ".pdf"), width=10, height=8, units="in")
 }
 
-titlenames <- c("m1-d5medarea", "m2-d5medarea", "m3-d5medarea", "m4-d5medarea", "m5-d5medarea", "m6-d5medarea")
-for(i in 1:length(titlenames)){
-     mm <- lnCapelinArea(d5med_cape_all, d5med_cape_1992, d5med_cape_2017, "d5med_area", "logcapelin", 1, titlenames)
-     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
-}
+# compare Sums of Squares
+#2*optim_Ale$cdf$value+2*length(optim_Ale$cdf$par)
 
+for(i in 1:length(optim_ls$optim_ls)){
+     print(optim_ls$optim_ls[[i]]$cdf$value)
+}
 
 #####################################################################################################
 #graphics.off()
