@@ -248,7 +248,6 @@ iceSummarylm <- function(df, med = NULL, med1 = NULL) {
   return(list(minlats_v_area = a, minlats_v_tice = b, area_v_tice = c))
 }
 
-
 ##################################################################
 ##' iceDateScatter()--------
 #'

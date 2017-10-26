@@ -29,7 +29,7 @@ library(RArcInfo)
 library(maptools)
 library(rgdal)
 library(rgeos)
-library(raster)
+#library(raster)
 library(data.table)
 #library(cowplot)
 
@@ -427,7 +427,6 @@ sub1991.m5.sum <- iceSummarylm(sub1991.m5)
 sub1991.m5.rsq <- lmoutputSummary(sub1991.m5.sum)
 write.csv(sub1991.m5.rsq, file = "output-processing/sub1991-m5-rsq.csv", row.names=F, na="")
 
-
 #m6
 sub1991.m6 <- iceMedian(trends.m6, "year < 1992", "tice < 150", iceSum.m6)
 sub1991.m6.sum <- iceSummarylm(sub1991.m6)
@@ -595,7 +594,7 @@ write.csv(iceMedD5p2017.m6.rsq, file = "output-processing/iceMedD5p2017-m6-rsq.c
 ##########################################################################################
 ###pre-1992------
 ##m1
-iceMedD5p1992.m1 <- iceMedianD5(trends.m1, "year <= 1992", "tice < 150", iceSum.m1)
+iceMedD5p1992.m1 <- iceMedianD5(trends.m1, "year <= 1991", "tice < 150", iceSum.m1)
 iceMedD5p1992.m1.sum <- iceSummarylm(iceMedD5p1992.m1, med = "d5", med1 = "d5")
 iceMedD5p1992.m1.sum.rsq <- lmoutputSummary(iceMedD5p1992.m1.sum)
 write.csv(iceMedD5p1992.m1.sum.rsq, file = "output-processing/iceMedD5p1992-m1-sum.csv", row.names=F, na="")
@@ -675,6 +674,64 @@ iceMedD5p1992.m6.sum <- iceSummarylm(iceMedD5p1992.m6, med = "d5", med1 = "d5")
 iceMedD5p1992.m6.sum.rsq <- lmoutputSummary(iceMedD5p1992.m6.sum)
 write.csv(iceMedD5p1992.m6.sum.rsq, file = "output-processing/iceMedD5p1992-m6-sum.csv", row.names=F, na="")
 
+###########################################################
+# extra graphs
+iceMed.m1 <- iceMedian(trends.m1, "year < 2018", "tice < 150", iceSum.m1)
+iceMed.m2 <- iceMedian(trends.m2, "year < 2018", "tice < 150", iceSum.m2)
+iceMed.m3 <- iceMedian(trends.m3, "year < 2018", "tice < 150", iceSum.m3)
+iceMed.m4 <- iceMedian(trends.m4, "year < 2018", "tice < 150", iceSum.m4)
+iceMed.m5 <- iceMedian(trends.m5, "year < 2018", "tice < 150", iceSum.m5)
+iceMed.m6 <- iceMedian(trends.m6, "year < 2018", "tice < 150", iceSum.m6)
+
+iceMedD5.m1 <- iceMedianD5(trends.m1, "year < 2018", "tice < 150", iceSum.m1)
+iceMedD5.m2 <- iceMedianD5(trends.m2, "year < 2018", "tice < 150", iceSum.m2)
+iceMedD5.m3 <- iceMedianD5(trends.m3, "year < 2018", "tice < 150", iceSum.m3)
+iceMedD5.m4 <- iceMedianD5(trends.m4, "year < 2018", "tice < 150", iceSum.m4)
+iceMedD5.m5 <- iceMedianD5(trends.m5, "year < 2018", "tice < 150", iceSum.m5)
+iceMedD5.m6 <- iceMedianD5(trends.m6, "year < 2018", "tice < 150", iceSum.m6)
+
+#m1
+atScat.m1 <- area_ticeScatter(df1 = iceSum.m1, df2 = iceMed.m1, df3 = iceMedD5.m1, x = "tice", y = "area", sub_val = "m1")
+ggsave("figs/41-atScat.m1.pdf")     
+
+#m2
+atScat.m2 <- area_ticeScatter(df1 = iceSum.m2, df2 = iceMed.m2, df3 = iceMedD5.m2, x="tice", y="area", sub_val = "m2")
+ggsave("figs/42-atScat.m2.pdf")     
+
+#m3
+atScat.m3 <- area_ticeScatter(df1 = iceSum.m3, df2 = iceMed.m3, df3 = iceMedD5.m3, x = "tice", y = "area", sub_val = "m3")
+ggsave("figs/43-atScat.m3.pdf")     
+
+#m4
+atScat.m4 <- area_ticeScatter(iceSum.m4, iceMed.m4, iceMedD5.m4, x = "tice", y = "area", sub_val = "m4")
+ggsave("figs/44-atScat.m4.pdf")     
+
+ #m5
+atScat.m5 <- area_ticeScatter(iceSum.m5, iceMed.m5, iceMedD5.m5, x = "tice", y = "area", sub_val = "m5")
+ggsave("figs/45-atScat.m5.pdf")
+
+#m6
+atScat.m6 <- area_ticeScatter(iceSum.m6, iceMed.m6, iceMedD5.m6, x = "tice", y = "area", sub_val = "m6")
+ggsave("figs/46-atScat.m6.pdf")
+
+## Correlations
+area_tice_corr_1 <- area_ticeRsq(df1 = iceSum.m1, df2 = iceMed.m1, df3 = iceMedD5.m1, x = "tice", y = "area")
+write.csv(area_tice_corr_1, file = "output-processing/area_tice_corr_1.csv", row.names=F, na="")
+
+area_tice_corr_2 <- area_ticeRsq(df1 = iceSum.m2, df2 = iceMed.m2, df3 = iceMedD5.m2, x = "tice", y = "area")
+write.csv(area_tice_corr_2, file = "output-processing/area_tice_corr_2.csv", row.names=F, na="")
+
+area_tice_corr_3 <- area_ticeRsq(df1 = iceSum.m3, df2 = iceMed.m3, df3 = iceMedD5.m3, x = "tice", y = "area")
+write.csv(area_tice_corr_3, file = "output-processing/area_tice_corr_3.csv", row.names=F, na="")
+
+area_tice_corr_4 <- area_ticeRsq(df1 = iceSum.m4, df2 = iceMed.m4, df3 = iceMedD5.m4, x = "tice", y = "area")
+write.csv(area_tice_corr_4, file = "output-processing/area_tice_corr_4.csv", row.names=F, na="")
+
+area_tice_corr_5 <- area_ticeRsq(df1 = iceSum.m5, df2 = iceMed.m5, df3 = iceMedD5.m5, x = "tice", y = "area")
+write.csv(area_tice_corr_5, file = "output-processing/area_tice_corr_5.csv", row.names=F, na="")
+
+area_tice_corr_6 <- area_ticeRsq(df1 = iceSum.m6, df2 = iceMed.m6, df3 = iceMedD5.m6, x = "tice", y = "area")
+write.csv(area_tice_corr_6, file = "output-processing/area_tice_corr_6.csv", row.names=F, na="")
 
 #######################################################################################
 #######Max values-----------
