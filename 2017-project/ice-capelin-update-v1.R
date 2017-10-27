@@ -11,7 +11,7 @@
 # This does an outstanding job except for 2013 and 2014 - why?  What covariates might explain the difference?
 
 rm(list=ls())
-setwd("D:/Keith/capelin/2017-project")
+#setwd("D:/Keith/capelin/2017-project")
 
 ## libraries------
 library(plotrix)
@@ -76,38 +76,38 @@ d5med_cape_all <- map2(d5med_cape_1992, d5med_cape_2017, bind_rows)
 ########################################################################
 ## EXPLORATORY PLOTS------
 ## plots - capelin v. area
-titlenames <- c("m1", "m2", "m3", "m4", "m5", "m6")
 source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
 
+titlenames <- c("m1", "m2", "m3", "m4", "m5", "m6")
 for(i in 1:length(titlenames)){
-     mm <- capelinAreaPlot(ls1=cape, ls2=med_cape_all, ls3=d5med_cape_all, 
-                           i, titlenames=titlenames)
-     ggsave(mm, filename = paste0("figs/capelinArea/", titlenames[i], ".pdf"))
+     mm <- capelinAreaPlot(ls1=cape, ls2=med_cape_all, ls3=d5med_cape_all, i, titlenames=titlenames)
+     ggsave(mm, filename = paste0("figs/capelinArea/", titlenames[i], ".pdf"), width=10, height=8, units="in")
 }
 
 ## plots - lncapelin v. maxarea
-titlenames <- c("m1-maxarea", "m2-maxarea", "m3-maxarea", "m4-maxarea", "m5-maxarea", "m6-maxarea")
+titlenames <- c("m1-max", "m2-max", "m3-max", "m4-max", "m5-max", "m6-max")
 for(i in 1:length(titlenames)){
      mm <- lnCapelinArea(cape, cape_1991, cape_2017, "max_area", "logcapelin", 1, titlenames)
-     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
+     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"), width=10, height=8, units="in")
 }
 
 ## plots - lncapelin v. medarea
-titlenames <- c("m1-medarea", "m2-medarea", "m3-medarea", "m4-medarea", "m5-medarea", "m6-medarea")
+titlenames <- c("m1-med", "m2-med", "m3-med", "m4-med", "m5-med", "m6-med")
 for(i in 1:length(titlenames)){
      mm <- lnCapelinArea(med_cape_all, med_cape_1991, med_cape_2017, "med_area", "logcapelin", 1, titlenames)
-     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
+     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"), width=10, height=8, units="in")
 }
 
 ## plots - lncapelin v. d5med-area
-titlenames <- c("m1-d5medarea", "m2-d5medarea", "m3-d5medarea", "m4-d5medarea", "m5-d5medarea", "m6-d5medarea")
+titlenames <- c("m1-d5med", "m2-d5med", "m3-d5med", "m4-d5med", "m5-d5med", "m6-d5med")
 for(i in 1:length(titlenames)){
      mm <- lnCapelinArea(d5med_cape_all, d5med_cape_1992, d5med_cape_2017, "d5med_area", "logcapelin", 1, titlenames)
-     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"))
+     ggsave(mm, filename = paste0("figs/lncapelinArea/", titlenames[i], ".pdf"), width=10, height=8, units="in")
 }
 
 
-###############################################################################
+########################################################################
+## OPTIMIZATION PLOTS
 ## common features to all plots------
 # make optimization graphs by year and in comparison to ice
 # plot of capelin biomass v. year with ice models  
@@ -118,7 +118,7 @@ lnbiomassInt <- seq(0, 10, by=2)
 biomassInt <- seq(0, 8500)
 
 labtice <- expression(paste(italic(t[ice]), '(day of year)')) # label for figures
-###############################################################################
+#################################
 ## Ale's original-------------
 ## Optimization - produces lists of the optimization curve for use in figures below
 # up to present
@@ -129,49 +129,34 @@ capelin_ale$myear[45:46] <- c(1960,1961)
 optim_Ale <- calcFit(capelin_ale)
 
 optimGraphs(optim_Ale$df, optim_Ale$regime1, optim_Ale$regime2, yearInt, lnbiomassInt, "max-values:Ale")
-ggsave("figs/u1-maxAle.pdf")
+ggsave("figs/optimization/opt-maxAle.pdf", width=10, height=8, units="in")
 
-# max area
-yearInt <- seq(1982, 2018, by=4)
-optim_ls <- calcFit_all(cape, titlenames)
-str(test, max.level = 3)  
+## Optimization for max area----
+titlenames <- c("opt_m1max", "opt_m2max", "opt_m3max", "opt_m4max", "opt_m5max", "opt_m6max")
+optim_max <- calcFit_all(cape, titlenames)
+str(optim_max, max.level = 3)
+optim_max$optim_ls$opt_m1max$cdf
 
-titlenames <- c("m1-maxarea", "m2-maxarea", "m3-maxarea", "m4-maxarea", "m5-maxarea", "m6-maxarea")
-for(i in 1:length(optim_ls$optim_ls)){
-     df1 <- as.data.frame(optim_ls$optim_ls[[i]]$df)
-     df2 <- as.data.frame(optim_ls$optim_ls[[i]]$regime1)
-     df3 <- as.data.frame(optim_ls$optim_ls[[i]]$regime2)
+#create and save graphs
+for(i in 1:length(optim_max$optim_ls)){
+     df1 <- as.data.frame(optim_max$optim_ls[[i]]$df)
+     df2 <- as.data.frame(optim_max$optim_ls[[i]]$regime1)
+     df3 <- as.data.frame(optim_max$optim_ls[[i]]$regime2)
      mm <- optimGraphs(df1, df2, df3, yearInt, lnbiomassInt,  titlenames[i])
      ggsave(mm, filename = paste0("figs/optimization/max", titlenames[i], ".pdf"), width=10, height=8, units="in")
 }
 
 # compare Sums of Squares
-#2*optim_Ale$cdf$value+2*length(optim_Ale$cdf$par)
-
-for(i in 1:length(optim_ls$optim_ls)){
-     print(optim_ls$optim_ls[[i]]$cdf$value)
+# $value reports the minimized residual sums of squares or minimized Likelihood
+# http://www.magesblog.com/2013/03/how-to-use-optim-in-r.html
+# http://plantecology.syr.edu/fridley/bio793/likelihood.html - shows how to do AIC
+for(i in 1:length(optim_max$optim_ls)){
+     print(optim_max$optim_ls[[i]]$cdf$value)
 }
 
-
-# med area
-optim_ls <- calcFit_all(med_cape_all, titlenames)
-
-titlenames <- c("m1-medarea", "m2-medarea", "m3-medarea", "m4-medarea", "m5-medarea", "m6-medarea")
-for(i in 1:length(optim_ls$optim_ls)){
-     df1 <- as.data.frame(optim_ls$optim_ls[[i]]$df)
-     df2 <- as.data.frame(optim_ls$optim_ls[[i]]$regime1)
-     df3 <- as.data.frame(optim_ls$optim_ls[[i]]$regime2)
-     mm <- optimGraphs(df1, df2, df3, yearInt, lnbiomassInt,  titlenames[i])
-     ggsave(mm, filename = paste0("figs/optimization/med", titlenames[i], ".pdf"), width=10, height=8, units="in")
+for(i in 1:length(optim_max$optim_ls)){
+     print(optim_max$optim_ls[[i]]$cdf$convergence)
 }
-
-# compare Sums of Squares
-#2*optim_Ale$cdf$value+2*length(optim_Ale$cdf$par)
-
-for(i in 1:length(optim_ls$optim_ls)){
-     print(optim_ls$optim_ls[[i]]$cdf$value)
-}
-
 #####################################################################################################
 #graphics.off()
 #####################################################################################################
@@ -215,23 +200,24 @@ ggplot(capelin, aes(x = year, y = logdiff)) +
    ## Ale's original changed from tice to area-------------
 ## Optimization - produces lists of the optimization curve for use in figures below
 # up to present
+   str(cape$capelin_m1)
    CapelinDomeFit_area <- optim(par = c(2,400000,0.6),
                            dataf = cape$capelin_m1[which(cape$capelin_m1$logcapelin!='NA'),
-                                           c('year','maxarea','logcapelin')],
+                                           c('year','max_area','logcapelin')],
                            fn = SSQCapelinDome, method=c("BFGS"))
    
    # before 2010
    CapelinDomeFitOld_area <- optim(par=c(2,400000,0.6),
                               dataf = cape$capelin_m1[which(cape$capelin_m1$year < 2011 & 
                                                                  cape$capelin_m1$logcapelin!='NA'),
-                                              c('year','maxarea','logcapelin')],
+                                              c('year','max_area','logcapelin')],
                               fn = SSQCapelinDome, 
                               method=c("L-BFGS-B"), control=list(maxit=50000))
    
    ## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
-   cape$capelin_m1$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit_area$par), dataf = cape$capelin_m1[,c('year','maxarea')])
+   cape$capelin_m1$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit_area$par), dataf = cape$capelin_m1[,c('year','max_area')])
    
-   cape$capelin_m1$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld_area$par), dataf = cape$capelin_m1[,c('year','maxarea')])
+   cape$capelin_m1$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld_area$par), dataf = cape$capelin_m1[,c('year','max_area')])
    
    
    
@@ -261,10 +247,10 @@ ggplot() +
      geom_line(data = regime2, aes(x = area, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
      geom_line(data = regime1, aes(x = area, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
      geom_line(data = regime2, aes(x = area, y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
-     geom_point(data = subset(cape$capelin_m1, year < 1991), aes(x = maxarea, y = logcapelin), shape=2, size=3) +
-     geom_point(data = subset(cape$capelin_m1, year > 1991), aes(x = maxarea, y = logcapelin), shape=15, size=3) + 
-     geom_errorbar(data = subset(cape$capelin_m1, year < 1991), aes(x = maxarea, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
-     geom_errorbar(data = subset(cape$capelin_m1, year > 1991), aes(x = maxarea, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+     geom_point(data = subset(cape$capelin_m1, year < 1991), aes(x = max_area, y = logcapelin), shape=2, size=3) +
+     geom_point(data = subset(cape$capelin_m1, year > 1991), aes(x = max_area, y = logcapelin), shape=15, size=3) + 
+     geom_errorbar(data = subset(cape$capelin_m1, year < 1991), aes(x = max_area, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+     geom_errorbar(data = subset(cape$capelin_m1, year > 1991), aes(x = max_area, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
      xlab("maxarea") +
      ylab("ln (Capelin biomass (ktons))") + 
      ylim(0,9) +
