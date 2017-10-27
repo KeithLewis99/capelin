@@ -361,12 +361,14 @@ iceOuput <- function(df, date) {
 #'
 #' @examples lmoutputSummary(ls)
 lmoutputSummary <- function(ls) {
-  a <- "minlats_v_area"
-  b <- "minlats_v_tice"
-  c <- "area_v_tice"
+  a <- "tice_v_area"
+  b <- "tice_v_minlats"
+  c <- "minlats_v_area"
   comp <- rbind(a, b, c)
   rsq_val <- rbind(ls$minlats_v_area$r.squared, ls$minlats_v_tice$r.squared, ls$area_v_tice$r.squared)
-  out <- cbind(comp = comp, rsq_val = round(rsq_val, 3))
+  slope <- rbind(ls$minlats_v_area$coefficients[2,1], ls$minlats_v_tice$coefficients[2,1], ls$area_v_tice$coefficients[2,1])
+  out <- cbind(comp = comp, col=col, rsq_val = round(rsq_val, 3), slope = round(rsq_val, 2))
+  colnames(out) <- c("measure", "rsq", "slope")
   return(out)
 }
 
@@ -382,15 +384,15 @@ lmoutputSummary <- function(ls) {
 #'
 #' @examples atScat.m1 <- area_ticeScatter(iceSum.m1, iceMed.m1, iceMedD5.m1, "tice", "area", "m1")
 #' ggsave("figs/41-atScat.m1.pdf")    
-area_ticeScatter <- function(df1, df2, df3, x, y, sub_val){
-     p1 <- ggplot(data = df1, aes_string(x=x, y=y)) + 
+area_ticeScatter <- function(df1, df2, df3, x, y1, y2, y3, sub_val){
+     p1 <- ggplot(data = df1, aes_string(x=x, y=y1)) + 
           geom_point() +         
           geom_smooth(method=lm)  +
           ggtitle(paste(sub_val))
-     p2 <- ggplot(data = df2$mall, aes_string(x=x, y=y)) +  
+     p2 <- ggplot(data = df2$mall, aes_string(x=x, y=y2)) +  
           geom_point() +         
           geom_smooth(method=lm)
-     p3 <- ggplot(data = df3$mall, aes_string(x=x, y=y)) +  
+     p3 <- ggplot(data = df3$mall, aes_string(x=x, y=y3)) +  
           geom_point() +         
           geom_smooth(method=lm)
     out_plot <- cowplot::plot_grid(p1, p2, p3, labels = c("max", "med", "d5med"), ncol=2)
@@ -421,6 +423,8 @@ area_ticeRsq <- function(df1, df2, df3, x, y) {
      c <- "d5Median"
      comp <- rbind(a, b, c)
      rsq_val <- rbind(s1$r.squared, s2$r.squared, s3$r.squared)
-     out <- cbind(comp = comp, rsq_val = round(rsq_val, 3))
+     slope <- rbind(s1$minlats_v_area$coefficients[2,1], s2$minlats_v_tice$coefficients[2,1], s3$area_v_tice$coefficients[2,1])
+     out <- cbind(comp = comp, rsq_val = round(rsq_val, 3), slope = round(rsq_val, 2))
+     colnames(out) <- c("measure", "rsq", "slope")
      return(out)
 }
