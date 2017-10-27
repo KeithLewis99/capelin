@@ -97,8 +97,6 @@ iceSum.m3 <- iceSummary(trends.m3)
 iceSum.m4 <- iceSummary(trends.m4)
 iceSum.m5 <- iceSummary(trends.m5)
 iceSum.m6 <- iceSummary(trends.m6)
-
-
 # this is the null model for tice and area
 View(iceSum.m1a)
 
@@ -294,48 +292,50 @@ par(mfrow=c(3,2))
 par(mfrow=c(1,1))
 
 ###############################################################################
-# plot relationships between area, tice, and minlats-----
+# plot relationships between area, tice, and minlats FOR MAX_AREA-----
+
+source("D:/Keith/capelin/2017-project/area-ice-function.R")
 #m1
 # plot tice against ice area
-iceCorr.m1 <- iceScatterSummary(iceSum.m1, "area", "minlats", "tice", "minlats")
+iceCorr.m1 <- iceScatterSummary(iceSum.m1, x = "area", x1 = "minlats", y = "tice", y1 = "minlats")
 cowplot::plot_grid(iceCorr.m1$p1, iceCorr.m1$p2, iceCorr.m1$p3, labels = c("m1"), ncol=2)
-ggsave("figs/8-relMax-m1.pdf")
+ggsave("figs/8-relMax-m1.pdf", width=10, height=8, units="in")
 iceCorr.m1.rsq <- lmoutputSummary(iceCorr.m1)
 write.csv(iceCorr.m1.rsq, file = "output-processing/iceCorr-m1-rsq.csv", row.names=F, na="")
 
 #m2
 # plot tice against ice area
 iceCorr.m2 <- iceScatterSummary(iceSum.m2, "area", "minlats", "tice", "minlats")
-cowplot::plot_grid(iceCorr.m2$p1, iceCorr.m2$p2, iceCorr.m2$p3, labels = c("m1"), ncol=2)
-ggsave("figs/9-relMax-m2.pdf")
+cowplot::plot_grid(iceCorr.m2$p1, iceCorr.m2$p2, iceCorr.m2$p3, labels = c("m2"), ncol=2)
+ggsave("figs/9-relMax-m2.pdf", width=10, height=8, units="in")
 iceCorr.m2.rsq <- lmoutputSummary(iceCorr.m2)
 write.csv(iceCorr.m2.rsq, file = "output-processing/iceCorr-m2-rsq.csv", row.names=F, na="")
 
 #m3
 iceCorr.m3 <- iceScatterSummary(iceSum.m3, "area", "minlats", "tice", "minlats")
-cowplot::plot_grid(iceCorr.m3$p1, iceCorr.m3$p2, iceCorr.m3$p3, labels = c("m1"), ncol=2)
-ggsave("figs/10-relMax-m3.pdf")
+cowplot::plot_grid(iceCorr.m3$p1, iceCorr.m3$p2, iceCorr.m3$p3, labels = c("m3"), ncol=2)
+ggsave("figs/10-relMax-m3.pdf", width=10, height=8, units="in")
 iceCorr.m3.rsq <- lmoutputSummary(iceCorr.m3)
 write.csv(iceCorr.m3.rsq, file = "output-processing/iceCorr-m3-rsq.csv", row.names=F, na="")
 
 #m4
 iceCorr.m4 <- iceScatterSummary(iceSum.m4, "area", "minlats", "tice", "minlats")
-cowplot::plot_grid(iceCorr.m4$p1, iceCorr.m4$p2, iceCorr.m4$p3, labels = c("m1"), ncol=2)
-ggsave("figs/11-relMax-m4.pdf")
+cowplot::plot_grid(iceCorr.m4$p1, iceCorr.m4$p2, iceCorr.m4$p3, labels = c("m4"), ncol=2)
+ggsave("figs/11-relMax-m4.pdf", width=10, height=8, units="in")
 iceCorr.m4.rsq <- lmoutputSummary(iceCorr.m4)
 write.csv(iceCorr.m4.rsq, file = "output-processing/iceCorr-m4-rsq.csv", row.names=F, na="")
 
 #m5
 iceCorr.m5 <- iceScatterSummary(iceSum.m5, "area", "minlats", "tice", "minlats")
-cowplot::plot_grid(iceCorr.m5$p1, iceCorr.m5$p2, iceCorr.m5$p3, labels = c("m1"), ncol=2)
-ggsave("figs/12-relMax-m5.pdf")
+cowplot::plot_grid(iceCorr.m5$p1, iceCorr.m5$p2, iceCorr.m5$p3, labels = c("m5"), ncol=2)
+ggsave("figs/12-relMax-m5.pdf", width=10, height=8, units="in")
 iceCorr.m5.rsq <- lmoutputSummary(iceCorr.m5)
 write.csv(iceCorr.m5.rsq, file = "output-processing/iceCorr-m5-rsq.csv", row.names=F, na="")
 
 #m6
 iceCorr.m6 <- iceScatterSummary(iceSum.m6, "area", "minlats", "tice", "minlats")
-cowplot::plot_grid(iceCorr.m6$p1, iceCorr.m6$p2, iceCorr.m6$p3, labels = c("m1"), ncol=2)
-ggsave("figs/13-relMax-m6.pdf")
+cowplot::plot_grid(iceCorr.m6$p1, iceCorr.m6$p2, iceCorr.m6$p3, labels = c("m6"), ncol=2)
+ggsave("figs/13-relMax-m6.pdf", width=10, height=8, units="in")
 iceCorr.m6.rsq <- lmoutputSummary(iceCorr.m6)
 write.csv(iceCorr.m6.rsq, file = "output-processing/iceCorr-m6-rsq.csv", row.names=F, na="")
 
@@ -690,29 +690,32 @@ iceMedD5.m4 <- iceMedianD5(trends.m4, "year < 2018", "tice < 150", iceSum.m4)
 iceMedD5.m5 <- iceMedianD5(trends.m5, "year < 2018", "tice < 150", iceSum.m5)
 iceMedD5.m6 <- iceMedianD5(trends.m6, "year < 2018", "tice < 150", iceSum.m6)
 
+source("D:/Keith/capelin/2017-project/area-ice-function.R")
 #m1
-atScat.m1 <- area_ticeScatter(df1 = iceSum.m1, df2 = iceMed.m1, df3 = iceMedD5.m1, x = "tice", y = "area", sub_val = "m1")
-ggsave("figs/41-atScat.m1.pdf")     
+atScat.m1 <- area_ticeScatter(df1 = iceSum.m1, df2 = iceMed.m1, df3 = iceMedD5.m1, x = "tice", y1 = "area", y2 = "darea",   y3 = "d5area", sub_val = "m1")
+ggsave("figs/area_v_tice/41-areaticeScat-m1.pdf", width=10, height=8, units="in")     
 
 #m2
-atScat.m2 <- area_ticeScatter(df1 = iceSum.m2, df2 = iceMed.m2, df3 = iceMedD5.m2, x="tice", y="area", sub_val = "m2")
-ggsave("figs/42-atScat.m2.pdf")     
+atScat.m2 <- area_ticeScatter(df1 = iceSum.m2, df2 = iceMed.m2, df3 = iceMedD5.m2, x="tice", y="area", y2 = "darea",   y3 = "d5area", sub_val = "m2")
+ggsave("figs/area_v_tice/42-areaticeScat-m2.pdf", width=10, height=8, units="in")     
 
 #m3
-atScat.m3 <- area_ticeScatter(df1 = iceSum.m3, df2 = iceMed.m3, df3 = iceMedD5.m3, x = "tice", y = "area", sub_val = "m3")
-ggsave("figs/43-atScat.m3.pdf")     
+atScat.m3 <- area_ticeScatter(df1 = iceSum.m3, df2 = iceMed.m3, df3 = iceMedD5.m3, x = "tice", y1 = "area", y2 = "darea",   y3 = "d5area", sub_val = "m3")
+ggsave("figs/area_v_tice/43-areaticeScat-m3.pdf", width=10, height=8, units="in")     
 
 #m4
-atScat.m4 <- area_ticeScatter(iceSum.m4, iceMed.m4, iceMedD5.m4, x = "tice", y = "area", sub_val = "m4")
-ggsave("figs/44-atScat.m4.pdf")     
+atScat.m4 <- area_ticeScatter(iceSum.m4, iceMed.m4, iceMedD5.m4, x = "tice", y1 = "area", y2 = "darea",   y3 = "d5area", sub_val = "m4")
+ggsave("figs/area_v_tice/44-areaticeScat-m4.pdf", width=10, height=8, units="in")     
 
  #m5
-atScat.m5 <- area_ticeScatter(iceSum.m5, iceMed.m5, iceMedD5.m5, x = "tice", y = "area", sub_val = "m5")
-ggsave("figs/45-atScat.m5.pdf")
+atScat.m5 <- area_ticeScatter(iceSum.m5, iceMed.m5, iceMedD5.m5, x = "tice", y1 = "area", y2 = "darea",   y3 = "d5area", sub_val = "m5")
+ggsave("figs/area_v_tice/45-areaticeScat-m5.pdf", width=10, height=8, units="in")
 
 #m6
-atScat.m6 <- area_ticeScatter(iceSum.m6, iceMed.m6, iceMedD5.m6, x = "tice", y = "area", sub_val = "m6")
-ggsave("figs/46-atScat.m6.pdf")
+atScat.m6 <- area_ticeScatter(iceSum.m6, iceMed.m6, iceMedD5.m6, x = "tice", y1 = "area", y2 = "darea",   y3 = "d5area", sub_val = "m6")
+ggsave("figs/area_v_tice/46-areaticeScat-m6.pdf", width=10, height=8, units="in")
+
+source("D:/Keith/capelin/2017-project/area-ice-function.R")
 
 ## Correlations
 area_tice_corr_1 <- area_ticeRsq(df1 = iceSum.m1, df2 = iceMed.m1, df3 = iceMedD5.m1, x = "tice", y = "area")
@@ -733,7 +736,7 @@ write.csv(area_tice_corr_5, file = "output-processing/area_tice_corr_5.csv", row
 area_tice_corr_6 <- area_ticeRsq(df1 = iceSum.m6, df2 = iceMed.m6, df3 = iceMedD5.m6, x = "tice", y = "area")
 write.csv(area_tice_corr_6, file = "output-processing/area_tice_corr_6.csv", row.names=F, na="")
 
-#######################################################################################
+####################################################################################### OUTPUT of derived values for each year
 #######Max values-----------
 
 # need to change all fo these values from here to below
@@ -758,80 +761,80 @@ write.csv(iceSum.m6, file = "output-processing/capelin-m6.csv", row.names=F, na=
 #######################################################################################
 #######Median values-----------
 ## < 1992
-sub1991.m1a <- sub1991.m1$mall[c("year", "darea", "dminlats", "dtice")]
+sub1991.m1a <- sub1991.m1$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub1991.m1a, file = "output-processing/sub1991-m1.csv", row.names=F, na="")
 
-sub1991.m2a <- sub1991.m2$mall[c("year", "darea", "dminlats", "dtice")]
+sub1991.m2a <- sub1991.m2$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub1991.m2a, file = "output-processing/sub1991-m2.csv", row.names=F, na="")
 
-sub1991.m3a <- sub1991.m3$mall[c("year", "darea", "dminlats", "dtice")]
+sub1991.m3a <- sub1991.m3$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub1991.m3a, file = "output-processing/sub1991-m3.csv", row.names=F, na="")
 
-sub1991.m4a <- sub1991.m4$mall[c("year", "darea", "dminlats", "dtice")]
+sub1991.m4a <- sub1991.m4$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub1991.m4a, file = "output-processing/sub1991-m4.csv", row.names=F, na="")
 
-sub1991.m5a <- sub1991.m5$mall[c("year", "darea", "dminlats", "dtice")]
+sub1991.m5a <- sub1991.m5$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub1991.m5a, file = "output-processing/sub1991-m5.csv", row.names=F, na="")
 
-sub1991.m6a <- sub1991.m6$mall[c("year", "darea", "dminlats", "dtice")]
+sub1991.m6a <- sub1991.m6$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub1991.m6a, file = "output-processing/sub1991-m6.csv", row.names=F, na="")
 
 ## > 1992
-sub2017.m1a <- sub2017.m1$mall[c("year", "darea", "dminlats", "dtice")]
+sub2017.m1a <- sub2017.m1$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub2017.m1a, file = "output-processing/sub2017-m1.csv", row.names=F, na="")
 
-sub2017.m2a <- sub2017.m2$mall[c("year", "darea", "dminlats", "dtice")]
+sub2017.m2a <- sub2017.m2$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub2017.m2a, file = "output-processing/sub2017-m2.csv", row.names=F, na="")
 
-sub2017.m3a <- sub2017.m3$mall[c("year", "darea", "dminlats", "dtice")]
+sub2017.m3a <- sub2017.m3$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub2017.m3a, file = "output-processing/sub2017-m3.csv", row.names=F, na="")
 
-sub2017.m4a <- sub2017.m4$mall[c("year", "darea", "dminlats", "dtice")]
+sub2017.m4a <- sub2017.m4$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub2017.m4a, file = "output-processing/sub2017-m4.csv", row.names=F, na="")
 
-sub2017.m5a <- sub2017.m5$mall[c("year", "darea", "dminlats", "dtice")]
+sub2017.m5a <- sub2017.m5$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub2017.m5a, file = "output-processing/sub2017-m5.csv", row.names=F, na="")
 
-sub2017.m6a <- sub2017.m6$mall[c("year", "darea", "dminlats", "dtice")]
+sub2017.m6a <- sub2017.m6$mall[c("year", "darea", "dminlats", "tice")]
 write.csv(sub2017.m6a, file = "output-processing/sub2017-m6.csv", row.names=F, na="")
 
 #######D5Median values-----------
 # <1992
-iceMedD5p1992.m1a <- iceMedD5p1992.m1$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p1992.m1a <- iceMedD5p1992.m1$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p1992.m1a, file = "output-processing/iceMedD5p1992-m1a.csv", row.names=F, na="")
 
-iceMedD5p1992.m2a <- iceMedD5p1992.m2$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p1992.m2a <- iceMedD5p1992.m2$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p1992.m2a, file = "output-processing/iceMedD5p1992-m2a.csv", row.names=F, na="")
 
-iceMedD5p1992.m3a <- iceMedD5p1992.m3$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p1992.m3a <- iceMedD5p1992.m3$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p1992.m3a, file = "output-processing/iceMedD5p1992-m3a.csv", row.names=F, na="")
 
-iceMedD5p1992.m4a <- iceMedD5p1992.m4$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p1992.m4a <- iceMedD5p1992.m4$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p1992.m4a, file = "output-processing/iceMedD5p1992-m4a.csv", row.names=F, na="")
 
-iceMedD5p1992.m5a <- iceMedD5p1992.m5$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p1992.m5a <- iceMedD5p1992.m5$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p1992.m5a, file = "output-processing/iceMedD5p1992-m5a.csv", row.names=F, na="")
 
-iceMedD5p1992.m6a <- iceMedD5p1992.m6$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p1992.m6a <- iceMedD5p1992.m6$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p1992.m6a, file = "output-processing/iceMedD5p1992-m6a.csv", row.names=F, na="")
 
 # >1992
-iceMedD5p2017.m1a <- iceMedD5p2017.m1$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p2017.m1a <- iceMedD5p2017.m1$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p2017.m1a, file = "output-processing/iceMedD5p2017-m1a.csv", row.names=F, na="")
 
-iceMedD5p2017.m2a <- iceMedD5p2017.m2$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p2017.m2a <- iceMedD5p2017.m2$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p2017.m2a, file = "output-processing/iceMedD5p2017-m2a.csv", row.names=F, na="")
 
-iceMedD5p2017.m3a <- iceMedD5p2017.m3$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p2017.m3a <- iceMedD5p2017.m3$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p2017.m3a, file = "output-processing/iceMedD5p2017-m3a.csv", row.names=F, na="")
 
-iceMedD5p2017.m4a <- iceMedD5p2017.m4$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p2017.m4a <- iceMedD5p2017.m4$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p2017.m4a, file = "output-processing/iceMedD5p2017-m4a.csv", row.names=F, na="")
 
-iceMedD5p2017.m5a <- iceMedD5p2017.m5$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p2017.m5a <- iceMedD5p2017.m5$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p2017.m5a, file = "output-processing/iceMedD5p2017-m5a.csv", row.names=F, na="")
 
-iceMedD5p2017.m6a <- iceMedD5p2017.m6$mall[c("year", "d5area", "d5minlats", "d5tice")]
+iceMedD5p2017.m6a <- iceMedD5p2017.m6$mall[c("year", "d5area", "d5minlats", "tice")]
 write.csv(iceMedD5p2017.m6a, file = "output-processing/iceMedD5p2017-m6a.csv", row.names=F, na="")
 
 #######################################################################################
