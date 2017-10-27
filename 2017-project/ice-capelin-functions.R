@@ -401,17 +401,20 @@ capelinAreaPlot <- function(ls1, ls2, ls3, i, titlenames) {
      p1 <- ggplot(data = df1,
                   aes(x = max_area, y = capelin)) +
           geom_point() + 
-          ggtitle(paste(titlenames[i]))
+          ggtitle(paste(titlenames[i])) +
+          theme(plot.title = element_text(hjust = 0.5))
      p2 <- ggplot(data = df2,
                   aes(x = med_area, y = capelin)) +
           geom_point() + 
-          ggtitle(paste(titlenames[i]))
+          ggtitle(paste(titlenames[i])) +
+          theme(plot.title = element_text(hjust = 0.5))
      p3 <- ggplot(data = df3,
                   aes(x = d5med_area, y = capelin)) +
           geom_point() + 
-          ggtitle(paste(titlenames[i]))
+          ggtitle(paste(titlenames[i])) +
+          theme(plot.title = element_text(hjust = 0.5))
      
-     cowplot::plot_grid(p1, p2, p3, nrow=1)    
+     cowplot::plot_grid(p1, p2, p3, labels = c("Max Area", "Median Area", "D5Median Area"), nrow=1)    
 }
 
 ###############################################
@@ -438,25 +441,28 @@ lnCapelinArea <- function(ls1, ls2, ls3, xaxis, yaxis, i, titlenames){
      p1 <- ggplot(data = df1,
                   aes_string(x = xaxis, y = yaxis)) +
           geom_point() + 
-          ggtitle(paste(titlenames[i]))
+          ggtitle(paste(titlenames[i])) +
+          theme(plot.title = element_text(hjust = 0.5))
      p2 <- ggplot(data = df2,
                   aes_string(x = xaxis, y = yaxis)) +
           geom_point() + 
-          ggtitle(paste(titlenames[i]))
+          ggtitle(paste(titlenames[i])) +
+          theme(plot.title = element_text(hjust = 0.5))
      p3 <- ggplot(data = df3,
                   aes_string(x = xaxis, y = yaxis)) +
           geom_point() + 
-          ggtitle(paste(titlenames[i]))
-     cowplot::plot_grid(p1, p2, p3, nrow=1)
+          ggtitle(paste(titlenames[i])) +
+          theme(plot.title = element_text(hjust = 0.5))
+     cowplot::plot_grid(p1, p2, p3, labels = c("All years", "<1992", ">=1992"), nrow=1)
 }
 ###############################################
 
-calcFit_all <- function(df, titlenames) {
+calcFit_all <- function(ls, titlenames) {
      #browser()
      optim_ls <- rep(list(list()), length(titlenames))
      names(optim_ls) <- titlenames
-     for(i in 1:length(cape)){
-          df1 <- as.data.frame(cape[[i]])
+     for(i in 1:length(ls)){
+          df1 <- as.data.frame(ls[[i]])
           optim <- calcFit(df1)
           optim_ls[[i]] <- optim
      }
