@@ -19,22 +19,25 @@
 
 ## Objective function - part of optimization function
 
-SSQCapelinDome <- function(params,dataf){
-  #browser()
+SSQCapelinDome <- function(params, dataf, form1, form2){
+     #browser()
      dataf <- as.data.frame(dataf) # needed because optim doesn't work with tibbles.....grrrrrrrr!!!!!
-  Alpha <- params[1]
-  Beta <- params[2]
-  Gamma <- params[3]
-  year <- dataf[,1]
-  tice <- dataf[,2]
-  logcap <- dataf[,3]
-  # this is based on MSY
-  ELogCapBiom <- ifelse(year<1991, Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma)
-  sum((logcap-ELogCapBiom)^2)
+     Alpha <- params[1]
+     Beta <- params[2]
+     Gamma <- params[3]
+     year <- dataf[,1]
+     tice <- dataf[,2]
+     logcap <- dataf[,3]
+     
+     # this is based on MSY
+     ELogCapBiom <- ifelse(year<1991, eval(parse(text = form1)), eval(parse(text = form2)))
+     sum((logcap-ELogCapBiom)^2)
 }
 
+# Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma
+
 ## Function to obtain Expected Log Capelin Biomass         
-CapelinDome <- function(params,dataf){
+CapelinDome <- function(params,dataf, form1, form2){
      #browser()
      dataf <- as.data.frame(dataf)
   Alpha <- params[1]
@@ -42,7 +45,7 @@ CapelinDome <- function(params,dataf){
   Gamma <- params[3]
   year <- dataf[,1]
   tice <- dataf[,2]
-  ELogCapBiom <- ifelse(year<1991, Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma)
+  ELogCapBiom <- ifelse(year<1991, eval(parse(text = form1)), eval(parse(text = form2)))
   ELogCapBiom
 }
 
@@ -151,6 +154,7 @@ modelGraphs <- function(years){
 #' @param reg2 
 #' @param yearInt 
 #' @param lnbiomassInt 
+#' @param title
 #'
 #' @return
 #' @export
@@ -207,9 +211,6 @@ optimGraphs <- function(df, reg1, reg2, yearInt, lnbiomassInt, title){
   
 }
 # make optimization graphs by year and in comparison to ice
-
-
-
 
 ################
 ##' multiplot()--------- 
@@ -299,28 +300,31 @@ loadSubsetDatasets <- function(df, pat, N){
 #'
 #' @examples calcFit(cape$capelin_m1)
 #' note that this returns a warning "Unknown or uninitialised column: 'par'." which apparently is a tibble problem!!
-calcFit <- function(df) {
+calcFit <- function(df, par, form1 = NULL, form2 = NULL) {
   #browser()
-  CapelinDomeFit <- optim(par = c(1,200,0.6),
-                          dataf = df[which(df$logcapelin!='NA'), c('year','tice','logcapelin')],
-                           fn = SSQCapelinDome, method=c("BFGS"))
+     #print(environment())
+     CapelinDomeFit <- optim(par = par,
+                          dataf = df[which(df$logcapelin!='NA'), c('year','tice','logcapelin')], form1=form1, form2=form2,
+                           fn = SSQCapelinDome, 
+                          method=c("BFGS"))
   
   # before 2010
   CapelinDomeFitOld <- optim(par=c(0.2,180,0.6),
                          dataf = df[which(df$year < 2011 & df$logcapelin!='NA'),
                          c('year','tice','logcapelin')],
+                         form1=form1, form2=form2,
                          fn = SSQCapelinDome, method=c("BFGS"))
   
   ## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
-  df$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par), dataf = df[,c('year','tice')])
+  df$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par), dataf = df[,c('year','tice')], form1, form2)
   
-  df$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par), dataf = df[,c('year','tice')])
+  df$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par), dataf = df[,c('year','tice')], form1, form2)
   
   # attach the optimization curves of capelin abundance to ice data
   xtice <- expand.grid(year = c(1990,2000),tice = c(0:190,173.515,187.768))
   xtice <- xtice[order(xtice$tice),]
-  xtice$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par),dataf = xtice)
-  xtice$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par),dataf = xtice)
+  xtice$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par),dataf = xtice, form1, form2)
+  xtice$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par),dataf = xtice, form1, form2)
   #not sure what these are for but used in plots below but creates a data set where all values of year are the same????
   regime1 <- xtice[which(xtice$year == 1990),]
   regime2 <- xtice[which(xtice$year == 2000),]
@@ -457,14 +461,14 @@ lnCapelinArea <- function(ls1, ls2, ls3, xaxis, yaxis, i, titlenames){
 }
 ###############################################
 
-calcFit_all <- function(ls, titlenames) {
+calcFit_all <- function(ls, titlenames, par, form1 = NULL, form2 = NULL) {
      #browser()
      optim_ls <- rep(list(list()), length(titlenames))
      names(optim_ls) <- titlenames
      for(i in 1:length(ls)){
           df1 <- as.data.frame(ls[[i]])
-          optim <- calcFit(df1)
+          optim <- calcFit(df1, par, form1 = form1, form2 = form2)
           optim_ls[[i]] <- optim
      }
-     return(list(optim_ls=optim_ls))
+     return(list(optim_ls = optim_ls))
 }     
