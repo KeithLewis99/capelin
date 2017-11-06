@@ -40,7 +40,7 @@ options(stringsAsFactors = FALSE)
 
 
 #setwd("C:/Users/Paul/Documents/DFO/ice")
-setwd("D:/Keith/capelin/2017-project")
+#setwd("D:/Keith/capelin/2017-project")
 
 library(RArcInfo)
 library(maptools)
@@ -57,14 +57,14 @@ library(cleangeo)
 library(broom)
 library(tidyverse)
 #library(doParallel)
+source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
+
+# from here to "subset ice data" can be carved off into another file
 
 ## create dirs for data storage
 if(!dir.exists("avc_data")) dir.create("avc_data")
 if(!dir.exists("e00_data")) dir.create("e00_data")
 if(!dir.exists("sp_data")) dir.create("sp_data")
-
-source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
-
 
 ## Metadata --------------------------------------------------------------------
 
@@ -111,7 +111,6 @@ dates <- dates[!as.Date(dates) %in% as.Date(downloaded)] #this line is for downl
 dates <- format(dates, "%Y%m%d")
 dates
 
-
 # downloads all files not already in e00_data folder
 # error messages indicate maps that have not been or may never be created.  Can be ignored. See previous comment
 e00Download(dates)
@@ -119,7 +118,7 @@ e00Download(dates)
 ## remove problem files at this stage
 file.remove("e00_data/20070508.e00")
 
-## e00 file conversion to Spatial Polygons Dataframe--------------------
+## e00 file conversion to Spatial Polygons Dataframe-------------------
 # e00 to avc_data (coverages) and then to SpatialPolygonsDAtaframe in sp_data
 
 ## note: had to run this across multiple sessions...too many open files.
@@ -160,16 +159,18 @@ file.remove("sp_data/19920319.Rdata")
 file.remove("sp_data/20010409.Rdata")
 file.remove("sp_data/20070423.Rdata")
 file.remove("sp_data/20110404.Rdata")
-file.remove("sp_data/20130415.Rdata")
+#file.remove("sp_data/20130415.Rdata") tried removing dates but this is such a wonky year that it doesn't really work (too many chunks of ice in the bays or just outside of the filters).  Went over the 
 file.remove("sp_data/20150427.Rdata")
 
 # second round of removals
 file.remove("sp_data/19920402.Rdata")
 file.remove("sp_data/20070507.Rdata")
-file.remove("sp_data/20130422.Rdata")
+#file.remove("sp_data/20130422.Rdata")
 file.remove("sp_data/20150323.Rdata")
 file.remove("sp_data/20110214.Rdata")
 
+# third round of removals
+#file.remove("sp_data/20130128.Rdata")
 ## Area and volume calculations ------------------------------------------------
 # calculate the area of the sea ice and .....
 
@@ -181,8 +182,9 @@ save(dates3, file = "output-processing/dates3all.Rdata")
 dates3 <- dates3[!format(dates3, "%Y%m%d") %in% format(trends.calculated, "%Y%m%d")] # these are dates that are not in ice_trends.Rdata- hence it is small
 save(dates3, file = "output-processing/dates3.Rdata")
 
+##########################################################################
 ## subset the ice data
-
+#
 # create "model sets"
 #load("output-processing/dates3.Rdata")
 load("output-processing/dates3all.Rdata")
@@ -190,14 +192,27 @@ load("output-processing/subset-lists.Rdata")
 load("output-processing/filters.Rdata")
 source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
+# calculate proper dates for 2013 and manually insert below
+trends_2013 <- calcAreaVolLat(dates3[1306:1330], ct=m1$ct, sa=m1$sa, sb=m1$sb)
+trends.2013 <- iceOutput(trends_2013, dates3[1306:1330])
+max(trends.2013$area) 
+maxarea2013 <- trends.2013[5,] # this is the proper value :: keep
+min(trends.2013$minlats) # the minlats is actually 2013-04-15 but bc this was a fragment
+minlats2013 <- trends.2013[8,]
+minlats2013 <- trends.2013[-15, -16] #remove the fragments
+lookAt(trends.m1)
+#View(trends.m1)
+save(trends.m1, file = "output-processing/ice-trends-2013-m1.Rdata")
+
 # it makes no sense to bind minlat to this because the original ice-trends.Rdata does not have this value - therefore, updating it makes no sense.
 
 # this gets errors if you subset on dates3 as in some of the tests here.  Works fine if calcAreaVolume done on full dates3 vector
 
 ## m1
 trends_update.m1 <- calcAreaVolLat(dates3, ct=m1$ct, sa=m1$sa, sb=m1$sb)
-trends.m1 <- iceOuput(trends_update.m1, dates3)
+trends.m1 <- iceOutput(trends_update.m1, dates3)
 lookAt(trends.m1)
+#View(trends.m1)
 save(trends.m1, file = "output-processing/ice-trends-2017-m1-alla.Rdata")
 #save(trends.m1, file = "output-processing/ice-trends-2017-m1-subset.Rdata")
 
@@ -207,35 +222,35 @@ subset(x, x < 0)
 
 ## m2
 trends_update.m2 <- calcAreaVolLat(dates3, ct=m2$ct, sa=m2$sa,  sb=m2$sb)
-trends.m2 <- iceOuput(trends_update.m2, dates3)
+trends.m2 <- iceOutput(trends_update.m2, dates3)
 lookAt(trends.m2)
 save(trends.m2, file = "output-processing/ice-trends-2017-m2-all.Rdata")
 #save(trends.m2, file = "output-processing/ice-trends-2017-m2-subset.Rdata")
 
 ## m3
 trends_update.m3 <- calcAreaVolLat(dates3, ct=m3$ct, sa=m3$sa,  sb=m3$sb)
-trends.m3 <- iceOuput(trends_update.m3, dates3)
+trends.m3 <- iceOutput(trends_update.m3, dates3)
 lookAt(trends.m3)
 save(trends.m3, file = "output-processing/ice-trends-2017-m3-all.Rdata")
 #save(trends.m3, file = "output-processing/ice-trends-2017-m3-subset.Rdata")
 
 ## m4
 trends_update.m4 <- calcAreaVolLat(dates3, ct=m4$ct, sa=m4$sa,  sb=m4$sb)
-trends.m4 <- iceOuput(trends_update.m4, dates3)
+trends.m4 <- iceOutput(trends_update.m4, dates3)
 lookAt(trends.m4)
 #save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
 save(trends.m4, file = "output-processing/ice-trends-2017-m4-all.Rdata")
 
 ## m5
 trends_update.m5 <- calcAreaVolLat(dates3, ct=m5$ct, sa=m5$sa,  sb=m5$sb)
-trends.m5 <- iceOuput(trends_update.m5, dates3)
+trends.m5 <- iceOutput(trends_update.m5, dates3)
 lookAt(trends.m5)
 #save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
 save(trends.m5, file = "output-processing/ice-trends-2017-m5-all.Rdata")
 
 ## m6
 trends_update.m6 <- calcAreaVolLat(dates3, ct=m6$ct, sa=m6$sa,  sb=m6$sb)
-trends.m6 <- iceOuput(trends_update.m6, dates3)
+trends.m6 <- iceOutput(trends_update.m6, dates3)
 lookAt(trends.m6)
 #save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
 save(trends.m6, file = "output-processing/ice-trends-2017-m6-all.Rdata")
@@ -254,8 +269,6 @@ save(trends.m6, file = "output-processing/ice-trends-2017-m6-all.Rdata")
 
 ## Manual discard --------------------------------------------------------------
 dates3[-c(23)]
-
-
 
 dates3[-c(618, 656, 933, 1125, 1257, 1328, 1404)]
 
