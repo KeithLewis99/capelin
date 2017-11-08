@@ -361,13 +361,14 @@ iceOuput <- function(df, date) {
 #'
 #' @examples lmoutputSummary(ls)
 lmoutputSummary <- function(ls) {
+#browser()
   a <- "tice_v_area"
   b <- "tice_v_minlats"
   c <- "minlats_v_area"
   comp <- rbind(a, b, c)
   rsq_val <- rbind(ls$minlats_v_area$r.squared, ls$minlats_v_tice$r.squared, ls$area_v_tice$r.squared)
   slope <- rbind(ls$minlats_v_area$coefficients[2,1], ls$minlats_v_tice$coefficients[2,1], ls$area_v_tice$coefficients[2,1])
-  out <- cbind(comp = comp, col=col, rsq_val = round(rsq_val, 3), slope = round(rsq_val, 2))
+  out <- cbind(comp = comp, rsq_val = round(rsq_val, 3), slope = round(rsq_val, 2))
   colnames(out) <- c("measure", "rsq", "slope")
   return(out)
 }

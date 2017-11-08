@@ -4,7 +4,7 @@
 #  Last modified by Keith Lewis (2017-09-22) #
 ################################################################
 
-# The purpose of this file is to: 
+# The purpose of this file is to:
 
 #1) to map these summaries and ensure that the data are being properly summarized by ice-chart-processing-data
 #2) examine the relationships between ice area, tice, and minlat using various subsets of the ice data
@@ -37,7 +37,7 @@ library(data.table)
 #source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 source("D:/Keith/capelin/2017-project/area-ice-function.R")
 
-#load("ice-trends-2017-m1-d3.Rdata") 
+#load("ice-trends-2017-m1-d3.Rdata")
 load("output-processing/ice-trends-2017-m1-alla.Rdata")
 load("output-processing/ice-trends-2017-m2-all.Rdata")
 load("output-processing/ice-trends-2017-m3-all.Rdata")
@@ -72,7 +72,7 @@ trends.m6$year <- year(trends.m6$date)
 ss1 <- subsetTestPlot(m1, m2, "date")
 ss2 <- subsetTestPlot(m2, m3, "date")
 ss3 <- subsetTestPlot(m3, m4, "date")
-ss4 <- subsetTestPlot(m3, m5, "date")# 
+ss4 <- subsetTestPlot(m3, m5, "date")#
 #subsetTestPlot(m4, m5, "date")
 ss5 <- subsetTestPlot(m5, m6, "date")
 ss6 <- subsetTestPlot(m4, m6, "date")
@@ -119,40 +119,40 @@ for(i in seq_along(iceSum_ls)){
 list2env(iceSum_ls, .GlobalEnv)
 
 # plot year v tice and year v area for m1-m6
-p1 <- ggplot(data = iceSum.m1, aes(x = year, y = tice)) + 
+p1 <- ggplot(data = iceSum.m1, aes(x = year, y = tice)) +
   geom_point() + geom_smooth(method=lm) + ggtitle("m1")
 
-p2 <- ggplot(data = iceSum.m1, aes(x = year, y = area)) + 
+p2 <- ggplot(data = iceSum.m1, aes(x = year, y = area)) +
   geom_point() + geom_smooth(method=lm)
 
-p3 <- ggplot(data = iceSum.m2, aes(x = year, y = tice)) + 
+p3 <- ggplot(data = iceSum.m2, aes(x = year, y = tice)) +
   geom_point() + geom_smooth(method=lm) + ggtitle("m2")
 
-p4 <- ggplot(data = iceSum.m2, aes(x = year, y = area)) + 
+p4 <- ggplot(data = iceSum.m2, aes(x = year, y = area)) +
   geom_point() + geom_smooth(method=lm)
 
-p5 <- ggplot(data = iceSum.m3, aes(x = year, y = tice)) + 
+p5 <- ggplot(data = iceSum.m3, aes(x = year, y = tice)) +
   geom_point() + geom_smooth(method=lm) + ggtitle("m3")
 
-p6 <- ggplot(data = iceSum.m3, aes(x = year, y = area)) + 
+p6 <- ggplot(data = iceSum.m3, aes(x = year, y = area)) +
   geom_point() + geom_smooth(method=lm)
 
-p7 <- ggplot(data = iceSum.m4, aes(x = year, y = tice)) + 
+p7 <- ggplot(data = iceSum.m4, aes(x = year, y = tice)) +
   geom_point() + geom_smooth(method=lm) + ggtitle("m4")
 
-p8 <- ggplot(data = iceSum.m4, aes(x = year, y = area)) + 
+p8 <- ggplot(data = iceSum.m4, aes(x = year, y = area)) +
   geom_point() + geom_smooth(method=lm)
 
-p9 <- ggplot(data = iceSum.m5, aes(x = year, y = tice)) + 
+p9 <- ggplot(data = iceSum.m5, aes(x = year, y = tice)) +
   geom_point() + geom_smooth(method=lm) + ggtitle("m5")
 
-p10 <- ggplot(data = iceSum.m5, aes(x = year, y = area)) + 
+p10 <- ggplot(data = iceSum.m5, aes(x = year, y = area)) +
   geom_point() + geom_smooth(method=lm)
 
-p11 <- ggplot(data = iceSum.m6, aes(x = year, y = tice)) + 
+p11 <- ggplot(data = iceSum.m6, aes(x = year, y = tice)) +
   geom_point() + geom_smooth(method=lm) + ggtitle("m6")
 
-p12 <- ggplot(data = iceSum.m6, aes(x = year, y = area)) + 
+p12 <- ggplot(data = iceSum.m6, aes(x = year, y = area)) +
   geom_point() + geom_smooth(method=lm)
 
 cowplot::plot_grid(p1, p2, p3, p4, p5, p6, labels = c("m1", "", "m2", "", "m3", ""), ncol=2)
@@ -163,43 +163,43 @@ ggsave("figs/5-areaMaxScatterm4m5.pdf", width=10, height=8, units="in")
 # filter so that 0 values are removed
 si1 <- iceSum.m4 %>%
   filter(year >= 1983) %>%
-ggplot(aes(x = year, y = area)) + 
+ggplot(aes(x = year, y = area)) +
   geom_point() + geom_smooth(method=lm) + ggtitle("m4 > 1983")
 
 si2 <- iceSum.m6 %>%
   filter(year >= 1983) %>%
-  ggplot(aes(x = year, y = area)) + 
+  ggplot(aes(x = year, y = area)) +
   geom_point() + geom_smooth(method=lm) + ggtitle("m6 > 1983")
 
 areaMaxScatterm4m6 <- cowplot::plot_grid(si1, si2, ncol=2)
 ggsave("figs/6-areaMaxScatterm4m6.pdf", width=10, height=8, units="in")
 
 # ranges and ratios----------
-area.range.low <- c(m1 = range(iceSum.m1$area)[1], 
-                m2 = range(iceSum.m2$area)[1], 
-                m3 = range(iceSum.m3$area)[1], 
-                m4 = range(iceSum.m4$area)[1], 
-                m5 = range(iceSum.m5$area)[1], 
+area.range.low <- c(m1 = range(iceSum.m1$area)[1],
+                m2 = range(iceSum.m2$area)[1],
+                m3 = range(iceSum.m3$area)[1],
+                m4 = range(iceSum.m4$area)[1],
+                m5 = range(iceSum.m5$area)[1],
                 m6 = range(iceSum.m6$area)[1])
 
-area.range.high <- c(m1 = range(iceSum.m1$area)[2], 
-                    m2 = range(iceSum.m2$area)[2], 
-                    m3 = range(iceSum.m3$area)[2], 
-                    m4 = range(iceSum.m4$area)[2], 
-                    m5 = range(iceSum.m5$area)[2], 
+area.range.high <- c(m1 = range(iceSum.m1$area)[2],
+                    m2 = range(iceSum.m2$area)[2],
+                    m3 = range(iceSum.m3$area)[2],
+                    m4 = range(iceSum.m4$area)[2],
+                    m5 = range(iceSum.m5$area)[2],
                     m6 = range(iceSum.m6$area)[2])
 
-tice.range.low <- c(m1 = range(iceSum.m1$tice)[1], 
-                m2 = range(iceSum.m2$tice)[1], 
-                m3 = range(iceSum.m3$tice)[1], 
-                m4 = range(iceSum.m4$tice)[1], 
-                m5 = range(iceSum.m5$tice)[1], 
+tice.range.low <- c(m1 = range(iceSum.m1$tice)[1],
+                m2 = range(iceSum.m2$tice)[1],
+                m3 = range(iceSum.m3$tice)[1],
+                m4 = range(iceSum.m4$tice)[1],
+                m5 = range(iceSum.m5$tice)[1],
                 m6 = range(iceSum.m6$tice)[1])
-tice.range.high <- c(m1 = range(iceSum.m1$tice)[2], 
-                    m2 = range(iceSum.m2$tice)[2], 
-                    m3 = range(iceSum.m3$tice)[2], 
-                    m4 = range(iceSum.m4$tice)[2], 
-                    m5 = range(iceSum.m5$tice)[2], 
+tice.range.high <- c(m1 = range(iceSum.m1$tice)[2],
+                    m2 = range(iceSum.m2$tice)[2],
+                    m3 = range(iceSum.m3$tice)[2],
+                    m4 = range(iceSum.m4$tice)[2],
+                    m5 = range(iceSum.m5$tice)[2],
                     m6 = range(iceSum.m6$tice)[2])
 
 ice.ranges <- as.data.frame(cbind(area.range.low, area.range.high, tice.range.low, tice.range.high))
@@ -233,80 +233,80 @@ water <- gUnaryUnion(water)
 
 #m1 - plot for presentaiton only - save manually
 par(mfrow=c(1,2))
-plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
+plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
 plot(filters, border = "red", add = TRUE)  # plot main map with filter
 points(iceSum.m1$minlongs, iceSum.m1$minlats)
 
 # plot all points
-plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
+plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
 plot(filters, border = "red", add = TRUE)  # plot main map with filter
 points(trends.m1$minlongs, trends.m1$minlats)
 
-# plot water and minlongs/lats as points 
+# plot water and minlongs/lats as points
 # confirm that filters are working; check ice maps
 par(mfrow=c(3,2))
 
 #m1
-plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
+plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
   plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(iceSum.m1$minlongs, iceSum.m1$minlats)
 
 # plot all points
-plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
+plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
   plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(trends.m1$minlongs, trends.m1$minlats)
 
 #m2
-plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
-  plot(filters, border = "red", add = TRUE)  # plot main map with filter 
+plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
+  plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(iceSum.m2$minlongs, iceSum.m2$minlats)
 
 # plot all points
-plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
+plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
   plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(trends.m2$minlongs, trends.m2$minlats)
 
 #m3
-plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
-  plot(filters, border = "red", add = TRUE)  # plot main map with filter 
+plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
+  plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(iceSum.m3$minlongs, iceSum.m3$minlats)
 
 # plot all points
-plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
+plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
   plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(trends.m3$minlongs, trends.m3$minlats)
 
-par(mfrow=c(3,2)) 
+par(mfrow=c(3,2))
 #m4
-  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
-  plot(filters, border = "red", add = TRUE)  # plot main map with filter 
+  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
+  plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(iceSum.m4$minlongs, iceSum.m4$minlats)
-  
+
   # plot all points
-  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
+  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
   plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(trends.m4$minlongs, trends.m4$minlats)
 
 #m5
-  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
-  plot(filters, border = "red", add = TRUE)  # plot main map with filter 
+  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
+  plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(iceSum.m5$minlongs, iceSum.m5$minlats)
-  
+
   # plot all points
-  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
+  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
   plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(trends.m5$minlongs, trends.m5$minlats)
 
 #m6
-  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
-  plot(filters, border = "red", add = TRUE)  # plot main map with filter 
+  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
+  plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(iceSum.m6$minlongs, iceSum.m6$minlats)
-  
+
   # plot all points
-  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA) 
+  plot(water, xlim = c(-70, -48), ylim = c(40, 55), col = "lightblue", border = NA)
   plot(filters, border = "red", add = TRUE)  # plot main map with filter
   points(trends.m6$minlongs, trends.m6$minlats)
-  
+
 par(mfrow=c(1,1))
 
 ###############################################################################
@@ -407,7 +407,7 @@ cowplot::plot_grid(p1.m1, p2.m1, p3.m1, labels = c("medians-1969-1991-m1"), ncol
 ggsave("figs/14-relMeds1991.pdf", width=10, height=8, units="in")
 
 # scatter plots of all dates
-sub1991.m1.plot <- iceDateScatter(sub1991.m1) 
+sub1991.m1.plot <- iceDateScatter(sub1991.m1)
 sub1991.m1.plot$p1
 ggsave("figs/15-minlatMedYear1991m1.pdf", width=10, height=8, units="in")
 sub1991.m1.plot$p2
@@ -710,19 +710,19 @@ iceMedD5.m6 <- iceMedianD5(trends.m6, "year < 2018", "tice < 150", iceSum.m6)
 source("D:/Keith/capelin/2017-project/area-ice-function.R")
 #m1
 atScat.m1 <- area_ticeScatter(df1 = iceSum.m1, df2 = iceMed.m1, df3 = iceMedD5.m1, x = "tice", y1 = "area", y2 = "darea",   y3 = "d5area", sub_val = "m1")
-ggsave("figs/area_v_tice/41-areaticeScat-m1.pdf", width=10, height=8, units="in")     
+ggsave("figs/area_v_tice/41-areaticeScat-m1.pdf", width=10, height=8, units="in")
 
 #m2
 atScat.m2 <- area_ticeScatter(df1 = iceSum.m2, df2 = iceMed.m2, df3 = iceMedD5.m2, x="tice", y="area", y2 = "darea",   y3 = "d5area", sub_val = "m2")
-ggsave("figs/area_v_tice/42-areaticeScat-m2.pdf", width=10, height=8, units="in")     
+ggsave("figs/area_v_tice/42-areaticeScat-m2.pdf", width=10, height=8, units="in")
 
 #m3
 atScat.m3 <- area_ticeScatter(df1 = iceSum.m3, df2 = iceMed.m3, df3 = iceMedD5.m3, x = "tice", y1 = "area", y2 = "darea",   y3 = "d5area", sub_val = "m3")
-ggsave("figs/area_v_tice/43-areaticeScat-m3.pdf", width=10, height=8, units="in")     
+ggsave("figs/area_v_tice/43-areaticeScat-m3.pdf", width=10, height=8, units="in")
 
 #m4
 atScat.m4 <- area_ticeScatter(iceSum.m4, iceMed.m4, iceMedD5.m4, x = "tice", y1 = "area", y2 = "darea",   y3 = "d5area", sub_val = "m4")
-ggsave("figs/area_v_tice/44-areaticeScat-m4.pdf", width=10, height=8, units="in")     
+ggsave("figs/area_v_tice/44-areaticeScat-m4.pdf", width=10, height=8, units="in")
 
  #m5
 atScat.m5 <- area_ticeScatter(iceSum.m5, iceMed.m5, iceMedD5.m5, x = "tice", y1 = "area", y2 = "darea",   y3 = "d5area", sub_val = "m5")
@@ -870,11 +870,11 @@ waterDF <- merge(waterPoints, water@data, by = "id")
 #water1DF <- full_join(water1Points, water1@data, by = "id")
 
 
-ggWater <- ggplot(data = waterDF, aes(x=long, y=lat, group=group)) + 
+ggWater <- ggplot(data = waterDF, aes(x=long, y=lat, group=group)) +
   # map "tears" w/0 the group
-  geom_polygon(fill="lightsteelblue") + 
-  geom_path(col="black") + 
-  theme(panel.background = element_rect(fill = "white", colour = "grey"), panel.grid.major = element_line(colour = "grey90")) + theme_bw() 
+  geom_polygon(fill="lightsteelblue") +
+  geom_path(col="black") +
+  theme(panel.background = element_rect(fill = "white", colour = "grey"), panel.grid.major = element_line(colour = "grey90")) + theme_bw()
 
 
 guides(fill=FALSE)
