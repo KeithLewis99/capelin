@@ -174,7 +174,7 @@ ggsave("figs/optimization/AleMaxArea.pdf", width=10, height=8, units="in")
 
 AleMaxArea$cdf$value
 AleMaxArea$cdf$convergence
-
+str(AleMaxArea, max.level = 2)
 #######################################################
 ## Optimization for tice using maxarea from m1-m6----
 titlenames <- c("MaxTice-m1", "MaxTice-m2", "MaxTice-m3", "MaxTice-m4", "MaxTice-m5", "MaxTice-m6")
@@ -184,6 +184,7 @@ MaxTice <- calcFit_all(cape, titlenames, par = c(1, 200, 0.6), var = "tice",
                          form1 = "Alpha*tmp*(1-(tmp/Beta))",
                          form2 = "Alpha*tmp*(1-(tmp/Beta))*Gamma",
                          x_range = c(0:190,173.515,187.768))
+str(MaxTice, max.level = 3)
 #create and save graphs
 for(i in 1:length(MaxTice$optim_ls)){
      df1 <- as.data.frame(MaxTice$optim_ls[[i]]$df)
@@ -206,6 +207,30 @@ for(i in 1:length(MaxTice$optim_ls)){
      print(MaxTice$optim_ls[[i]]$cdf$convergence)
 }
 
+mm <- optimGraphs(MaxTice$optim_ls$`MaxTice-m1`$df, MaxTice$optim_ls$`MaxTice-m1`$regime1, MaxTice$optim_ls$`MaxTice-m1`$regime2, yearInt, lnbiomassInt,  "MaxTice-m1", "tice")
+library(plotly)
+ggplotly(mm)  
+testPlot <- function(df, reg1, reg2, yearInt, lnbiomassInt, title, var){
+     browser()
+     p3 <- ggplot() +
+          geom_line(data = reg1, aes_string(x = var) + aes(y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) + 
+          geom_line(data = reg2, aes_string(x = var) + aes(y = ExpectedLogBiomass), colour="green", linetype=1, size=1.25) +
+          geom_line(data = reg1, aes_string(x = var) + aes(y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+          geom_line(data = reg2, aes_string(x = var) + aes(y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+          geom_point(data = subset(df, year < 1991), aes_string(x = var) + aes(y = logcapelin), shape=2, size=3) +
+          geom_point(data = subset(df, year > 1991), aes_string(x = var) + aes(y = logcapelin), shape=15, size=3) + 
+          geom_errorbar(data = subset(df, year < 1991),  aes_string(x = var) + aes(ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+          geom_errorbar(data = subset(df, year > 1991), aes_string(x = var) + aes(ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+          xlab(paste(var)) +
+          ylab("ln (Capelin biomass (ktons))") + 
+          #ylim(0,9) +
+          theme_bw()
+     
+}
+
+test <- testPlot(MaxTice$optim_ls$`MaxTice-m1`$df, MaxTice$optim_ls$`MaxTice-m1`$regime1, MaxTice$optim_ls$`MaxTice-m1`$regime2, yearInt, lnbiomassInt,  "MaxTice-m1", "tice")
+ggplotly(test)
+View(MaxTice$optim_ls$`MaxTice-m1`$df)
 #############################################################################################
 ## Optimization for max_area using maxarea----
 titlenames <- c("MaxArea-m1", "MaxArea-m2", "MaxArea-m3", "MaxArea-m4", "MaxArea-m5", "MaxArea-m6")
@@ -249,11 +274,11 @@ titlenames <- c("MedArea-m1", "MedArea-m2", "MedArea-m3", "MedArea-m4", "MedArea
 
 range(med_cape_all$med_m1$med_area1000)
 
-MedArea <- calcFit_all(med_cape_all, titlenames, par = c(1, 400, 0.6), 
-                       var = "med_area1000", 
+MedArea <- calcFit_all(med_cape_all, titlenames, par = c(1, 300, 0.6),                        var = "med_area1000", 
                        form1 = "Alpha*tmp*(1-(tmp/Beta))", 
                        form2 = "Alpha*tmp*(1-(tmp/Beta))*Gamma",
                        x_range = c(0:210))
+
 #create and save graphs
 for(i in 1:length(MedArea$optim_ls)){
      df1 <- as.data.frame(MedArea$optim_ls[[i]]$df)

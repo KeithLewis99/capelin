@@ -905,4 +905,22 @@ extractSPDFfinal <- function(z, i, ct = NULL, sa = NULL, sb = NULL){
 #x@data$AREAice <- x@data$AREA*as.numeric(x@data$CT)/10
 #subarea <- iceArea(x@data)
 
-
+##################################################################
+##' iceOutput()------
+#'
+#' @param df a list with areas, volumes, minlats, minlongs
+#'
+#' @return the dataframe from the list df
+#' @export
+#'
+#' @examples iceOutput(df)
+iceOutput <- function(df, date) {
+     #browser()
+     df1 <- rbind(data.frame(date = date, 
+                             area = df$areas, 
+                             volume = df$volumes,
+                             minlats = df$minlats,
+                             minlongs = df$minlongs)) 
+     df1 <- df1[order(df1$date), ]  
+     return(df1)
+}
