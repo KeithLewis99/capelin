@@ -1,0 +1,175 @@
+################################################################
+#  Script written by Keith Lewis (Keith.Lewis@dfo-mpo.gc.ca)  #
+#  Created 2017-11-08, R version 3.3.3 (2017-03-06)             #
+#  Last modified by Paul Regular, Alejandro Buren, and Keith Lewis 2017-11.08 #
+################################################################
+
+# The purpose of this file is to:
+# 1) Test additional covariates to improve the Tice model fit
+## Objective function - part of optimization function
+
+
+###############################################################
+##' loadSubsetDatasets()-----
+#'
+#' @param df - the capelin dataset
+#' @param pat - a pattern of file names
+#' @param N - the number of files
+#'
+#' @return a list of dataframes with the summaries of year, area, minlats, tice, and capelin info for each subset (m1-m6)
+#' @export
+#'
+#' @examples cape <- loadSubsetDatasets(capelin_join, pattern, 6)
+loadSubsetDatasets <- function(df, pat, N){
+     #browser()
+     name <- paste0("capelin_m", 1:N) # create names of dataframes
+     x <- vector("list", N) # create a list to fill
+     for (i in seq_along(pat)) {
+          print(pat[i])   # print to see what has been loaded
+          cap <- read_csv(paste0("output-processing/", pat[i])) 
+          cap <- left_join(cap, df, by = "year")
+          cap <- rename(cap, maxarea = area)
+          cap <- rename(cap, minlat = minlats)
+          x[[i]] <- cap # put cap in list
+          #x[[name]] <- x
+     }
+     names(x) <- paste(name) #name elements of list
+     return(x)
+}     
+
+###############################################################
+SSQCapelinDome <- function(params, dataf, form1, form2, var){
+     #browser()
+     dataf <- as.data.frame(dataf) # needed because optim doesn't work with tibbles.....grrrrrrrr!!!!!
+     Alpha <- params[1]
+     Beta <- params[2]
+     Gamma <- params[3]
+     year <- dataf[,1]
+     #tice <- dataf[,2]
+     tmp <- dataf[,2]
+     assign(var, tmp)
+     logcap <- dataf[,3]
+     # this is based on MSY
+     ELogCapBiom <- ifelse(year<1991, eval(parse(text = form1)), eval(parse(text = form2)))
+     sum((logcap-ELogCapBiom)^2)
+}
+
+# Alpha*tice*(1-(tice/Beta)), Alpha*tice*(1-(tice/Beta))*Gamma
+
+## Function to obtain Expected Log Capelin Biomass         
+CapelinDome <- function(params,dataf, form1, form2, var){
+     #browser()
+     dataf <- as.data.frame(dataf)
+     Alpha <- params[1]
+     Beta <- params[2]
+     Gamma <- params[3]
+     year <- dataf[,1]
+     tmp <- dataf[,2]
+     assign(var, tmp)
+     ELogCapBiom <- ifelse(year<1991, eval(parse(text = form1)), eval(parse(text = form2)))
+     ELogCapBiom
+}
+
+##########################################################################
+##' calcFit()----
+#'
+#' @param df a dataframe within a list; one of the capelin 
+#'
+#' @return a list with the new expected values of the caplein, the CapelinDomeFit, regime 1 and regime 2
+#' @export
+#'
+#' @examples calcFit(cape$capelin_m1)
+#' note that this returns a warning "Unknown or uninitialised column: 'par'." which apparently is a tibble problem!!
+calcFit <- function(df, var, par, form1 = NULL, form2 = NULL, x_range) {
+     #browser()
+     #print(environment())
+     CapelinDomeFit <- optim(par = par,
+                             dataf = df[which(df$logcapelin!='NA'), c('year', paste(var),'logcapelin')], form1=form1, form2=form2, var=var,
+                             fn = SSQCapelinDome, 
+                             method=c("BFGS"))
+     
+     # before 2010
+     CapelinDomeFitOld <- optim(par=par,
+                                dataf = df[which(df$year < 2011 & df$logcapelin!='NA'),
+                                           c('year', paste(var), 'logcapelin')],
+                                form1=form1, form2=form2, var=var,
+                                fn = SSQCapelinDome, method=c("BFGS"))
+     
+     ## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
+     df$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par), dataf = df[,c('year', paste(var))], form1, form2, var)
+     
+     df$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par), dataf = df[,c('year', paste(var))], form1, form2, var)
+     
+     # attach the optimization curves of capelin abundance to ice data
+     xtice <- expand.grid(year = c(1990,2000), var = as.numeric(paste(x_range)))
+     colnames(xtice)[2] <- c(paste(var))
+     xtice <- xtice[order(xtice[2]),]
+     xtice$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par),dataf = xtice, form1, form2, var)
+     xtice$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par),dataf = xtice, form1, form2, var)
+     #not sure what these are for but used in plots below but creates a data set where all values of year are the same????
+     regime1 <- xtice[which(xtice$year == 1990),]
+     regime2 <- xtice[which(xtice$year == 2000),]
+     return(list(df = df, cdf = CapelinDomeFit, regime1 = regime1, regime2 = regime2))  
+}
+
+##################################################################
+##' optimGraphs()------
+#'
+#' @param df 
+#' @param reg1 
+#' @param reg2 
+#' @param yearInt 
+#' @param lnbiomassInt 
+#' @param title
+#' @param var
+#'
+#' @return
+#' @export
+#'
+#' @examples
+optimGraphs <- function(df, reg1, reg2, yearInt, lnbiomassInt, title, var){
+     #browser()
+     p1 <- ggplot(df, aes(x = year, y = logcapelin)) + 
+          geom_errorbar(width = 0.3, colour = "black", aes(ymin=logcapelinlb, ymax=logcapelinub)) + 
+          geom_point(shape=16, size=3)  +
+          geom_line(aes(y=ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
+          geom_line(aes(y=ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+          scale_y_continuous(limits = c(0,10), breaks = lnbiomassInt) +
+          scale_x_continuous(limits = c(2000,2018), breaks = yearInt) +
+          xlab('Year') +
+          ylab('ln (Capelin biomass (ktons))') + 
+          theme_bw()
+     
+     p2 <- ggplot(df, aes(x = year, y = capelin)) +
+          geom_errorbar(width = 0.3, colour = "black", aes(ymin=capelinlb, ymax=capelinub)) + 
+          geom_point(shape=16, size=3)  +
+          geom_line(aes(y=exp(ExpectedLogBiomass)), colour="red", linetype=1, size=1.25) +
+          geom_line(aes(y=exp(ExpectedLogBiomassOld)), colour="blue", linetype=1, size=1.25) +
+          #scale_y_continuous(limits = c(0,8500), breaks = biomassInt) +
+          scale_x_continuous(limits = c(2000,2018), breaks = yearInt) +
+          xlab('Year') +
+          ylab('Capelin biomass (ktons)') + 
+          theme_bw() +
+          annotate("text", x = 2008, y = 8400, label = "Model estimates to 2014") + # all following for the legend
+          annotate("text", x = 2008, y = 8000, label = "Model estimates to 2010") +
+          annotate("segment", x = 2001, xend = 2003, y = 8400, yend = 8400, colour = "red") +
+          annotate("segment", x = 2001, xend = 2003, y = 8000, yend = 8000, colour = "blue")
+     
+     
+     p3 <- ggplot() +
+          geom_line(data = reg2, aes_string(x = var) + aes(y = ExpectedLogBiomass), colour="green", linetype=1, size=1.25) +
+          geom_line(data = reg2, aes_string(x = var) + aes(y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+          geom_point(data = subset(df, year > 1991), aes_string(x = var) + aes(y = logcapelin), shape=15, size=3) + 
+          geom_errorbar(data = subset(df, year > 1991), aes_string(x = var) + aes(ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+          xlab(paste(var)) +
+          ylab("ln (Capelin biomass (ktons))") + 
+          #ylim(0,9) +
+          theme_bw()
+     
+     # make multiplot
+     #pdf('ice-capelin-update-2014-new.pdf',height=9,width=9,pointsize =8)
+     cowplot::plot_grid(p1, p2, p3, labels = c(paste(title)), ncol=2)
+     #multiplot(p1, p3, p2, cols=2)
+     #dev.off()
+     
+}
