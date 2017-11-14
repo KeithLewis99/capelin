@@ -20,6 +20,8 @@ library(plotly)
 
 ## read in source code-----
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
+
 ## load Ale original data----
 capelin <- read.csv('capelin-ice-2014.csv',header=T)
 # get rid of extra columns in csv file
@@ -68,7 +70,7 @@ biomassInt <- seq(0, 8500)
 labtice <- expression(paste(italic(t[ice]), '(day of year)')) # label for figures
 titlenames <- c("MaxTice-m1", "MaxTice-m2", "MaxTice-m3", "MaxTice-m4", "MaxTice-m5", "MaxTice-m6")
 
-MaxTice <- calcFit_all(cape_2001, titlenames, par = c(1, 200, 0.6), var = "tice*surface_tows_lag2", 
+MaxTice <- calcFit_all(cape_2001, titlenames, par = c(1, 200, 0.6), var = "tice", 
                        form1 = "Alpha*tmp*(1-(tmp/Beta))",
                        form2 = "Alpha*tmp*(1-(tmp/Beta))*Gamma",
                        x_range = c(0:190,173.515,187.768))
@@ -83,3 +85,12 @@ for(i in 1:length(MaxTice$optim_ls)){
      mm <- optimGraphs(df1, df2, df3, yearInt, lnbiomassInt,  titlenames[i], "tice")
      ggsave(mm, filename = paste0("figs/covariates/", titlenames[i], ".pdf"), width=10, height=8, units="in")
 }
+
+# test of a generalization of the formula to multiple variables
+source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+test <- calcFit_all1(cape_2001, titlenames, par = c(5, 300, 0.6), var1 = "tice", var2 = "surface_tows_lag2",
+                       form1 = "Alpha*tmp1*(1-(tmp1/Beta)) + Alpha*tmp2",
+                       form2 = "Alpha*tmp1*(1-(tmp1/Beta))*Gamma + Alpha*tmp2",
+                       x_range = c(0:190,173.515,187.768))
+
+str(MaxTice, max.level = 3)
