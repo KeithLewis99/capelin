@@ -117,14 +117,14 @@ optimGraphs <- function(df, reg1, reg2, yearInt, lnbiomassInt, title, var){
 #'
 #' @examples MaxTice <- calcFit_all(cape, titlenames, par = c(1, 200, 0.6), var = "tice", form1 = "Alpha*tmp*(1-(tmp/Beta))", form2 = "Alpha*tmp*(1-(tmp/Beta))*Gamma", x_range = c(0:190,173.515,187.768))
 #' 
-calcFit_all1 <- function(ls, titlenames, var1, var2, par, form1 = NULL, form2 = NULL, x_range) {
+calcFit_all1 <- function(ls, titlenames, var1, var2, par, form1 = NULL, form2 = NULL, x1_range, x2_range) {
      
      optim_ls <- rep(list(list()), length(titlenames))
      names(optim_ls) <- titlenames
      for(i in 1:length(ls)){
           df1 <- as.data.frame(ls[[i]])
           #browser()
-          optim <- calcFit1(df1, var1=var1, var2=var2, par=par, form1 = form1, form2 = form2, x_range = x_range)
+          optim <- calcFit1(df1, var1=var1, var2=var2, par=par, form1 = form1, form2 = form2, x1_range = x1_range, x2_range = x2_range)
           optim_ls[[i]] <- optim
      }
      return(list(optim_ls = optim_ls))
@@ -147,32 +147,36 @@ calcFit_all1 <- function(ls, titlenames, var1, var2, par, form1 = NULL, form2 = 
 #'
 #' @examples AleMaxArea <- calcFit(capelin_ale, var = "maxarea", par = c(1, 500, 0.6), form1 = "Alpha*tmp*(1-(tmp/Beta))", form2 = "Alpha*tmp*(1-(tmp/Beta))*Gamma", x_range = c(0:650))
 #' note that this returns a warning "Unknown or uninitialised column: 'par'." which apparently is a tibble problem!!
-calcFit1 <- function(df, var1, var2=NULL, par, form1 = NULL, form2 = NULL, x_range) {
+calcFit1 <- function(df, var1, var2=NULL, par, form1 = NULL, form2 = NULL, x1_range, x2_range) {
      #browser()
      #print(environment())
      CapelinDomeFit <- optim(par = par,
                              dataf = df[which(df$logcapelin!='NA'), c('year', paste(var1), paste(var2), 'logcapelin')], form1=form1, form2=form2, var1=var1, var2=var2,
                              fn = SSQCapelinDome1, 
-                             method=c("BFGS"))
+                             method=c("Nelder-Mead"))
      
      # before 2010
      CapelinDomeFitOld <- optim(par=par,
                                 dataf = df[which(df$year < 2011 & df$logcapelin!='NA'),
                                            c('year',  paste(var1), paste(var2), 'logcapelin')],
                                 form1=form1, form2=form2, var1=var1, var2=var2,
-                                fn = SSQCapelinDome1, method=c("BFGS"))
+                                fn = SSQCapelinDome1, method=c("Nelder-Mead"))
      
      ## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
+     
      df$ExpectedLogBiomass <- CapelinDome1(params = c(CapelinDomeFit$par), dataf = df[,c('year', paste(var1), paste(var2))], form1, form2, var1, var2)
      
      df$ExpectedLogBiomassOld <- CapelinDome1(params = c(CapelinDomeFitOld$par), dataf = df[,c('year', paste(var1), paste(var2))], form1, form2, var1, var2)
      
      # attach the optimization curves of capelin abundance to ice data
-     xtice <- expand.grid(year = c(1990,2000), var = as.numeric(paste(x_range)))
+     xtice <- expand.grid(year = c(1990,2000), col2 = as.numeric(paste(x1_range)), col3=as.numeric(x2_range))
      colnames(xtice)[2] <- c(paste(var1))
-     colnames(xtice)[2] <- c(paste(var2))
+     colnames(xtice)[3] <- c(paste(var2))
      xtice <- xtice[order(xtice[2]),]
-     xtice$ExpectedLogBiomassOld <- CapelinDome1(params = c(CapelinDomeFitOld$par),dataf = xtice, form1, form2, var1, var2)
+     xtice$ExpectedLogBiomassOld <- CapelinDome1(params = c(CapelinDomeFitOld$par), dataf = xtice, form1, form2, var1, var2)
+     
+     #xtice$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par),dataf = xtice, form1, form2, var)
+     
      xtice$ExpectedLogBiomass <- CapelinDome1(params = c(CapelinDomeFit$par),dataf = xtice, form1, form2, var1, var2)
      #not sure what these are for but used in plots below but creates a data set where all values of year are the same????
      regime1 <- xtice[which(xtice$year == 1990),]
@@ -202,6 +206,7 @@ SSQCapelinDome1 <- function(params, dataf, form1, form2, var1, var2){
      Alpha <- params[1]
      Beta <- params[2]
      Gamma <- params[3]
+     Delta <- params[4]
      year <- dataf[,1]
      #tice <- dataf[,2]
      tmp1 <- dataf[,2] #variable of interest in form1 and form2
@@ -229,12 +234,13 @@ SSQCapelinDome1 <- function(params, dataf, form1, form2, var1, var2){
 #'
 #' @examples df$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par), dataf = df[,c('year', paste(var))], form1, form2, var)
 #' 
-CapelinDome1 <- function(params,dataf, form1, form2, var){
+CapelinDome1 <- function(params, dataf, form1, form2, var1, var2){
      #browser()
      dataf <- as.data.frame(dataf)
      Alpha <- params[1]
      Beta <- params[2]
      Gamma <- params[3]
+     Delta <- params[4]
      year <- dataf[,1]
      tmp1 <- dataf[,2] #variable of interest in form1 and form2
      assign(var1, tmp1)

@@ -39,7 +39,12 @@ capelin_join <- capelin[c("year", "capelin", "capelinlb", "capelinub", "logcapel
 # read in larval data
 larvae <- read.csv('capelin_larval_indices.csv',header=T)
 larvae$surface_tows_lag2 <- lag(larvae$surface_tows, 2)
+#normalize the surface_tows 
+larvae$Nsurface_tows_lag2 <- (larvae$surface_tows_lag2 - mean(larvae$surface_tows_lag2, na.rm=T)) / sd(larvae$surface_tows_lag2, na.rm = T)
+
+#join the acoustic and larvae data
 capelin_join <- left_join(capelin_join, larvae, by = "year")
+
 
 ### load files generated in area-ice----
 ## max area
@@ -53,6 +58,11 @@ cape <- loadSubsetDatasets1(df = capelin_join, name = "capelin_m", pat = pattern
 # Divide area by 1000
 for(i in 1:length(cape)){
      cape[[i]]$max_area1000 <- cape[[i]]$max_area/1000
+}
+
+# nomalize the tice
+for(i in 1:length(cape)){
+     cape[[i]]$Ntice <- (cape[[i]]$tice - mean(cape[[i]]$tice))/sd(cape[[i]]$tice)
 }
 
 # seperate cape into time components
@@ -84,7 +94,7 @@ MaxTice <- calcFit_all(cape_2001, titlenames, par = c(1, 200, 0.6), var = "tice"
                        x_range = c(0:190,173.515,187.768))
 str(MaxTice, max.level = 3)
 
-source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+#source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 #create and save graphs
 for(i in 1:length(MaxTice$optim_ls)){
      df1 <- as.data.frame(MaxTice$optim_ls[[i]]$df)
@@ -98,17 +108,21 @@ for(i in 1:length(MaxTice$optim_ls)){
 # IN DEVELOPMENT
 #
 # test of a generalization of the formula to multiple variables
-source("D:/Keith/capelin/20117-project/ice-capelin-covariates-FUN.R")
+source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+titlenames <- c("test-m1", "test-m2", "test-m3", "test-m4", "test-m5", "test-m6")
+
 test <- calcFit_all1(cape_2001, titlenames, par = c(5, 300, 5, 0.6), var1 = "tice", var2 = "surface_tows_lag2",
                        form1 = "Alpha*tmp1*(1-(tmp1/Beta)) + Delta*tmp2",
                        form2 = "Alpha*tmp1*(1-(tmp1/Beta))*Gamma + Delta*tmp2",
-                       x_range = c(400:1500))
+                       x1_range = c(0:150), x2_range = c(500:4500))
 
-test <- calcFit_all(cape_2001, titlenames, par = c(1, 10000, 0.6), var = "surface_tows_lag2", 
-                     form1 = "Alpha*tmp*(1-(tmp/Beta))",
-                     form2 = "Alpha*tmp*(1-(tmp/Beta))*Gamma",
-                     x_range = c(400:4000))
-str(MaxTice, max.level = 3)
+range(cape_2001$capelin_m1$Ntice)
+range(cape_2001$capelin_m1$Nsurface_tows_lag2)
+
+test <- calcFit_all1(cape_2001, titlenames, par = c(5, 300, 5, 0.6), var1 = "Ntice", var2 = "Nsurface_tows_lag2",
+                     form1 = "Alpha*tmp1*(1-(tmp1/Beta)) + Delta*tmp2",
+                     form2 = "Alpha*tmp1*(1-(tmp1/Beta))*Gamma + Delta*tmp2",
+                     x1_range = c(-2:2), x2_range = c(-2:2))
 
 Alpha <- 1
 Beta <- 300
@@ -117,6 +131,14 @@ tmp1 <- cape_2001$capelin_m1$tice[2:15]
 tmp2 <- cape_2001$capelin_m1$surface_tows_lag2[2:15]
 Alpha*tmp1*(1-(tmp1/Beta)) + Delta*tmp2
 View(cape_2001$capelin_m1)
+
+for(i in 1:length(test$optim_ls)){
+     df1 <- as.data.frame(test$optim_ls[[i]]$df)
+     df2 <- as.data.frame(test$optim_ls[[i]]$regime1)
+     df3 <- as.data.frame(test$optim_ls[[i]]$regime2)
+     mm <- optimGraphs(df1, df2, df3, yearInt, lnbiomassInt,  titlenames[i], "Nsurface_tows_lag2")
+     ggsave(mm, filename = paste0("figs/optimization/", titlenames[i], ".pdf"), width=10, height=8, units="in")
+}
 #################################
 ## med area -----
 
