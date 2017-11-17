@@ -1,4 +1,4 @@
-################################################################
+ ################################################################
 #  Script written by Paul Regular (Paul.Regular@dfo-mpo.gc.ca)  #
 #  Created 201X-XX-XX, R version 3.X.x (201X-XX-XX)             #
 #  Last modified by Paul Regular, Alejandro Buren, and Keith Lewis 2017-07.04 #
@@ -361,6 +361,7 @@ calcFit <- function(df, var, par, form1 = NULL, form2 = NULL, x_range) {
   
   # attach the optimization curves of capelin abundance to ice data
   xtice <- expand.grid(year = c(1990,2000), var = as.numeric(paste(x_range)))
+  #browser()
   colnames(xtice)[2] <- c(paste(var))
   xtice <- xtice[order(xtice[2]),]
   xtice$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par),dataf = xtice, form1, form2, var)

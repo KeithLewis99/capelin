@@ -180,6 +180,8 @@ str(AleMaxArea, max.level = 2)
 titlenames <- c("MaxTice-m1", "MaxTice-m2", "MaxTice-m3", "MaxTice-m4", "MaxTice-m5", "MaxTice-m6")
 yearInt <- seq(1982, 2017, by=4)
 
+source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
+
 MaxTice <- calcFit_all(cape, titlenames, par = c(1, 200, 0.6), var = "tice", 
                          form1 = "Alpha*tmp*(1-(tmp/Beta))",
                          form2 = "Alpha*tmp*(1-(tmp/Beta))*Gamma",
@@ -207,6 +209,7 @@ for(i in 1:length(MaxTice$optim_ls)){
      print(MaxTice$optim_ls[[i]]$cdf$convergence)
 }
 
+# create graphs in plotly to examine acutal data points.
 mm <- optimGraphs(MaxTice$optim_ls$`MaxTice-m1`$df, MaxTice$optim_ls$`MaxTice-m1`$regime1, MaxTice$optim_ls$`MaxTice-m1`$regime2, yearInt, lnbiomassInt,  "MaxTice-m1", "tice")
 library(plotly)
 ggplotly(mm)  
@@ -225,12 +228,12 @@ testPlot <- function(df, reg1, reg2, yearInt, lnbiomassInt, title, var){
           ylab("ln (Capelin biomass (ktons))") + 
           #ylim(0,9) +
           theme_bw()
-     
 }
 
 test <- testPlot(MaxTice$optim_ls$`MaxTice-m1`$df, MaxTice$optim_ls$`MaxTice-m1`$regime1, MaxTice$optim_ls$`MaxTice-m1`$regime2, yearInt, lnbiomassInt,  "MaxTice-m1", "tice")
 ggplotly(test)
 View(MaxTice$optim_ls$`MaxTice-m1`$df)
+
 #############################################################################################
 ## Optimization for max_area using maxarea----
 titlenames <- c("MaxArea-m1", "MaxArea-m2", "MaxArea-m3", "MaxArea-m4", "MaxArea-m5", "MaxArea-m6")
