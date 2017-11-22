@@ -199,7 +199,7 @@ optimGraphs <- function(df, reg1, reg2, yearInt, lnbiomassInt, title, var){
     geom_line(aes(y=ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
     geom_line(aes(y=ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
     scale_y_continuous(limits = c(0,10), breaks = lnbiomassInt) +
-    scale_x_continuous(limits = c(1982,2018), breaks = yearInt) +
+    scale_x_continuous(limits = yearLim, breaks = yearInt) +
     xlab('Year') +
     ylab('ln (Capelin biomass (ktons))') + 
     theme_bw()
@@ -374,7 +374,7 @@ return(list(df = df, cdf = CapelinDomeFit, regime1 = regime1, regime2 = regime2)
 
 
 ###############################################################
-##' loadSubsetDatasets()-----
+##' loadSubsetDatasets1()-----
 #'
 #' @param df - the capelin dataset
 #' @param name - name of output list
@@ -500,7 +500,7 @@ lnCapelinArea <- function(ls1, ls2, ls3, xaxis, yaxis, i, titlenames){
 }
 ###############################################
 
-#' calcFit_all()----
+##' calcFit_all()----
 #' #calcFit performs the optim function for a single dataframe.  CalcFit_all is a wrapper that performs the optim function on a list of dataframes for the different ice subsets
 #'
 #' @param ls a list of dataframes for the different ice subsets (e.g. m1-m6) with associated capelin data

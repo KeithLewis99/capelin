@@ -131,7 +131,7 @@ for(i in 1:length(titlenames)){
 yearInt <- seq(1982, 2014, by=4)
 lnbiomassInt <- seq(0, 10, by=2)
 biomassInt <- seq(0, 8500)
-
+yearLim <- c(1982, 2014)
 labtice <- expression(paste(italic(t[ice]), '(day of year)')) # label for figures
 
 #################################
@@ -153,7 +153,7 @@ AleMaxTice <- calcFit(capelin_ale, var = "tice",
                      )
 #plot
 optimGraphs(AleMaxTice$df, AleMaxTice$regime1, AleMaxTice$regime2, yearInt, lnbiomassInt, "AleMaxTice", "tice")
-ggsave("figs/optimization/AleMaxtice.pdf", width=10, height=8, units="in")
+#ggsave("figs/optimization/AleMaxtice.pdf", width=10, height=8, units="in")
 
 # summs of squares and convergence
 AleMaxTice$cdf$value
@@ -179,6 +179,7 @@ str(AleMaxArea, max.level = 2)
 ## Optimization for tice using maxarea from m1-m6----
 titlenames <- c("MaxTice-m1", "MaxTice-m2", "MaxTice-m3", "MaxTice-m4", "MaxTice-m5", "MaxTice-m6")
 yearInt <- seq(1982, 2017, by=4)
+yearLim <- c(1982, 2017)
 
 source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
 
@@ -193,7 +194,7 @@ for(i in 1:length(MaxTice$optim_ls)){
      df2 <- as.data.frame(MaxTice$optim_ls[[i]]$regime1)
      df3 <- as.data.frame(MaxTice$optim_ls[[i]]$regime2)
      mm <- optimGraphs(df1, df2, df3, yearInt, lnbiomassInt,  titlenames[i], "tice")
-     ggsave(mm, filename = paste0("figs/optimization/", titlenames[i], ".pdf"), width=10, height=8, units="in")
+    ggsave(mm, filename = paste0("figs/optimization/", titlenames[i], ".pdf"), width=10, height=8, units="in")
 }
 
 # compare Sums of Squares
