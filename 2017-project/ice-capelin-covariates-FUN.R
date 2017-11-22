@@ -1,16 +1,12 @@
-################################################################
 #  Script written by Keith Lewis (Keith.Lewis@dfo-mpo.gc.ca)  #
 #  Created 2017-11-08, R version 3.3.3 (2017-03-06)             #
 #  Last modified by Paul Regular, Alejandro Buren, and Keith Lewis 2017-11.08 #
-################################################################
 
 # The purpose of this file is to:
 # 1) Test additional covariates to improve the Tice model fit
 ## Objective function - part of optimization function
 
-
-###############################################################
-##' loadSubsetDatasets()-----
+--------------------------------------------------------------
 #'
 #' @param df - the capelin dataset
 #' @param pat - a pattern of file names
@@ -37,9 +33,7 @@ loadSubsetDatasets <- function(df, pat, N){
      return(x)
 }     
 
-########################################
-##' loadSubsetDatasets1()-----
-#'
+--------------------------------------------------------------
 #' @param df - the capelin dataset
 #' @param name - name of output list
 #' @param pat - a pattern of file names
@@ -73,9 +67,8 @@ loadSubsetDatasets1 <- function(df, name, pat, N, var1 = NULL, var2 = NULL, nvar
      return(x)
 }     
 
-##################################################################
-##' optimGraphs1()------
-#'
+
+--------------------------------------------------------------
 #' @param df 
 #' @param reg1 
 #' @param reg2 
@@ -130,13 +123,8 @@ p3 <- ggplot() +
 cowplot::plot_grid(p1, p2, p3, labels = c(paste(title)), ncol=2)
 }
 
-#ggplot() +
-#     geom_line(data = reg1, aes_string(x = var) + aes(y = ExpectedLogBiomas#s), colour="red", linetype=1, size=1.25) + 
-#    geom_line(data = reg2, aes_string(x = var) + aes(y = ExpectedLogBiomass#), colour="green", linetype=1, size=1.25) +
-#     geom_line(data = reg1, aes_string(x = var) + aes(y = ExpectedLogBiomas#sOld), colour="blue", linetype=1, size=1.25) +
-#     geom_line(data = reg2, aes_string(x = var) + aes(y = ExpectedLogBiomas#sOld), colour="blue", linetype=1, size=1.25)
-###############################################
-##' calcFit_all1()----
+
+--------------------------------------------------------------
 #' #calcFit performs the optim function for a single dataframe.  CalcFit_all is a wrapper that performs the optim function on a list of dataframes for the different ice subsets
 #'
 #' @param ls a list of dataframes for the different ice subsets (e.g. m1-m6) with associated capelin data
@@ -166,8 +154,7 @@ calcFit_all1 <- function(ls, titlenames, var1, var2, par, form1 = NULL, form2 = 
      return(list(optim_ls = optim_ls))
 }     
 
-##########################################################################
-##' calcFit1()----
+--------------------------------------------------------------
 #' calcFit1 performs the optim function for a single dataframe or list
 #' most param are passed from calcFit_all(); like calcFit but for two variables
 #' @param df - a dataframe for a single ice subset (e.g. Ale's data) with associated capelin data or part of a list used in calcFit_all
@@ -181,10 +168,11 @@ calcFit_all1 <- function(ls, titlenames, var1, var2, par, form1 = NULL, form2 = 
 #' @return a list with the new expected values of the caplein, the CapelinDomeFit, regime 1 and regime 2
 #' @export
 #'
-#' @examples AleMaxArea <- calcFit(capelin_ale, var = "maxarea", par = c(1, 500, 0.6), form1 = "Alpha*tmp*(1-(tmp/Beta))", form2 = "Alpha*tmp*(1-(tmp/Beta))*Gamma", x_range = c(0:650))
+#' @examples 
 #' note that this returns a warning "Unknown or uninitialised column: 'par'." which apparently is a tibble problem!!
+
 calcFit1 <- function(df, var1, var2=NULL, par, form1 = NULL, form2 = NULL, x1_range, x2_range) {
-     #browser()
+     browser()
      #print(environment())
      CapelinDomeFit <- optim(par = par,
                              dataf = df[which(df$logcapelin!='NA'), c('year', paste(var1), paste(var2), 'logcapelin')], 
@@ -210,19 +198,16 @@ calcFit1 <- function(df, var1, var2=NULL, par, form1 = NULL, form2 = NULL, x1_ra
      xtice <- xtice[order(xtice[2]),]
      xtice$ExpectedLogBiomassOld <- CapelinDome1(params = c(CapelinDomeFitOld$par), dataf = xtice, form1, form2, var1, var2)
      
-     #xtice$ExpectedLogBiomassOld <- CapelinDome(params = c(CapelinDomeFitOld$par),dataf = xtice, form1, form2, var)
-     
      xtice$ExpectedLogBiomass <- CapelinDome1(params = c(CapelinDomeFit$par),dataf = xtice, form1, form2, var1, var2)
      #not sure what these are for but used in plots below but creates a data set where all values of year are the same????
      regime1 <- xtice[which(xtice$year == 1990),]
      regime2 <- xtice[which(xtice$year == 2000),]
      return(list(df = df, cdf = CapelinDomeFit, regime1 = regime1, regime2 = regime2))  
 }
-######################################################################################################
+
+--------------------------------------------------------------
 # OPtimization funcitons
 ## Objective function - part of optimization function
-
-##' SSQCapelinDome()------
 #' most params passed from calcFit_all():
 #' @param params - from par: a series of values to help the optim function 
 #' @param dataf - a dataframe for a single ice subset (e.g. Ale's data) with associated capelin data or part of a list used in calcFit_all
@@ -254,10 +239,9 @@ SSQCapelinDome1 <- function(params, dataf, form1, form2, var1, var2){
      sum((logcap-ELogCapBiom)^2)
 }
 
-####################################################################################################
+--------------------------------------------------------------
 ## Function to obtain Expected Log Capelin Biomass    
 #' most params passed from calcFit_all():
-##'CapelinDome1()----- 
 #' @param params - from par: a series of values to help the optim function 
 #' @param dataf - a dataframe for a single ice subset (e.g. Ale's data) with associated capelin data or part of a list used in calcFit_all
 #' @param form1 - a formula to describe the relationship of some ice parameter to capelin abundance post 1991
