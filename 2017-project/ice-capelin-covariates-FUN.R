@@ -37,13 +37,49 @@ loadSubsetDatasets <- function(df, pat, N){
      return(x)
 }     
 
+########################################
+##' loadSubsetDatasets1()-----
+#'
+#' @param df - the capelin dataset
+#' @param name - name of output list
+#' @param pat - a pattern of file names
+#' @param N - the number of files
+#' @param var1 - area, darea, d5area
+#' @param var2 - minlats, dminlats, d5minlats
+#' @param nvar1 - new name of var1 
+#' @param nvar2 - new name of var2
+#'
+#' @return a list of dataframes with the summaries of year, area, minlats, tice, and capelin info for each subset (m1-m6)
+#' @export
+#'
+#' @examples cape <- loadSubsetDatasets(capelin_join, pattern, 6, area, maxarea, minlats, minlat)
+loadSubsetDatasets1 <- function(df, name, pat, N, var1 = NULL, var2 = NULL, nvar1 = NULL, nvar2 = NULL){
+     #browser()
+     #var1 <- enquo(var1)
+     #nvar1 <- enquo(nvar1)
+     name <- paste0(name, 1:N) # create names of dataframes
+     x <- vector("list", N) # create a list to fill
+     for (i in seq_along(pat)) {
+          print(pat[i])   # print to see what has been loaded
+          cap <- read_csv(paste0("output-processing/", pat[i])) 
+          cap <- left_join(cap, df, by = "year")
+          #cap <- rename(.dots = setNames(var1, nvar1))
+          cap <- rename(cap, !!nvar1 := !!var1)  # !! unquotes the input but the code is not valid.  The ":=" makes it valid.....somehow
+          cap <- rename(cap, !!nvar2 := !!var2) 
+          x[[i]] <- cap # put cap in list
+          #x[[name]] <- x
+     }
+     names(x) <- paste(name) #name elements of list
+     return(x)
+}     
 
 ##################################################################
-##' optimGraphs()------
+##' optimGraphs1()------
 #'
 #' @param df 
 #' @param reg1 
 #' @param reg2 
+#' @param yearLim
 #' @param yearInt 
 #' @param lnbiomassInt 
 #' @param title
@@ -53,52 +89,52 @@ loadSubsetDatasets <- function(df, pat, N){
 #' @export
 #'
 #' @examples
-optimGraphs <- function(df, reg1, reg2, yearInt, lnbiomassInt, title, var){
+optimGraphs1 <- function(df, reg1, reg2, yearLim, yearInt, lnbiomassInt, title, var){
      #browser()
-     p1 <- ggplot(df, aes(x = year, y = logcapelin)) + 
-          geom_errorbar(width = 0.3, colour = "black", aes(ymin=logcapelinlb, ymax=logcapelinub)) + 
-          geom_point(shape=16, size=3)  +
-          geom_line(aes(y=ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
-          geom_line(aes(y=ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
-          scale_y_continuous(limits = c(0,10), breaks = lnbiomassInt) +
-          scale_x_continuous(limits = c(2000,2018), breaks = yearInt) +
-          xlab('Year') +
-          ylab('ln (Capelin biomass (ktons))') + 
-          theme_bw()
+p1 <- ggplot(df, aes(x = year, y = logcapelin)) + 
+     geom_errorbar(width = 0.3, colour = "black", aes(ymin=logcapelinlb, ymax=logcapelinub)) + 
+     geom_point(shape=16, size=3)  +
+     geom_line(aes(y=ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
+     geom_line(aes(y=ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+     scale_y_continuous(limits = c(-4,10), breaks = lnbiomassInt) +
+     scale_x_continuous(limits = yearLim, breaks = yearInt) +
+     xlab('Year') +
+     ylab('ln (Capelin biomass (ktons))') + 
+     theme_bw()
      
-     p2 <- ggplot(df, aes(x = year, y = capelin)) +
-          geom_errorbar(width = 0.3, colour = "black", aes(ymin=capelinlb, ymax=capelinub)) + 
-          geom_point(shape=16, size=3)  +
-          geom_line(aes(y=exp(ExpectedLogBiomass)), colour="red", linetype=1, size=1.25) +
-          geom_line(aes(y=exp(ExpectedLogBiomassOld)), colour="blue", linetype=1, size=1.25) +
+p2 <- ggplot(df, aes(x = year, y = capelin)) +
+     geom_errorbar(width = 0.3, colour = "black", aes(ymin=capelinlb, ymax=capelinub)) + 
+     geom_point(shape=16, size=3)  +
+     geom_line(aes(y=exp(ExpectedLogBiomass)), colour="red", linetype=1, size=1.25) +
+     geom_line(aes(y=exp(ExpectedLogBiomassOld)), colour="blue", linetype=1, size=1.25) +
           #scale_y_continuous(limits = c(0,8500), breaks = biomassInt) +
-          scale_x_continuous(limits = c(2000,2018), breaks = yearInt) +
-          xlab('Year') +
-          ylab('Capelin biomass (ktons)') + 
-          theme_bw() +
-          annotate("text", x = 2008, y = 8400, label = "Model estimates to 2014") + # all following for the legend
-          annotate("text", x = 2008, y = 8000, label = "Model estimates to 2010") +
-          annotate("segment", x = 2001, xend = 2003, y = 8400, yend = 8400, colour = "red") +
-          annotate("segment", x = 2001, xend = 2003, y = 8000, yend = 8000, colour = "blue")
+     scale_x_continuous(limits = yearLim, breaks = yearInt) +
+     xlab('Year') +
+     ylab('Capelin biomass (ktons)') + 
+     theme_bw() +
+     annotate("text", x = 2008, y = 8400, label = "Model estimates to 2014") + # all following for the legend
+     annotate("text", x = 2008, y = 8000, label = "Model estimates to 2010") +
+     annotate("segment", x = 2001, xend = 2003, y = 8400, yend = 8400, colour = "red") +
+     annotate("segment", x = 2001, xend = 2003, y = 8000, yend = 8000, colour = "blue")
      
-     
-     p3 <- ggplot() +
-          geom_line(data = reg2, aes_string(x = var) + aes(y = ExpectedLogBiomass), colour="green", linetype=1, size=1.25) +
-          geom_line(data = reg2, aes_string(x = var) + aes(y = ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
-          geom_point(data = subset(df, year > 1991), aes_string(x = var) + aes(y = logcapelin), shape=15, size=3) + 
-          geom_errorbar(data = subset(df, year > 1991), aes_string(x = var) + aes(ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
-          xlab(paste(var)) +
-          ylab("ln (Capelin biomass (ktons))") + 
-          #ylim(0,9) +
-          theme_bw()
-     
-     # make multiplot
-     #pdf('ice-capelin-update-2014-new.pdf',height=9,width=9,pointsize =8)
-     cowplot::plot_grid(p1, p2, p3, labels = c(paste(title)), ncol=2)
-     #multiplot(p1, p3, p2, cols=2)
-     #dev.off()
-     
+#browser()
+p3 <- ggplot() + 
+     geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomass"), colour="red", linetype=1, size=1.25) + 
+     geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomassOld"), colour="blue", linetype=1, size=1.25) +
+     geom_point(data = subset(df, year > 1991), aes_string(x = var, y = "logcapelin"), shape=15, size=3) + 
+     geom_errorbar(data = subset(df, year > 1991), aes_string(x = var, ymin="logcapelinlb", ymax="logcapelinub"), width = 0.3, colour = "black") +
+     xlab(paste(var)) +
+     ylab("ln (Capelin biomass (ktons))") + 
+     #ylim(0,9) +
+     theme_bw()
+cowplot::plot_grid(p1, p2, p3, labels = c(paste(title)), ncol=2)
 }
+
+#ggplot() +
+#     geom_line(data = reg1, aes_string(x = var) + aes(y = ExpectedLogBiomas#s), colour="red", linetype=1, size=1.25) + 
+#    geom_line(data = reg2, aes_string(x = var) + aes(y = ExpectedLogBiomass#), colour="green", linetype=1, size=1.25) +
+#     geom_line(data = reg1, aes_string(x = var) + aes(y = ExpectedLogBiomas#sOld), colour="blue", linetype=1, size=1.25) +
+#     geom_line(data = reg2, aes_string(x = var) + aes(y = ExpectedLogBiomas#sOld), colour="blue", linetype=1, size=1.25)
 ###############################################
 ##' calcFit_all1()----
 #' #calcFit performs the optim function for a single dataframe.  CalcFit_all is a wrapper that performs the optim function on a list of dataframes for the different ice subsets
@@ -151,19 +187,18 @@ calcFit1 <- function(df, var1, var2=NULL, par, form1 = NULL, form2 = NULL, x1_ra
      #browser()
      #print(environment())
      CapelinDomeFit <- optim(par = par,
-                             dataf = df[which(df$logcapelin!='NA'), c('year', paste(var1), paste(var2), 'logcapelin')], form1=form1, form2=form2, var1=var1, var2=var2,
-                             fn = SSQCapelinDome1, 
-                             method=c("Nelder-Mead"))
+                             dataf = df[which(df$logcapelin!='NA'), c('year', paste(var1), paste(var2), 'logcapelin')], 
+                             form1=form1, form2=form2, var1=var1, var2=var2,
+                             fn = SSQCapelinDome1, method=c("Nelder-Mead"))
      
      # before 2010
      CapelinDomeFitOld <- optim(par=par,
-                                dataf = df[which(df$year < 2011 & df$logcapelin!='NA'),
-                                           c('year',  paste(var1), paste(var2), 'logcapelin')],
+                                dataf = df[which(df$year < 2011 & df$logcapelin!='NA'), c('year',  paste(var1), paste(var2), 'logcapelin')], 
                                 form1=form1, form2=form2, var1=var1, var2=var2,
                                 fn = SSQCapelinDome1, method=c("Nelder-Mead"))
      
      ## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
-     
+     #browser()
      df$ExpectedLogBiomass <- CapelinDome1(params = c(CapelinDomeFit$par), dataf = df[,c('year', paste(var1), paste(var2))], form1, form2, var1, var2)
      
      df$ExpectedLogBiomassOld <- CapelinDome1(params = c(CapelinDomeFitOld$par), dataf = df[,c('year', paste(var1), paste(var2))], form1, form2, var1, var2)
@@ -215,7 +250,7 @@ SSQCapelinDome1 <- function(params, dataf, form1, form2, var1, var2){
      assign(var2, tmp2)
      logcap <- dataf[,4]
      # this is based on MSY
-     ELogCapBiom <- ifelse(year<1991, eval(parse(text = form1)), eval(parse(text = form2)))
+     ELogCapBiom <- ifelse(year < 2013, eval(parse(text = form1)), eval(parse(text = form2)))
      sum((logcap-ELogCapBiom)^2)
 }
 
@@ -246,6 +281,6 @@ CapelinDome1 <- function(params, dataf, form1, form2, var1, var2){
      assign(var1, tmp1)
      tmp2 <- dataf[,3] #variable of interest in form1 and form2
      assign(var2, tmp2)
-     ELogCapBiom <- ifelse(year<1991, eval(parse(text = form1)), eval(parse(text = form2)))
+     ELogCapBiom <- ifelse(year<2017, eval(parse(text = form1)), eval(parse(text = form2)))
      ELogCapBiom
 }
