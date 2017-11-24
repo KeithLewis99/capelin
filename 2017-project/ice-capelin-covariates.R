@@ -55,7 +55,7 @@ cape <- loadSubsetDatasets1(df = capelin_join, name = "capelin_m", pat = pattern
 # Divide area by 1000 and normalize Ntice
 for(i in 1:length(cape)){
      cape[[i]]$max_area1000 <- cape[[i]]$max_area/1000
-     cape[[i]]$Ntice <- (cape[[i]]$tice - mean(cape[[i]]$tice))/sd(cape[[i]]$tice)
+     cape[[i]]$Ntice <- ((cape[[i]]$tice - mean(cape[[i]]$tice))/sd(cape[[i]]$tice)) + 5
 }
 
 # seperate cape into time components
@@ -68,7 +68,8 @@ cape_2001 <- map(cape, ~filter(.x, year > 2002 & year < 2017))
 sdf <- cape_2001$capelin_m1[c("year", "tice", "logcapelin", "surface_tows_lag2", "Ntice", "Nsurface_tows_lag2")]
 library(plot3D)
 View(sdf)
-
+sdf$logTows <- log10(sdf$surface_tows_lag2)
+max(sdf$logTows)/min(sdf$logTows)
 scatter3D(sdf$Ntice, sdf$logcapelin, sdf$Nsurface_tows_lag2)
 
 
@@ -104,9 +105,9 @@ for(i in 1:length(MaxTice$optim_ls)){
 }
 
 # replicate graphs with calcFit_all1 and only 2000 data
-MaxTice1 <- calcFit_all1(cape_2001, titlenames, par = c(1, 200, 0.6), var1 = "tice", var2 = "surface_tows_lag2",
+MaxTice1 <- calcFit_all1(cape_2001, titlenames, par = c(1, 200), var1 = "tice", var2 = "surface_tows_lag2",
                        form1 = "Alpha*tmp1*(1-(tmp1/Beta))",
-                       form2 = "Alpha*tmp1*(1-(tmp1/Beta))*Gamma",
+#                       form2 = "Alpha*tmp1*(1-(tmp1/Beta))*Gamma",
                        x1_range = c(0:150),
                        x2_range = seq(500, 4000, 25))
 str(MaxTice1, max.level = 4)
@@ -114,6 +115,7 @@ head(MaxTice1$optim_ls$`MaxTice-m1`$df)
 MaxTice1$optim_ls$`MaxTice-m1`$df
 
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+
 for(i in 1:length(MaxTice1$optim_ls)){
      df1 <- as.data.frame(MaxTice1$optim_ls[[i]]$df)
      df2 <- as.data.frame(MaxTice1$optim_ls[[i]]$regime1)
@@ -126,17 +128,33 @@ for(i in 1:length(MaxTice1$optim_ls)){
 # replicate graphs with calcFit_all1 and only 2000 normalized data
 
 ## works above here----
-MaxTice2 <- calcFit_all1(cape_2001, titlenames, par = c(1, 20, 0.6), var1 = "Ntice", var2 = "Nsurface_tows_lag2",
+MaxTice2 <- calcFit_all1(cape_2001, titlenames, par = c(1, 7), var1 = "Ntice", var2 = "Nsurface_tows_lag2",
                          form1 = "Alpha*tmp1*(1-(tmp1/Beta))",
-                         form2 = "Alpha*tmp1*(1-(tmp1/Beta))*Gamma",
-                         x1_range = c(-3:3),
+                         #form1 = "Alpha*tmp1*(1-(tmp1/Beta)) + tmp2*Gamma",
+#                         form2 = "Alpha*tmp1*(1-(tmp1/Beta))*Gamma",
+                         x1_range = seq(0, 10, 0.067), #c(0:10),
                          x2_range = c(-3:3))
 str(MaxTice, max.level = 3)
 head(MaxTice2$optim_ls$`MaxTice-m1`$regime2)
 
+MaxTice2$optim_ls$`MaxTice-m1`$cdf
+MaxTice1$optim_ls$`MaxTice-m1`$cdf
+
+x <- MaxTice2$optim_ls$`MaxTice-m1`$df
+rm(x)
+min(x$tice) - mean(x$tice)
+range(x$tice)
+max(x$tice)/min(x$tice)
+max(x$tice)
+min(x$Ntice) - mean(x$Ntice)
+range(x$Ntice)
+max(x$Ntice)/min(x$Ntice)
+max(x$Ntice)
+
 #create and save graphs
 #source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+
 for(i in 1:length(MaxTice2$optim_ls)){
      df1 <- as.data.frame(MaxTice2$optim_ls[[i]]$df)
      df2 <- as.data.frame(MaxTice2$optim_ls[[i]]$regime1)
