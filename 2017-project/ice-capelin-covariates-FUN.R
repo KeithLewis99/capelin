@@ -87,7 +87,7 @@ optimGraphs1 <- function(df, reg1, reg2, yearLim, yearInt, lnbiomassInt, title, 
 p1 <- ggplot(df, aes(x = year, y = logcapelin)) + 
      geom_errorbar(width = 0.3, colour = "black", aes(ymin=logcapelinlb, ymax=logcapelinub)) + 
      geom_point(shape=16, size=3)  +
-     geom_line(aes(y=ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +
+     geom_line(aes(y=ExpectedLogBiomass), colour="blue", linetype=1, size=1.25) +
      #geom_line(aes(y=ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
      scale_y_continuous(limits = c(-4,10), breaks = lnbiomassInt) +
      scale_x_continuous(limits = yearLim, breaks = yearInt) +
@@ -98,7 +98,7 @@ p1 <- ggplot(df, aes(x = year, y = logcapelin)) +
 p2 <- ggplot(df, aes(x = year, y = capelin)) +
      geom_errorbar(width = 0.3, colour = "black", aes(ymin=capelinlb, ymax=capelinub)) + 
      geom_point(shape=16, size=3)  +
-     geom_line(aes(y=exp(ExpectedLogBiomass)), colour="red", linetype=1, size=1.25) +
+     geom_line(aes(y=exp(ExpectedLogBiomass)), colour="blue", linetype=1, size=1.25) +
      #geom_line(aes(y=exp(ExpectedLogBiomassOld)), colour="blue", linetype=1, size=1.25) +
           #scale_y_continuous(limits = c(0,8500), breaks = biomassInt) +
      scale_x_continuous(limits = yearLim, breaks = yearInt) +
@@ -124,6 +124,15 @@ cowplot::plot_grid(p1, p2, p3, labels = c(paste(title)), ncol=2)
 }
 
 
+optimGraphs1_all <- function(ls, var, file_name){
+     for(i in 1:length(ls$optim_ls)){
+          df1 <- as.data.frame(ls$optim_ls[[i]]$df)
+          df2 <- as.data.frame(ls$optim_ls[[i]]$regime1)
+          df3 <- as.data.frame(ls$optim_ls[[i]]$regime2)
+          mm <- optimGraphs1(df1, df2, df3, yearLim, yearInt, lnbiomassInt,  titlenames[i], var)
+          ggsave(mm, filename = paste0("figs/covariates/", file_name, titlenames[i], ".pdf"), width=10, height=8, units="in")
+     }
+}
 
 #' #calcFit performs the optim function for a single dataframe.  CalcFit_all is a wrapper that performs the optim function on a list of dataframes for the different ice subsets
 #'
@@ -177,8 +186,7 @@ calcFit1 <- function(df, var1, var2=NULL, par, form1 = NULL, form2 = NULL, x1_ra
      CapelinDomeFit <- optim(par = par,
                              dataf = df[which(df$logcapelin!='NA'), c(paste(var1), paste(var2), 'logcapelin')], 
                              form1=form1, form2=form2, var1=var1, var2=var2,
-                             fn = SSQCapelinDome1, method=c("L-BFGS-B"))
-                             #,lower = c(0.00001,0))
+                             fn = SSQCapelinDome1, method=c("L-BFGS-B"))#, lower = c(0.00001, 0))
      
      # before 2010
 #     CapelinDomeFitOld <- optim(par=par,
@@ -193,6 +201,8 @@ calcFit1 <- function(df, var1, var2=NULL, par, form1 = NULL, form2 = NULL, x1_ra
  #    df$ExpectedLogBiomassOld <- CapelinDome1(params = c(CapelinDomeFitOld$par), dataf = df[,c('year', paste(var1), paste(var2))], form1, form2, var1, var2)
      
      # attach the optimization curves of capelin abundance to ice data
+     
+     #browser()
      xtice <- expand.grid(col1 = as.numeric(paste(x1_range)), col2=as.numeric(x2_range))
      
      #    xtice <- expand.grid(year = c(1990,2000), col2 = as.numeric(paste(x1_range)), col3=as.numeric(x2_range))
