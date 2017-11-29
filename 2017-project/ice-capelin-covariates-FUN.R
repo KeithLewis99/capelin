@@ -114,6 +114,7 @@ p2 <- ggplot(df, aes(x = year, y = capelin)) +
 p3 <- ggplot() + 
      geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomass"), colour="red", linetype=1, size=1.25) + 
      #geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomassOld"), colour="blue", linetype=1, size=1.25) +
+     geom_line(data = subset(reg2, var2==230), aes_string(x = var, y = "ExpectedLogBiomass"), colour="green", linetype=1, size=1.25) +
      geom_point(data = subset(df, year > 1991), aes_string(x = var, y = "logcapelin"), shape=15, size=3) + 
      geom_errorbar(data = subset(df, year > 1991), aes_string(x = var, ymin="logcapelinlb", ymax="logcapelinub"), width = 0.3, colour = "black") +
      xlab(paste(var)) +
@@ -186,7 +187,7 @@ calcFit1 <- function(df, var1, var2=NULL, par, form1 = NULL, form2 = NULL, x1_ra
      CapelinDomeFit <- optim(par = par,
                              dataf = df[which(df$logcapelin!='NA'), c(paste(var1), paste(var2), 'logcapelin')], 
                              form1=form1, form2=form2, var1=var1, var2=var2,
-                             fn = SSQCapelinDome1, method=c("L-BFGS-B"))#, lower = c(0.00001, 0))
+                             fn = SSQCapelinDome1, method=c("L-BFGS-B"), lower = c(0.00001, 0))
      
      # before 2010
 #     CapelinDomeFitOld <- optim(par=par,
