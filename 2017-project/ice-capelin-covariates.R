@@ -4,7 +4,7 @@
 
 
 # The purpose of this file is to:
-# 1) Test additional covariates to improve the Tice model fit
+# 1) Use function optim to test additional covariates to improve the Tice model fit
 
 rm(list=ls())
 
@@ -56,6 +56,10 @@ cape <- loadSubsetDatasets1(df = capelin_join, name = "capelin_m", pat = pattern
 for(i in 1:length(cape)){
      cape[[i]]$max_area1000 <- cape[[i]]$max_area/1000
      cape[[i]]$Ntice <- ((cape[[i]]$tice - mean(cape[[i]]$tice))/sd(cape[[i]]$tice)) + 5
+     cape[[i]]$logsurface_tows_lag2 <- log(cape[[i]]$surface_tows_lag2)
+     cape[[i]]$logtice <- log(cape[[i]]$tice)
+     cape[[i]]$Htice <- cape[[i]]$tice*100
+     cape[[i]]$Ssurface_tows_lag2 <- cape[[i]]$surface_tows_lag2/10
 }
 
 # seperate cape into time components
@@ -96,14 +100,9 @@ MaxTice <- calcFit_all(cape_2001, titlenames, par = c(1, 200, 0.6), var = "tice"
                        x_range = c(0:190,173.515,187.768))
 str(MaxTice, max.level = 3)
 
-for(i in 1:length(MaxTice$optim_ls)){
-     df1 <- as.data.frame(MaxTice$optim_ls[[i]]$df)
-     df2 <- as.data.frame(MaxTice$optim_ls[[i]]$regime1)
-     df3 <- as.data.frame(MaxTice$optim_ls[[i]]$regime2)
-     mm <- optimGraphs(df1, df2, df3, yearInt, lnbiomassInt,  titlenames[i], "tice")
-     ggsave(mm, filename = paste0("figs/covariates/opt_", titlenames[i], ".pdf"), width=10, height=8, units="in")
-}
+optimGraphs1_all(MaxTice, "tice", "opt_")
 
+##MaxTice1----
 # replicate graphs with calcFit_all1 and only 2000 data
 MaxTice1 <- calcFit_all1(cape_2001, titlenames, par = c(1, 200), var1 = "tice", var2 = "surface_tows_lag2",
                        form1 = "Alpha*tmp1*(1-(tmp1/Beta))",
@@ -113,19 +112,10 @@ MaxTice1 <- calcFit_all1(cape_2001, titlenames, par = c(1, 200), var1 = "tice", 
 str(MaxTice1, max.level = 4)
 head(MaxTice1$optim_ls$`MaxTice-m1`$df)
 MaxTice1$optim_ls$`MaxTice-m1`$df
+MaxTice1$optim_ls$`MaxTice-m1`$cdf
 
-source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+optimGraphs1_all(MaxTice1, "tice", "opt1")
 
-for(i in 1:length(MaxTice1$optim_ls)){
-     df1 <- as.data.frame(MaxTice1$optim_ls[[i]]$df)
-     df2 <- as.data.frame(MaxTice1$optim_ls[[i]]$regime1)
-     df3 <- as.data.frame(MaxTice1$optim_ls[[i]]$regime2)
-     mm <- optimGraphs1(df1, df2, df3, yearLim, yearInt, lnbiomassInt,  titlenames[i], "tice")
-     ggsave(mm, filename = paste0("figs/covariates/opt1_", titlenames[i], ".pdf"), width=10, height=8, units="in")
-}
-# something screwy with the CapelinDomeFitOld object.  The last 4  values are > 80 and this throws everythign off - so just ignore the blue lines
-
-# replicate graphs with calcFit_all1 and only 2000 normalized data
 
 ## works above here----
 MaxTice2 <- calcFit_all1(cape_2001, titlenames, par = c(1, 7), var1 = "Ntice", var2 = "Nsurface_tows_lag2",
@@ -140,6 +130,7 @@ head(MaxTice2$optim_ls$`MaxTice-m1`$regime2)
 MaxTice2$optim_ls$`MaxTice-m1`$cdf
 MaxTice1$optim_ls$`MaxTice-m1`$cdf
 
+# this suggests to me that the normalizatoin is squishing the variable bc ratios are different
 x <- MaxTice2$optim_ls$`MaxTice-m1`$df
 rm(x)
 min(x$tice) - mean(x$tice)
@@ -155,29 +146,153 @@ max(x$Ntice)
 #source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 
-for(i in 1:length(MaxTice2$optim_ls)){
-     df1 <- as.data.frame(MaxTice2$optim_ls[[i]]$df)
-     df2 <- as.data.frame(MaxTice2$optim_ls[[i]]$regime1)
-     df3 <- as.data.frame(MaxTice2$optim_ls[[i]]$regime2)
-     mm <- optimGraphs1(df1, df2, df3, yearLim, yearInt, lnbiomassInt,  titlenames[i], "Ntice")
-     ggsave(mm, filename = paste0("figs/covariates/opt_norm_", titlenames[i], ".pdf"), width=10, height=8, units="in")
+optimGraphs1_all(MaxTice4, "Ntice", "opt_norm")
+
+### MaxTice4 log----
+yearInt <- seq(2002, 2017, by=3)
+yearLim <- c(2002, 2017)
+lnbiomassInt <- seq(0, 10, by=2)
+biomassInt <- seq(0, 8500)
+
+source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+
+MaxTice4 <- calcFit_all1(cape_2001, titlenames, par = c(1, 1), var1 = "logtice", var2 = "logsurface_tows_lag2",
+                         form1 = "Alpha*tmp1*(1-(tmp1/Beta))",
+                         #                       form2 = "Alpha*tmp1*(1-(tmp1/Beta))*Gamma",
+                         x1_range = seq(3, 5, 0.1),
+                         x2_range = seq(3, 5, 0.1))
+
+MaxTice4$optim_ls$`MaxTice-m1`$cdf
+optimGraphs1_all(MaxTice4, "logtice", file_name = "optLog2")
+
+str(MaxTice4$optim_ls$`MaxTice-m5`$regime2)
+head(MaxTice4$optim_ls$`MaxTice-m4`$df)
+x <- MaxTice4$optim_ls$`MaxTice-m1`$regime2
+plot(x$logtice, x$ExpectedLogBiomass)
+
+head(x)
+tail(x)
+
+#attempt at back transforming
+for(i in 1:length(MaxTice4$optim_ls)){
+     for(col in names(MaxTice4$optim_ls[[i]]$regime2)){
+          new_names <- c(1:3, NA)
+          new_names <- paste0("E", names(MaxTice4$optim_ls[[i]]$regime2[col]))
+          MaxTice4$optim_ls[[i]]$regime2[[new_names]] <- exp(MaxTice4$optim_ls[[i]]$regime2[[col]])
+     }
 }
 
+for(col in names(x)){
+     new_names <- c(1:3, NA)
+     new_names <- paste0("E", names(x[col]))
+     x[[new_names]] <- exp(x[[col]])
+}
+
+head(x)
+
+#won't work unless you add another var
+optimGraphs1_all(MaxTice4, "logtice", "optLog2")
+for(i in 1:length(MaxTice4$optim_ls)){
+     df1 <- as.data.frame(MaxTice4$optim_ls[[i]]$df)
+     df2 <- as.data.frame(MaxTice4$optim_ls[[i]]$regime1)
+     df3 <- as.data.frame(MaxTice4$optim_ls[[i]]$regime2)
+     mm <- optimGraphs1(df1, df2, df3, yearLim, yearInt, lnbiomassInt,  titlenames[i], "Elogtice", "tice")
+     ggsave(mm, filename = paste0("figs/covariates/optLog", titlenames[i], ".pdf"), width=10, height=8, units="in")
+}
+
+     df1 <- as.data.frame(MaxTice4$optim_ls$`MaxTice-m1`$df)
+     df2 <- as.data.frame(MaxTice4$optim_ls$`MaxTice-m2`$regime2)
+     df3 <- as.data.frame(MaxTice4$optim_ls$`MaxTice-m1`$regime2)
+     mm <- optimGraphs1(df1, df2, df3, yearLim, yearInt, lnbiomassInt,  "MaxTice-m1", "Elogtice", "tice")
+     ggsave(mm, filename = paste0("figs/covariates/optLog", titlenames[i], ".pdf"), width=10, height=8, units="in")
+
+
+graphics.off()
+var1 <- "Elogtice"
+var2 <- "tice"
+p3 <- ggplot() + 
+     geom_line(data = df3, aes_string(x = var1, y = "ExpectedLogBiomass"), colour="red", linetype=1, size=1.25) + 
+     #geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomassOld"), colour="blue", linetype=1, size=1.25) +
+     geom_point(data = subset(df1, year > 1991), aes_string(x = var2, y = "logcapelin"), shape=15, size=3) + 
+     geom_errorbar(data = subset(df1, year > 1991), aes_string(x = var2, ymin="logcapelinlb", ymax="logcapelinub"), width = 0.3, colour = "black") +
+     xlab(paste(var2)) +
+     ylab("ln (Capelin biomass (ktons))") + 
+     #ylim(0,9) +
+     theme_bw()
+source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+
+
+###
+MaxTice5 <- calcFit_all1(cape_2001, titlenames, par = c(1, 200), var1 = "tice", var2 = "Ssurface_tows_lag2",
+                         form1 = "Alpha*tmp1*(1-(tmp1/Beta))",
+                         #form2 = "Alpha*tmp2*Beta*Gamma",
+                         x1_range = c(0:150),
+                         x2_range = c(0:500))
+
+MaxTice5$optim_ls$`MaxTice-m1`$cdf
+
+optimGraphs1_all(MaxTice5, "tice", "opt_div")
+
+
+### MaxTice6 log----
+#DON'T CHANGE 
+MaxTice6 <- calcFit_all1(cape_2001, titlenames, 
+                         par = c(1, 200, 1), 
+                         var1 = "tice", var2 = "Ssurface_tows_lag2",
+                         form1 = "Alpha*tmp1*(1-(tmp1/Beta)) + Gamma*tmp2",
+                         #form2 = "Alpha*tmp2*Beta*Gamma",
+                         x1_range = seq(0, 150, 10),
+                         x2_range = seq(30, 500, 50))
+#c(250))
+                              #
+optimGraphs1_all(MaxTice6, "tice", "opt_div2")
+
+x <- MaxTice6$optim_ls$`MaxTice-m1`
+MaxTice6$optim_ls$`MaxTice-m1`$cdf
+str(MaxTice6$optim_ls$`MaxTice-m1`$regime2)
+head(MaxTice6$optim_ls$`MaxTice-m1`$regime2, 30)
+range(x$df$Ssurface_tows_lag2)
+
+MaxTice6$optim_ls$`MaxTice-m1`$df
+a <- MaxTice6$optim_ls$`MaxTice-m1`$cdf$par[1]
+b <- MaxTice6$optim_ls$`MaxTice-m1`$cdf$par[2]
+c <- MaxTice6$optim_ls$`MaxTice-m1`$cdf$par[3]
+
+a*80*(1-(80/b)) + c*118.1
+
+
+###
+MaxTice7 <- calcFit_all1(cape_2001, titlenames, 
+                         par = c(1, 200, 1), 
+                         var1 = "tice", var2 = "Ssurface_tows_lag2",
+                         form1 = "Alpha*tmp1*(1-(tmp1/Beta)) + Gamma*tmp2",
+                         #form2 = "Alpha*tmp2*Beta*Gamma",
+                         x1_range = seq(0, 150, 10),
+                         x2_range = seq(30, 500, 50))
+#c(250))
+#
+optimGraphs1_all(MaxTice7, "tice", "opt_div3")
+MaxTice7$optim_ls$`MaxTice-m1`$cdf
+
+###
 MaxTice3 <- calcFit_all1(cape_2001, titlenames, par = c(1, 20, 0.6), var1 = "Ntice", var2 = "Nsurface_tows_lag2",
                          form1 = "Alpha*tmp2*Beta",
                          form2 = "Alpha*tmp2*Beta*Gamma",
                          x1_range = c(-3:3),
                          x2_range = c(-3:3))
-
-for(i in 1:length(MaxTice3$optim_ls)){
-     df1 <- as.data.frame(MaxTice3$optim_ls[[i]]$df)
-     df2 <- as.data.frame(MaxTice3$optim_ls[[i]]$regime1)
-     df3 <- as.data.frame(MaxTice3$optim_ls[[i]]$regime2)
-     mm <- optimGraphs1(df1, df2, df3, yearLim, yearInt, lnbiomassInt,  titlenames[i], "Nsurface_tows_lag2")
-     ggsave(mm, filename = paste0("figs/covariates/opt_norm_sur", titlenames[i], ".pdf"), width=10, height=8, units="in")
-}
+optimGraphs1_all(MaxTice3, "Nsurface_tows_lag2", "opt_norm_sur")
 
 ---------------------------------------------------------------
+     ggplot() + 
+     geom_line(data = MaxTice6$optim_ls$`MaxTice-m1`$regime2, aes(x = tice, y = ExpectedLogBiomass), colour="red", linetype=1, size=1.25) +  
+     #geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomassOld"), colour="blue", linetype=1, size=1.25) +
+     geom_line(data = subset(MaxTice6$optim_ls$`MaxTice-m1`$regime2, Ssurface_tows_lag2==230), aes(x = tice, y = ExpectedLogBiomass), colour="green", linetype=1, size=1.25) +
+     geom_point(data = MaxTice6$optim_ls$`MaxTice-m1`$df,  aes(x = tice, y = logcapelin), shape=15, size=3) + 
+     geom_errorbar(data = MaxTice6$optim_ls$`MaxTice-m1`$df, aes(x = tice, ymin=logcapelinlb, ymax=logcapelinub), width = 0.3, colour = "black") +
+     #     xlab(paste(tic)) +
+     ylab("ln (Capelin biomass (ktons))") + 
+     #ylim(0,9) +
+     theme_bw()
 ## IN DEVELOPMENT-----
 #
 # test of a generalization of the formula to multiple variables
