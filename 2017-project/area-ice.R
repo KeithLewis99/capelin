@@ -459,6 +459,8 @@ sub2017.m1.sum <- iceSummarylm(sub2017.m1)
 sub2017.m1.rsq <- lmoutputSummary(sub2017.m1.sum)
 write.csv(sub2017.m1.rsq, file = "output-processing/sub2017-m1-rsq.csv", row.names=F, na="")
 
+write.csv(trends.m1, file = "output-processing/trends_m1.csv", row.names=F, na="")
+
 p1.m1  <- ggplot(data = sub2017.m1$mall, aes(x = area, y = tice)) + geom_point() + geom_smooth(method=lm)
 
 # plot tice against ice area
@@ -882,3 +884,9 @@ guides(fill=FALSE)
 ggWater
 
 ########################################################################################################
+
+trends.m6 %>%
+     filter(year > 2002 & tice < 200) %>%
+     ggplot() + 
+     geom_line(aes(x=tice, y=minlats)) + 
+     facet_wrap(~year)
