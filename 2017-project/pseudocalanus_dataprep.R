@@ -68,6 +68,8 @@ m3 <- pscal %>%
      group_by(year) %>%
      summarise(mean_tot = mean(density), sd_tot = sd(density))
 
+
+
 #plot of above - densities are similar among stages    
 p1 <- pscal %>%
      gather(key = stage, value = density, 4:10) %>%
