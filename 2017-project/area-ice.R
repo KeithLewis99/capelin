@@ -8,7 +8,8 @@
 
 #1) to map these summaries and ensure that the data are being properly summarized by ice-chart-processing-data
 #2) examine the relationships between ice area, tice, and minlat using various subsets of the ice data
-#3) explore more rigorous method of determining relationship between tice and minlat
+#3) explore more rigorous method of determining relationship between tice and minlat such as median and median of the top 5 values
+#4) produce *.csv files of the above
 
 
 rm(list=ls())
