@@ -5,7 +5,7 @@
 ################################################################
 
 # The purpose of this file is to:
-#1) 
+#1) calculate non-Gaussian curves that Paul examined.  File deprecated for now.
 
 ## Area analysis ---------------------------------------------------------------
 
