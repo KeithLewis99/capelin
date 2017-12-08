@@ -196,9 +196,6 @@ normTice <- optimSummary(MaxTice2a, titlenames = titlenames)
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 optimGraphs2_all(MaxTice2a, "Ntice", var2 = NULL, var2val = 0, "normTice", "no")
 
-optimGraphs2_all(MaxTice2a, "Ntice", var2 = "Nsurface_tows_lag2", var2val = 0, "normTice", "no")
-MaxTice2a$optim_ls$`MaxTice-m1`$df
-
 
 ### MaxTice4 log data, 2 parm, 1 var, dome----
 MaxTice4 <- calcFit_all1(cape_2001, titlenames, par = c(1, 1), var1 = "logtice", var2 = "logsurface_tows_lag2",
@@ -277,7 +274,7 @@ MaxTice6d <- calcFit_all2(cape_2001, titlenames,
 
     
 scalTiceST_HollingIV_line <- optimSummary(MaxTice6d, titlenames = titlenames)
-optimGraphs2_all(MaxTice6d, "tice", var2 = NULL, var2val = 230, file_name = "scalTiceST_HollingIV", saveGraph = "no")
+optimGraphs2_all(MaxTice6d, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceST_HollingIV", saveGraph = "no")
 
 
 ### MaxTice8 scaled data, 4 parm, 3 var, dome + 2line----
@@ -292,6 +289,7 @@ MaxTice8 <- calcFit_all2(cape_2001, titlenames,
 
 
 scalTiceSTowPS <- optimSummary(MaxTice8, titlenames = titlenames)
+optimGraphs2_a
 optimGraphs2_all(MaxTice8, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceSTowPS", saveGraph = "no")
 
 

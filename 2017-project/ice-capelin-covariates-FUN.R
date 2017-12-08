@@ -170,7 +170,7 @@ cowplot::plot_grid(p1, p2, p3, labels = c(paste(title)), ncol=2)
 #' @examples optimGraphs2_all(MaxTice7, "tice", "Ssurface_tows_lag2", var2val = 280, "opt_div3c", "yes")
 optimGraphs2_all <- function(ls, var, var2=NULL, var2val, file_name, saveGraph){
      for(i in 1:length(ls$optim_ls)){
-          browser()
+          #browser()
           df1 <- as.data.frame(ls$optim_ls[[i]]$df)
           df2 <- as.data.frame(ls$optim_ls[[i]]$regime1)
           df3 <- as.data.frame(ls$optim_ls[[i]]$regime2)
@@ -259,13 +259,12 @@ optimGraphs2 <- function(df, reg1, reg2, yearLim, yearInt, lnbiomassInt, title, 
                #ylim(0,9) +
                theme_bw()
      }
-     browser()
+     #browser()
      mm <- if(is.null(var2)){
           cowplot::plot_grid(p1, p2, p3, labels = c(paste(title)), ncol=2)
-     }
-     mm <- if(!is.null(var2)){
+     } else if(!is.null(var2)){
           cowplot::plot_grid(p1, p2, p3, p4, labels = c(paste(title)), ncol=2)          }
-     mm
+return(mm)
 }
 
 
