@@ -118,3 +118,14 @@ y_det = a + b *x
 y = rnorm(20, mean = y_det, sd = 2)
 plot(x, y)
 lines(x, y)
+
+
+
+# Bolker pg 173
+data(ReedfromgPred)
+k <- 30
+binomNLL1 <- function(p, k, N) {
+     -sum(dbinom(k, prob = p, size = N, log = TRUE))
+}
+
+opt1 <- optim(fn = binomNLL1, par = c(p=0.5), N = 10, k = k, method = "BFGS")
