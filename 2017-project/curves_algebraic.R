@@ -10,12 +10,12 @@ hist(z)
 
 y1 <- alpha*x
 y2 <- 1-x/beta
-y3 <- alpha*x*(1-x/beta)
+y3 <- alpha*x/(1-x/beta)
 y4 <- alpha*x*(1-x/beta)
 y5 <- y4 + gamma*z
 y6 <- y5 + delta*w
 
-df <- cbind(y5, y4, x, z, w)
+df <- cbind(y5, y4, y3, x, z, w)
 head(df)
 
 plot(x, y1)
