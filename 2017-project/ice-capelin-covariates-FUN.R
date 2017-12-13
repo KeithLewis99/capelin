@@ -486,15 +486,15 @@ calcFit2 <- function(df, var1, var2=NULL, var3=NULL, par,
      #print(environment())
      if(lowerLim == "yes"){
           CapelinDomeFit <- optim(par = par,
-                                  dataf = df[which(df$logcapelin!='NA'), c(paste(var1), paste(var2), paste(var3), 'logcapelin')], 
+                                  dataf = df[which(df$logcapelin!='NA'), c(paste(var1), paste(var2), paste(var3), 'logcapelin')], #age2_log
                                   form1=form1, form2=form2, var1=var1, var2=var2, var3=var3,
                                   fn = SSQCapelinDome2, method=method, lower = c(0.00001, 0))
           
      }
      if(lowerLim == "no"){
           CapelinDomeFit <- optim(par = par,
-                                  dataf = df[which(df$logcapelin!='NA'), c(paste(var1), paste(var2), paste(var3), 'logcapelin')], 
-                                  form1=form1, form2=form2, var1=var1, var2=var2, var3=var3,
+                                  dataf = df[which(df$logcapelin!='NA'), c(paste(var1), paste(var2), paste(var3), 'logcapelin')], #logcapelin
+                                  form1=form1, form2=form2, var1=var1, var2=var2, var3=var3, 
                                   fn = SSQCapelinDome2, method=method)
           
      }
@@ -606,4 +606,169 @@ optimSummary <- function(ls, titlenames){
           output <- rbind(output, dat)
      }     
      return(output)
+}
+
+
+#' #calcFit performs the optim function for a single dataframe.  CalcFit_all is a wrapper that performs the optim function on a list of dataframes for the different ice subsets
+#'
+#' @param ls a list of dataframes for the different ice subsets (e.g. m1-m6) with associated capelin data
+#' @param titlenames for the different ice subsets (e.g. m1-m6)
+#' @param var1 - the variable of interest to enter into the model, i.e. form1 and form2, e.g. "tice"
+#' @param var2 - a variable of interest to enter into the model, i.e. form1 and form2, e.g. "surface_tows_lag2"
+#' #' @param var2 - a variable of interest to enter into the model, i.e. form1 and form2, e.g. "pseudo calanus density"
+#' @param par - a series of values to help the optim function
+#' @param form1 - a formula to describe the relationship of some ice parameter to capelin abundance post 1991
+#' @param form2 - a formula to describe the relationship of some ice parameter to capelin abundance  pre-1991; has the gamma param
+#' @param x_range - range of possible valus on the x-axis
+#'
+#' @return - a list of lists.  A list for each of the ice subsets (i.e., list of 6). Each list is a list of 4 with a dataframe (data), cdf (list of 5 which is output of the optim funtion), and 2 dataframes (regime1 and regime2) that are used to produce the associated graphs  
+#' @export
+#'
+#' @examples MaxTice <- calcFit_all(cape, titlenames, par = c(1, 200, 0.6), var = "tice", form1 = "Alpha*tmp*(1-(tmp/Beta))", form2 = "Alpha*tmp*(1-(tmp/Beta))*Gamma", x_range = c(0:190,173.515,187.768))
+#' 
+calcFit_all3 <- function(ls, titlenames, var1, var2=NULL, var3=NULL, rv, par, 
+                         form1 = NULL, form2 = NULL, 
+                         x1_range, x2_range=NULL, x3_range=NULL, 
+                         method = c("L-BFGS-B"), lowerLim = "no") {
+     
+     optim_ls <- rep(list(list()), length(titlenames))
+     names(optim_ls) <- titlenames
+     for(i in 1:length(ls)){
+          df1 <- as.data.frame(ls[[i]])
+          #browser()
+          optim <- calcFit3(df1, var1=var1, var2=var2, var3=var3, rv=rv, par=par, form1 = form1, form2 = form2, x1_range = x1_range, x2_range = x2_range, x3_range = x3_range)
+          optim_ls[[i]] <- optim
+     }
+     return(list(optim_ls = optim_ls))
+}     
+
+
+#' calcFit1 performs the optim function for a single dataframe or list
+#' most param are passed from calcFit_all(); like calcFit but for two variables
+#' @param df - a dataframe for a single ice subset (e.g. Ale's data) with associated capelin data or part of a list used in calcFit_all
+#' @param var1 - a variable of interest to enter into the model, i.e. form1 and form2, e.g. "tice"
+#' @param var2 - a variable of interest to enter into the model, i.e. form1 and form2, e.g. "surface_tows_lag2"
+#' @param par - a series of values to help the optim function
+#' @param form1 - a formula to describe the relationship of some ice parameter to capelin abundance post 1991
+#' @param form2 - a formula to describe the relationship of some ice parameter to capelin abundance  pre-1991; has the gamma param
+#' @param x_range - range of possible valus on the x-axis
+#'
+#' @return a list with the new expected values of the caplein, the CapelinDomeFit, regime 1 and regime 2
+#' @export
+#'
+#' @examples 
+#' note that this returns a warning "Unknown or uninitialised column: 'par'." which apparently is a tibble problem!!
+
+calcFit3 <- function(df, var1, var2=NULL, var3=NULL, rv, par, 
+                     form1 = NULL, form2 = NULL, 
+                     x1_range, x2_range=NULL, x3_range=NULL, 
+                     method = c("BFGS"),
+                     lowerLim = "no") {
+     
+     #browser()
+     #print(environment())
+     if(lowerLim == "yes"){
+          CapelinDomeFit <- optim(par = par,
+                                  dataf = df[which(df$logcapelin!='NA'), c(paste(var1), paste(var2), paste(var3), paste(rv))], 
+                                  form1=form1, form2=form2, var1=var1, var2=var2, var3=var3,
+                                  fn = SSQCapelinDome2, method=method, lower = c(0.00001, 0))
+          
+     }
+     if(lowerLim == "no"){
+          CapelinDomeFit <- optim(par = par,
+                                  dataf = df[which(df$logcapelin!='NA'), c(paste(var1), paste(var2), paste(var3), paste(rv))], 
+                                  form1=form1, form2=form2, var1=var1, var2=var2, var3=var3, 
+                                  fn = SSQCapelinDome2, method=method)
+          
+     }
+     ## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
+     #browser()
+     if(is.null(var3)){
+          df$ExpectedLogBiomass <- CapelinDome2(params = c(CapelinDomeFit$par), dataf = df[,c(paste(var1), paste(var2))], form1, form2, var1, var2, var3)
+          
+     } else {
+          df$ExpectedLogBiomass <- CapelinDome2(params = c(CapelinDomeFit$par), dataf = df[,c(paste(var1), paste(var2), paste(var3))], form1, form2, var1, var2, var3)
+     }
+     
+     #browser()
+     xtice <- expand.grid(col1 = as.numeric(paste(x1_range)), col2=as.numeric(x2_range), col3=as.numeric(x3_range))
+     colnames(xtice)[1] <- c(paste(var1))
+     colnames(xtice)[2] <- c(paste(var2))
+     colnames(xtice)[3] <- c(paste(var3))
+     xtice <- xtice[order(xtice[1]),]
+     xtice$ExpectedLogBiomass <- CapelinDome2(params = c(CapelinDomeFit$par),dataf = xtice, form1, form2, var1, var2, var3)
+     regime2 <- xtice
+     return(list(df = df, cdf = CapelinDomeFit, regime2 = regime2))  
+}
+
+
+#' SSQCapelinDome2
+#'
+#' @param params 
+#' @param dataf 
+#' @param form1 
+#' @param form2 
+#' @param var1 
+#' @param var2 
+#' @param var3 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+SSQCapelinDome3 <- function(params, dataf, form1, form2, var1, var2, var3){
+     browser()
+     dataf <- as.data.frame(dataf) # needed because optim doesn't work with tibbles.....grrrrrrrr!!!!!
+     Alpha <- params[1]
+     Beta <- params[2]
+     Gamma <- params[3]
+     Delta <- params[4]
+     #year <- dataf[,1]
+     #tice <- dataf[,2]
+     tmp1 <- dataf[,1] #variable of interest in form1 and form2
+     assign(var1, tmp1)
+     tmp2 <- dataf[,2] #variable of interest in form1 and form2
+     assign(var2, tmp2)
+     tmp3 <- dataf[,3] #variable of interest in form1 and form2      
+     assign(var3, tmp3)
+     logcap <- dataf[,4]
+     # this is based on MSY
+     # ELogCapBiom must be positive
+     # It is - always
+     ELogCapBiom <- eval(parse(text = form1))
+     #     ELogCapBiom <- ifelse(year < 2017, eval(parse(text = form1)), eval(parse(text = form2)))
+     sum((logcap-ELogCapBiom)^2)
+}
+
+
+## Function to obtain Expected Log Capelin Biomass    
+#' most params passed from calcFit_all():
+#' @param params - from par: a series of values to help the optim function 
+#' @param dataf - a dataframe for a single ice subset (e.g. Ale's data) with associated capelin data or part of a list used in calcFit_all
+#' @param form1 - a formula to describe the relationship of some ice parameter to capelin abundance post 1991
+#' @param form2 - a formula to describe the relationship of some ice parameter to capelin abundance  pre-1991; has the gamma param
+#' @param var - the variable of interest to enter into the model, i.e. form1 and form2, e.g. "tice"
+#' 
+#' @return - #### check this
+#' @export
+#'
+#' @examples df$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par), dataf = df[,c('year', paste(var))], form1, form2, var)
+#' 
+CapelinDome3 <- function(params, dataf, form1, form2, var1, var2, var3){
+     #browser()
+     dataf <- as.data.frame(dataf)
+     Alpha <- params[1]
+     Beta <- params[2]
+     Gamma <- params[3]
+     Delta <- params[4]
+     #year <- dataf[,1]
+     tmp1 <- dataf[,1] #variable of interest in form1 and form2
+     assign(var1, tmp1)
+     tmp2 <- dataf[,2] #variable of interest in form1 and form2
+     assign(var2, tmp2)
+     tmp3 <- dataf[,3] #variable of interest in form1 and form2
+     assign(var3, tmp3)
+     ELogCapBiom <- eval(parse(text = form1))
+     #     ELogCapBiom <- ifelse(year<2017, eval(parse(text = form1)), eval(parse(text = form2)))
+     ELogCapBiom
 }
