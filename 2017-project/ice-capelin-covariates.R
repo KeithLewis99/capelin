@@ -1,11 +1,9 @@
 #  Script written by Keith Lewis (Keith.Lewis@dfo-mpo.gc.ca)  #
 #  Created 2017-11-08, R version 3.3.3 (2017-03-06)             #
-#  Last modified by Paul Regular, Alejandro Buren, and Keith Lewis 2017-11.08 #
-
 
 # The purpose of this file is to:
 # 1) Use function optim to test additional covariates to improve the Tice model fit
-# 2) focus on capelin recruitment and pseudocalanus abundance.
+# 2) focus on capelin recruitment and pseudocalanus abundance. As well as capelin condition
 
 rm(list=ls())
 
@@ -36,19 +34,22 @@ capelin[c(47, 48, 49), 8] <- matrix(c(log(662), NA, log(158)), ncol = 1)
 # data set for joining to m1-m6 datasets
 capelin_join <- capelin[c("year", "capelin", "capelinlb", "capelinub", "logcapelin", "logcapelinlb", "logcapelinub")]
 
-# read in Age2 capelin 
+## read in Age2 capelin----
+#from "capelin_age_disaggregate_abundance.xlsx" worksheet:Age disagg acoustic index
 capelinAbun <- read.csv('data/capelin_age_disaggregate_abundance.csv',header=T)
 str(capelinAbun)
 capelinAbun$age2_log <- log(capelinAbun$age2)
 #View(capelinAbun)
 
-# read in Age2 capelin 
+# read in capelin condition
+# from "capelin_condition_maturation.xlsx"
 capelinCond <- read.csv('data/capelin_condition_maturation.csv',header=T)
 str(capelinCond)
 #View(capelinCond)
 capelinCond$resids_adj <- capelinCond$resids*1000
 
-# read in larval data
+## read in larval data----
+# from "capelin_age_disaggregate_abundance.xlsx":Larval indices
 larvae <- read.csv('data/capelin_larval_indices.csv',header=T)
 str(larvae)
 larvae$surface_tows_lag2 <- lag(larvae$surface_tows, 2)
@@ -56,8 +57,8 @@ larvae$surface_tows_lag2 <- lag(larvae$surface_tows, 2)
 #normalize the surface_tows 
 larvae$Nsurface_tows_lag2 <- (larvae$surface_tows_lag2 - mean(larvae$surface_tows_lag2, na.rm=T)) / sd(larvae$surface_tows_lag2, na.rm = T)
 
-# read in Pseudocalanus data
-## load original data----
+## read in Pseudocalanus data----
+# from "Copy of Copy of PSEUSP27_1999_2016.xlsx"
 pscal <- read_csv("data/pseudocal_1999_2016.csv")
 str(pscal)
 
@@ -80,8 +81,7 @@ range(ps_tot$ps_meanTot_lag2, na.rm = TRUE)
 ps_tot$ps_meanLog_lag2 <- lag(log10(ps_tot$ps_meanTot), 2)
 #View(ps_tot)
 
-# get rid of ex
-#join the acoustic and larvae data
+##join the above data sets----
 capelin_join <- left_join(capelin_join, larvae, by = "year")
 capelin_join <- left_join(capelin_join, ps_tot, by = "year")
 capelin_join <- left_join(capelin_join, capelinAbun, by = "year")
@@ -115,7 +115,7 @@ cape_2001 <- map(cape, ~filter(.x, year > 2002 & year < 2017))
 
 
 ## EXPLORATORY ANALYSIS----
-# make a simple data set and plot for m1
+# mimic Murphy et al - not successful
 cape_2017$capelin_m1$log10capelin <- log10(cape_2017$capelin_m1$capelin)
 cape_2017$capelin_m1$log10age2 <- log10(cape_2017$capelin_m1$age2)
 str(cape_2017$capelin_m1)
@@ -123,8 +123,9 @@ sdf_test <- cape_2017$capelin_m1[c("year", "logcapelin", "log10capelin", "log10a
 sdf_test <- filter(sdf_test, year > 1998 & year < 2013)
 plot(sdf_test$ps_meanLog_lag2, sdf_test$log10age2)
 
+# plot explanatory variables against response variable - check for colinearity
 cape_2001$capelin_m1$log10capelin <- log10(cape_2001$capelin_m1$capelin)
-sdf <- cape_2001$capelin_m1[c("year", "tice", "logcapelin", "age2_log", "surface_tows", "surface_tows_lag2", "ps_meanTot", "ps_meanTot_lag2", "ps_meanLog_lag2")]
+sdf <- cape_2001$capelin_m1[c("year", "tice", "logcapelin", "age2", "age2_log", "surface_tows", "surface_tows_lag2", "ps_meanTot", "ps_meanTot_lag2", "ps_meanLog_lag2")]
 View(sdf)
 str(cape_2001$capelin_m1)
 
@@ -133,20 +134,30 @@ plot(sdf$tice, sdf$ps_meanTot_lag2)
 plot(sdf$ps_meanLog_lag2, sdf$logcapelin)
 plot(sdf$ps_meanLog_lag2, sdf$log10capelin)
 plot(sdf$surface_tows_lag2, sdf$ps_meanTot_lag2)
+
+# compare logcapelin (biomass) against age2 (abundance)
 plot(sdf$logcapelin, sdf$age2_log)
 summary(lm(logcapelin ~ age2_log, data=sdf))
 
+ggplot(data=sdf) + geom_point(aes(x = age2_log, y = logcapelin)) +
+     geom_text(aes(x = age2_log, y = logcapelin + 0.05, label=year, size=3)) 
+     
+ggplot(data=sdf) + geom_point(aes(x = age2, y = logcapelin)) +
+     geom_text(aes(x = age2, y = logcapelin + 0.05, label=year, size=3)) 
+
+# plot variables in more detail - main graphic
 windows()
 ggplot(data=cape_2001$capelin_m1) + geom_point(aes(x = surface_tows_lag2, y = logcapelin)) +
      geom_text(aes(x = surface_tows_lag2, y = logcapelin + 0.05, label=tice), size=3) + 
      geom_text(aes(x = surface_tows_lag2, y = logcapelin - 0.05, label=year), nudge_x = 100, size=3, colour = "red") +
      geom_text(aes(x = surface_tows_lag2, y = logcapelin - 0.05, label=round(ps_meanTot_lag2, 0)), nudge_x = -25, size=3, colour = "blue")
 
-
+# Pcalanus(lag1) v capelin
 ggplot(data=cape_2001$capelin_m1) + geom_point(aes(x = ps_meanTot_lag1, y = logcapelin)) +
      geom_text(aes(x = ps_meanTot_lag1, y = logcapelin + 0.1, label=tice), size=3, ) + 
      geom_text(aes(x = ps_meanTot_lag1, y = logcapelin - 0.1, label=year), size=3)
 
+# Pcalanus(lag2) v capelin
 ggplot(data=cape_2001$capelin_m1) + geom_point(aes(x = ps_meanTot_lag2, y = logcapelin)) +
      geom_text(aes(x = ps_meanTot_lag2, y = logcapelin + 0.1, label=tice), size=3) + 
      geom_text(aes(x = ps_meanTot_lag2, y = logcapelin - 0.1, label=year), size=3)
@@ -158,7 +169,6 @@ lnbiomassInt <- seq(0, 10, by=2)
 biomassInt <- seq(0, 8500)
 
 labtice <- expression(paste(italic(t[ice]), '(day of year)')) # label for figures
-
 
 # replicate graphs with calcFit_all - gives extra lines
 MaxTice <- calcFit_all(cape_2001, titlenames, par = c(1, 200, 0.6), var = "tice", 
@@ -189,6 +199,26 @@ optimSummary(MaxTice1a, titlenames = titlenames)
 rawTice <- optimSummary(MaxTice1a, titlenames = titlenames)
 optimGraphs2_all(MaxTice1a, "tice", var2 = NULL, var2val = NULL, "rawTice", "no")
 
+source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+####################################################
+##########SOMETHING STILL WRONG!!!###################
+####################################################
+MaxTice1g <- calcFit_all3(cape_2001, 
+                          titlenames, 
+                          par = c(1, 200), 
+                          var1 = "tice", 
+                          var2 = NULL,
+                          var3 = NULL, 
+                          rv = "logcapelin",
+                          form1 = "Alpha*tmp1*(1 - (tmp1/Beta))",
+                          x1_range = seq(0:150),
+                          x2_range = NULL,
+                          x3_range = NULL) 
+optimSummary(MaxTice1g, titlenames = titlenames)
+windows()
+optimGraphs2_all(MaxTice1g, "tice", var2 = NULL, var2val = NULL, "rawTice", "no")
+
+
 # Surface tows
 MaxTice1b <- calcFit_all1(cape_2001, titlenames, par = c(1, 200), 
                           var1 = "Ssurface_tows_lag2", var2 = "tice",
@@ -208,7 +238,7 @@ scalPS <- optimSummary(MaxTice1c, titlenames = titlenames)
 optimGraphs2_all(MaxTice1c, "ps_meanTot_lag1", var2 = NULL, var2val = NULL, "scalPS", "no")
 
 # Surface tows_linear model
-MaxTice1d <- calcFit_all1(cape_2001, titlenames, par = c(1, 200), 
+MaxTice1d <- calcFit_all1(cape_2001, titlenames, par = c(1), 
                           var1 = "Ssurface_tows_lag2", var2 = "tice",
                           form1 = "Alpha*tmp1",
                           x1_range = c(0:500),
@@ -249,22 +279,37 @@ MaxTice1g <- calcFit_all2(cape_2001, titlenames, par = c(1, 200),
                           var1 = "tice", var2 = "Ssurface_tows_lag2", var3 ="ps_meanTot_lag1", 
                           form1 = "Alpha*tmp1*(1 - (tmp1/Beta))",
                           x1_range = seq(0:150),
-                          x2_range = seq(500, 4000, 25),
-                          x3_range = c(1)) 
+                          x2_range = NULL,
+                          x3_range = NULL) 
 
 optimSummary(MaxTice1g, titlenames = titlenames)
 
 
 
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
-MaxTice1g <- calcFit_all3(cape_2001, titlenames, par = c(1, 200), 
-                          var1 = "tice", var2 = "Ssurface_tows_lag2", var3 ="ps_meanTot_lag1", rv = "logcapelin",
-                          form1 = "Alpha*tmp1*(1 - (tmp1/Beta))",
-                          x1_range = seq(0:150),
-                          x2_range = seq(500, 4000, 25),
-                          x3_range = c(1)) 
+MaxTice1g <- calcFit_all3(cape_2001, 
+               titlenames, 
+               par = c(1, 200), 
+               var1 = "tice", var2 = NULL,
+               var3 =NULL, 
+               rv = "logcapelin",
+               form1 = "Alpha*tmp1*(1 - (tmp1/Beta))",
+               x1_range = seq(0:150),
+               x2_range = NULL,
+               x3_range = NULL) 
 optimSummary(MaxTice1g, titlenames = titlenames)
 
+MaxTice1g <- calcFit_all3(cape_2001, 
+                          titlenames, 
+                          par = c(1, 200), 
+                          var1 = "tice", var2 = NULL,
+                          var3 =NULL, 
+                          rv = "logcapelin",
+                          form1 = "Alpha*tmp1*(1 - (tmp1/Beta))",
+                          x1_range = seq(0:150),
+                          x2_range = NULL,
+                          x3_range = NULL) 
+optimSummary(MaxTice1g, titlenames = titlenames)
 
 ##MaxTice2a - normalized data, 2 parm, 1 var, dome----
 MaxTice2a <- calcFit_all1(cape_2001, titlenames, par = c(1, 7), 

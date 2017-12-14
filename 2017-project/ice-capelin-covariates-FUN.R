@@ -664,39 +664,47 @@ calcFit3 <- function(df, var1, var2=NULL, var3=NULL, rv, par,
                      x1_range, x2_range=NULL, x3_range=NULL, 
                      method = c("BFGS"),
                      lowerLim = "no") {
-     
      #browser()
      #print(environment())
      if(lowerLim == "yes"){
           CapelinDomeFit <- optim(par = par,
-                                  dataf = df[which(df$logcapelin!='NA'), c(paste(var1), paste(var2), paste(var3), paste(rv))], 
-                                  form1=form1, form2=form2, var1=var1, var2=var2, var3=var3,
-                                  fn = SSQCapelinDome2, method=method, lower = c(0.00001, 0))
+               dataf = df[which(df$logcapelin!='NA'), 
+               c(paste(var1), paste(var2), paste(var3), 
+                 paste(rv))], 
+               form1=form1, form2=form2, var1=var1, 
+               var2=var2, var3=var3, rv = rv,
+               fn = SSQCapelinDome3, method=method, 
+               lower = c(0.00001, 0))
           
      }
      if(lowerLim == "no"){
           CapelinDomeFit <- optim(par = par,
                                   dataf = df[which(df$logcapelin!='NA'), c(paste(var1), paste(var2), paste(var3), paste(rv))], 
-                                  form1=form1, form2=form2, var1=var1, var2=var2, var3=var3, 
-                                  fn = SSQCapelinDome2, method=method)
-          
+                                  form1=form1, form2=form2, var1=var1, var2=var2, var3=var3, rv = rv,
+                                  fn = SSQCapelinDome3, method=method)
      }
-     ## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
+
+## Obtain Expected Log Capelin Biomass using parameters estimated in lines above
      #browser()
      if(is.null(var3)){
-          df$ExpectedLogBiomass <- CapelinDome2(params = c(CapelinDomeFit$par), dataf = df[,c(paste(var1), paste(var2))], form1, form2, var1, var2, var3)
-          
+          df$ExpectedLogBiomass <- CapelinDome3(params = c(CapelinDomeFit$par), dataf = df[,c(paste(var1), paste(var2))], form1, form2, var1, var2, var3)
      } else {
-          df$ExpectedLogBiomass <- CapelinDome2(params = c(CapelinDomeFit$par), dataf = df[,c(paste(var1), paste(var2), paste(var3))], form1, form2, var1, var2, var3)
+          df$ExpectedLogBiomass <- CapelinDome3(params = c(CapelinDomeFit$par), dataf = df[,c(paste(var1), paste(var2), paste(var3))], form1, form2, var1, var2, var3)
      }
      
      #browser()
-     xtice <- expand.grid(col1 = as.numeric(paste(x1_range)), col2=as.numeric(x2_range), col3=as.numeric(x3_range))
+     if(is.null(var3) && is.null(var2)){
+          xtice <- expand.grid(col1 = as.numeric(x1_range))
+     } else if(is.null(var3)) {
+     xtice <- expand.grid(col1 = as.numeric(x1_range), col2=as.numeric(x2_range))
+     } else {
+     xtice <- expand.grid(col1 = as.numeric(x1_range), col2=as.numeric(x2_range), col3=as.numeric(x3_range))
+     }
      colnames(xtice)[1] <- c(paste(var1))
-     colnames(xtice)[2] <- c(paste(var2))
-     colnames(xtice)[3] <- c(paste(var3))
+     if(!is.null(var2)){colnames(xtice)[2] <- c(paste(var2))}
+     if(!is.null(var3)){colnames(xtice)[3] <- c(paste(var3))}
      xtice <- xtice[order(xtice[1]),]
-     xtice$ExpectedLogBiomass <- CapelinDome2(params = c(CapelinDomeFit$par),dataf = xtice, form1, form2, var1, var2, var3)
+     xtice$ExpectedLogBiomass <- CapelinDome3(params = c(CapelinDomeFit$par),dataf = xtice, form1, form2, var1, var2, var3)
      regime2 <- xtice
      return(list(df = df, cdf = CapelinDomeFit, regime2 = regime2))  
 }
@@ -716,22 +724,27 @@ calcFit3 <- function(df, var1, var2=NULL, var3=NULL, rv, par,
 #' @export
 #'
 #' @examples
-SSQCapelinDome3 <- function(params, dataf, form1, form2, var1, var2, var3){
-     browser()
+SSQCapelinDome3 <- function(params, dataf, form1, 
+                            form2, var1, var2=NULL, var3=NULL, rv){
+     #browser()
      dataf <- as.data.frame(dataf) # needed because optim doesn't work with tibbles.....grrrrrrrr!!!!!
      Alpha <- params[1]
      Beta <- params[2]
-     Gamma <- params[3]
-     Delta <- params[4]
+     if(!is.null(var2)){Gamma <- params[3]}
+     if(!is.null(var3)){Delta <- params[4]}
      #year <- dataf[,1]
      #tice <- dataf[,2]
      tmp1 <- dataf[,1] #variable of interest in form1 and form2
      assign(var1, tmp1)
-     tmp2 <- dataf[,2] #variable of interest in form1 and form2
-     assign(var2, tmp2)
-     tmp3 <- dataf[,3] #variable of interest in form1 and form2      
-     assign(var3, tmp3)
-     logcap <- dataf[,4]
+     if(!is.null(var2)){
+          tmp2 <- dataf[,2] #variable of interest in form1 and form2
+          assign(var2, tmp2)
+     }
+     if(!is.null(var3)){
+          tmp3 <- dataf[,3] #variable of interest in form1 and form2      
+          assign(var3, tmp3)
+     }
+     logcap <- dataf[,paste(rv)]
      # this is based on MSY
      # ELogCapBiom must be positive
      # It is - always
@@ -754,20 +767,25 @@ SSQCapelinDome3 <- function(params, dataf, form1, form2, var1, var2, var3){
 #'
 #' @examples df$ExpectedLogBiomass <- CapelinDome(params = c(CapelinDomeFit$par), dataf = df[,c('year', paste(var))], form1, form2, var)
 #' 
-CapelinDome3 <- function(params, dataf, form1, form2, var1, var2, var3){
+CapelinDome3 <- function(params, dataf, form1, form2, var1, var2=NULL, var3=NULL, rv){
      #browser()
      dataf <- as.data.frame(dataf)
      Alpha <- params[1]
      Beta <- params[2]
-     Gamma <- params[3]
-     Delta <- params[4]
+     if(!is.null(var2)){Gamma <- params[3]}
+     if(!is.null(var3)){Delta <- params[4]}
      #year <- dataf[,1]
      tmp1 <- dataf[,1] #variable of interest in form1 and form2
      assign(var1, tmp1)
-     tmp2 <- dataf[,2] #variable of interest in form1 and form2
-     assign(var2, tmp2)
-     tmp3 <- dataf[,3] #variable of interest in form1 and form2
-     assign(var3, tmp3)
+     if(!is.null(var2)){
+          tmp2 <- dataf[,2] #variable of interest in form1 and form2
+          assign(var2, tmp2)
+     }
+     if(!is.null(var3)){
+          tmp3 <- dataf[,3] #variable of interest in form1 and form2
+          assign(var3, tmp3)
+     }
+          
      ELogCapBiom <- eval(parse(text = form1))
      #     ELogCapBiom <- ifelse(year<2017, eval(parse(text = form1)), eval(parse(text = form2)))
      ELogCapBiom
