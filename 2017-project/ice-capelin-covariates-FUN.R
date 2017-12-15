@@ -206,7 +206,7 @@ optimGraphs2_all <- function(ls, var, var2=NULL, var2val, file_name, saveGraph){
 #' @examples nested in optimGraphs2_all(MaxTice7, "tice", "Ssurface_tows_lag2", var2val = 280, "opt_div3c", "yes")
 optimGraphs2 <- function(df, reg1, reg2, yearLim, yearInt, lnbiomassInt, title, var, var2, var2val){
      #browser()
-     #browser()
+     
      p1 <- ggplot(df, aes(x = year, y = logcapelin)) + 
           geom_errorbar(width = 0.3, colour = "black", aes(ymin=logcapelinlb, ymax=logcapelinub)) + 
           geom_point(shape=16, size=3)  +
@@ -229,6 +229,7 @@ optimGraphs2 <- function(df, reg1, reg2, yearLim, yearInt, lnbiomassInt, title, 
           ylab('Capelin biomass (ktons)') + 
           theme_bw() 
 
+#p3
      if(!is.null(var2)){
           p3 <- ggplot() + 
                geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomass"), colour="red", linetype=1, size=1.25) + 
@@ -249,7 +250,8 @@ optimGraphs2 <- function(df, reg1, reg2, yearLim, yearInt, lnbiomassInt, title, 
           #ylim(0,9) +
           theme_bw()
      }
-     #browser()
+#p4
+#browser()
      if(!is.null(var2)){
           p4 <- ggplot() + 
                geom_point(data = df, aes_string(x = var2, y = "logcapelin"), shape=15, size=3) +
@@ -703,7 +705,8 @@ calcFit3 <- function(df, var1, var2=NULL, var3=NULL, rv, par,
      colnames(xtice)[1] <- c(paste(var1))
      if(!is.null(var2)){colnames(xtice)[2] <- c(paste(var2))}
      if(!is.null(var3)){colnames(xtice)[3] <- c(paste(var3))}
-     xtice <- xtice[order(xtice[1]),]
+     #xtice <- xtice[order(xtice[1]),]
+     #browser()
      xtice$ExpectedLogBiomass <- CapelinDome3(params = c(CapelinDomeFit$par),dataf = xtice, form1, form2, var1, var2, var3)
      regime2 <- xtice
      return(list(df = df, cdf = CapelinDomeFit, regime2 = regime2))  

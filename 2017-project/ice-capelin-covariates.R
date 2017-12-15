@@ -202,23 +202,33 @@ optimGraphs2_all(MaxTice1a, "tice", var2 = NULL, var2val = NULL, "rawTice", "no"
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 ####################################################
 ##########SOMETHING STILL WRONG!!!###################
+###  #1 var1 does not converge for m2-m6: 
+     #2 graphoutput: green line not printing
 ####################################################
 MaxTice1g <- calcFit_all3(cape_2001, 
                           titlenames, 
-                          par = c(1, 200), 
+                          par = c(1, 200, 1), 
                           var1 = "tice", 
-                          var2 = NULL,
+                          var2 = "Ssurface_tows_lag2",
                           var3 = NULL, 
                           rv = "logcapelin",
-                          form1 = "Alpha*tmp1*(1 - (tmp1/Beta))",
-                          x1_range = seq(0:150),
-                          x2_range = NULL,
+                          form1 = "Alpha*tmp1*(1 - (tmp1/Beta)) + Gamma*tmp2",
+                          x1_range = seq(0,150, 10),
+                          x2_range = seq(50, 400, 25),
                           x3_range = NULL) 
 optimSummary(MaxTice1g, titlenames = titlenames)
 windows()
-optimGraphs2_all(MaxTice1g, "tice", var2 = NULL, var2val = NULL, "rawTice", "no")
+optimGraphs2_all(MaxTice1g, "tice", var2 = "Ssurface_tows_lag2", var2val = "Ssurface_tows_lag2", "rawTice", "no")
 
-
+"Ssurface_tows_lag2"
+"ps_meanTot_lag1"
+seq(500, 4000, 25)
+seq(10, 200, 20)
+"Alpha*tmp1*(1-(tmp1/Beta)) + Gamma*tmp2 + Delta*tmp3"
+MaxTice1g$optim_ls$`MaxTice-m1`$df
+range(MaxTice1g$optim_ls$`MaxTice-m1`$df$Ssurface_tows_lag2)
+MaxTice1g$optim_ls$`MaxTice-m1`$regime2
+range(MaxTice1g$optim_ls$`MaxTice-m1`$regime2$ExpectedLogBiomass)
 # Surface tows
 MaxTice1b <- calcFit_all1(cape_2001, titlenames, par = c(1, 200), 
                           var1 = "Ssurface_tows_lag2", var2 = "tice",
