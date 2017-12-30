@@ -228,12 +228,14 @@ optimGraphs2 <- function(df, reg1, reg2, yearLim, yearInt, lnbiomassInt, title, 
           xlab('Year') +
           ylab('Capelin biomass (ktons)') + 
           theme_bw() 
-
+#browser()
 #p3
      if(!is.null(var2)){
           p3 <- ggplot() + 
                geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomass"), colour="red", linetype=1, size=1.25) + 
                #geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomassOld"), colour="blue", linetype=1, size=1.25) +
+#               geom_line(data = reg2, eval(parse(text=var2))==var2val), aes_string(x = var, y = "ExpectedLogBiomass"), colour="green", linetype=1, size=1.25) +
+               
                geom_line(data = subset(reg2, eval(parse(text=var2))==var2val), aes_string(x = var, y = "ExpectedLogBiomass"), colour="green", linetype=1, size=1.25) +
                geom_point(data = subset(df, year > 1991), aes_string(x = var, y = "logcapelin"), shape=15, size=3) + 
                geom_errorbar(data = subset(df, year > 1991), aes_string(x = var, ymin="logcapelinlb", ymax="logcapelinub"), width = 0.3, colour = "black") +
@@ -792,4 +794,19 @@ CapelinDome3 <- function(params, dataf, form1, form2, var1, var2=NULL, var3=NULL
      ELogCapBiom <- eval(parse(text = form1))
      #     ELogCapBiom <- ifelse(year<2017, eval(parse(text = form1)), eval(parse(text = form2)))
      ELogCapBiom
+}
+
+
+#' var2val - helps to give value for the var2val arguement in the optimGraphs2_all
+#'
+#' @param df 
+#'
+#' @return - median values for 2nd variable + range of values
+#' @export
+#'
+#' @examples
+var2val <- function(df){
+     med <- median(df)
+     lev <- levels(as.factor(df))
+     return(list(med=med, lev=lev))    
 }
