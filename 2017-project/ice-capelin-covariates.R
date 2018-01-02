@@ -199,10 +199,19 @@ optimSummary(MaxTice1a, titlenames = titlenames)
 rawTice <- optimSummary(MaxTice1a, titlenames = titlenames)
 optimGraphs2_all(MaxTice1a, "tice", var2 = NULL, var2val = NULL, "rawTice", "no")
 
+MaxTice1a <- calcFit_all(cape_2001, titlenames, par = c(1, 200), 
+                          var = "tice", 
+                          form1 = "Alpha*tmp*(1-(tmp/Beta))", form2 = "Alpha*tmp*(1-(tmp/Beta))",
+                          x_range = c(0:150))
+
+optimSummary(MaxTice1a, titlenames = titlenames)
+
+source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
+
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 ####################################################
 ##########SOMETHING STILL WRONG!!!###################
-###  #1 var1 does not converge for m2-m6: 
+###  #1 var1 does not converge for m2-m6: this is because of the method.  
      #2 graphoutput: green line not printing - wrong values dumb ass!!!
 # vfin means not enough params!!!!
 ####################################################
@@ -239,6 +248,8 @@ optimSummary(MaxTice1g, titlenames = titlenames)
 optimGraphs2_all(MaxTice1g, "tice", var2 = "Ssurface_tows_lag2", var2val = 203, "rawTice", "no")
 
 #as above but one variable - doesn't converge!!!
+source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+
 MaxTice1g <- calcFit_all3(cape_2001, 
                           titlenames, 
                           par = c(1, 200), 
@@ -249,7 +260,8 @@ MaxTice1g <- calcFit_all3(cape_2001,
                           form1 = "Alpha*tmp1*(1 - (tmp1/Beta))",
                           x1_range = seq(0,150, 10),
                           x2_range = NULL,
-                          x3_range = NULL)
+                          x3_range = NULL, 
+                          method = c("L-BFGS-B"))
 
 optimSummary(MaxTice1g, titlenames = titlenames)
 var2val(MaxTice1g$optim_ls$`MaxTice-m1`$regime2$tice)

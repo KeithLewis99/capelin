@@ -633,14 +633,14 @@ optimSummary <- function(ls, titlenames){
 calcFit_all3 <- function(ls, titlenames, var1, var2=NULL, var3=NULL, rv, par, 
                          form1 = NULL, form2 = NULL, 
                          x1_range, x2_range=NULL, x3_range=NULL, 
-                         method = c("L-BFGS-B"), lowerLim = "no") {
+                         method = c("BFGS"), lowerLim = "no") {
      
      optim_ls <- rep(list(list()), length(titlenames))
      names(optim_ls) <- titlenames
      for(i in 1:length(ls)){
           df1 <- as.data.frame(ls[[i]])
           #browser()
-          optim <- calcFit3(df1, var1=var1, var2=var2, var3=var3, rv=rv, par=par, form1 = form1, form2 = form2, x1_range = x1_range, x2_range = x2_range, x3_range = x3_range)
+          optim <- calcFit3(df1, var1=var1, var2=var2, var3=var3, rv=rv, par=par, form1 = form1, form2 = form2, x1_range = x1_range, x2_range = x2_range, x3_range = x3_range, method = method)
           optim_ls[[i]] <- optim
      }
      return(list(optim_ls = optim_ls))
@@ -666,7 +666,7 @@ calcFit_all3 <- function(ls, titlenames, var1, var2=NULL, var3=NULL, rv, par,
 calcFit3 <- function(df, var1, var2=NULL, var3=NULL, rv, par, 
                      form1 = NULL, form2 = NULL, 
                      x1_range, x2_range=NULL, x3_range=NULL, 
-                     method = c("BFGS"),
+                     method = method,
                      lowerLim = "no") {
      #browser()
      #print(environment())
