@@ -383,9 +383,9 @@ MaxTice6b <- calcFit_all3(cape_2001,
                           x1_range = seq(30, 500, 50),
                           x2_range = seq(10, 280, 20),
                           x3_range = NULL)
-scalSTowPS <- optimSummary(MaxTice6b, titlenames = titlenames)
+scalSTowPS_lin <- optimSummary(MaxTice6b, titlenames = titlenames)
 var2val(MaxTice6a$optim_ls$`MaxTice-m1`$regime2$ps_meanTot_lag1)
-optimGraphs2_all(MaxTice6b, "Ssurface_tows_lag2", var2 = "ps_meanTot_lag1", var2val = 90, file_name = "scalSTowPS", saveGraph = "yes")
+optimGraphs2_all(MaxTice6b, "Ssurface_tows_lag2", var2 = "ps_meanTot_lag1", var2val = 90, file_name = "scalSTowPS_lin", saveGraph = "yes")
 
 ### MaxTice6c - Holling IV: scaled data, 3 parm, 1 var 
 # this is clunky code - there is only one variable being used but I need to put two in bc of the clunky code
@@ -438,8 +438,8 @@ MaxTice6e <- calcFit_all3(cape_2001,
                           x2_range = seq(10, 200, 20),
                           x3_range = seq(30, 500, 50))
 
-scalTiceST_domeH2 <- optimSummary(MaxTice6e, titlenames = titlenames)
-optimGraphs2_all(MaxTice6e, "tice", var2 = "ps_meanTot_lag1", var2val = 230, file_name = "scalTiceST_domeH2", saveGraph = "yes")
+scalTicePS_domeH2 <- optimSummary(MaxTice6e, titlenames = titlenames)
+optimGraphs2_all(MaxTice6e, "tice", var2 = "ps_meanTot_lag1", var2val = 230, file_name = "scalTicePS_domeH2", saveGraph = "yes")
 
 
 ### MaxTice8 scaled data, 4 parm, 3 var, dome + 2line----
@@ -537,7 +537,7 @@ optimSummary_ls <- list(rawTice=rawTice,
 optimSummary_ls
 
 ## med area -----
-
+# tells you almost nothing bc the ice runs from 1 Jan to 1 Jun and ice ends usually May.  Therefore, median values are always in 70s.
 # read the datasets and join them to capelin_join
 pattern <- grep("sub2017-m+[^rsq].csv", files, value = T)
 med_cape_2017 <- loadSubsetDatasets1(df = capelin_join, name = "med_m", pat = pattern, N = 6, var1 = "darea", var2 = "dminlats", nvar1 = "med_area", nvar2 = "minlats")
@@ -545,6 +545,14 @@ med_cape_2017 <- loadSubsetDatasets1(df = capelin_join, name = "med_m", pat = pa
 # Divide area by 1000
 for(i in 1:length(med_cape_2017)){
      med_cape_2017[[i]]$med_area1000 <- med_cape_2017[[i]]$med_area/1000
+}
+
+for(i in 1:length(med_cape_2017)){
+     med_cape_2017[[i]]$Ntice <- ((med_cape_2017[[i]]$tice - mean(med_cape_2017[[i]]$tice))/sd(med_cape_2017[[i]]$tice)) + 5
+     med_cape_2017[[i]]$logsurface_tows_lag2 <- log(med_cape_2017[[i]]$surface_tows_lag2)
+     med_cape_2017[[i]]$logtice <- log(med_cape_2017[[i]]$tice)
+     med_cape_2017[[i]]$Htice <- med_cape_2017[[i]]$tice*100
+     med_cape_2017[[i]]$Ssurface_tows_lag2 <- med_cape_2017[[i]]$surface_tows_lag2/10
 }
 
 # seperate cape into time components
@@ -559,7 +567,29 @@ ggplot(data=med_cape_2001$med_m1) + geom_point(aes(x = surface_tows_lag2, y = lo
      geom_text(aes(x = surface_tows_lag2, y = logcapelin + 0.05, label=dtice), size=3) + 
      geom_text(aes(x = surface_tows_lag2, y = logcapelin - 0.05, label=year), nudge_x = 100, size=3)
 
----------------------------------------------------------------
+med_titlenames <- c("MedArea-m1", "MedArea-m2", "MedArea-m3", "MedArea-m4", "MedArea-m5", "MedArea-m6")
+
+#optimize
+var2val(med_cape_2001$med_m1$dtice)
+MaxTice10 <- calcFit_all3(med_cape_2001, 
+                         med_titlenames, 
+                         par = c(1, 75, 1, 1), 
+                         var1 = "dtice", 
+                         var2 = "Ssurface_tows_lag2",
+                         var3 = "ps_meanTot_lag1", 
+                         rv = "logcapelin",
+                         form1 = "Alpha*tmp1*(1-(tmp1/Beta)) + Gamma*tmp2 + Delta*tmp3",
+                         x1_range = seq(0, 150, 10),
+                         x2_range = seq(70, 80, 0.5),
+                         x3_range = seq(10, 280, 20),
+                         lowerLim = "yes")
+
+med_scalTiceSTowPS <- optimSummary(MaxTice10, titlenames = titlenames)
+optimGraphs2_all(MaxTice10, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "med_scalTiceSTowPS", saveGraph = "yes")
+
+med_cape_2001$med_m1
+
+###
 ## D5 med area----
 pattern <- grep("iceMedD5p2017-m.a", files, value = T)
 
@@ -568,6 +598,15 @@ d5med_cape_2017 <- loadSubsetDatasets1(df = capelin_join, name = "d5med_m", pat 
 # Divide area by 1000
 for(i in 1:length(d5med_cape_2017)){
      d5med_cape_2017[[i]]$d5med_area1000 <- d5med_cape_2017[[i]]$d5med_area/1000
+}
+
+
+for(i in 1:length(d5med_cape_2017)){
+     d5med_cape_2017[[i]]$Ntice <- ((d5med_cape_2017[[i]]$tice - mean(d5med_cape_2017[[i]]$tice))/sd(d5med_cape_2017[[i]]$tice)) + 5
+     d5med_cape_2017[[i]]$logsurface_tows_lag2 <- log(d5med_cape_2017[[i]]$surface_tows_lag2)
+     d5med_cape_2017[[i]]$logtice <- log(d5med_cape_2017[[i]]$tice)
+     d5med_cape_2017[[i]]$Htice <- d5med_cape_2017[[i]]$tice*100
+     d5med_cape_2017[[i]]$Ssurface_tows_lag2 <- d5med_cape_2017[[i]]$surface_tows_lag2/10
 }
 
 # seperate cape into time components
@@ -582,5 +621,25 @@ ggplot(data=d5med_cape_2001$d5med_m1) + geom_point(aes(x = surface_tows_lag2, y 
      geom_text(aes(x = surface_tows_lag2, y = logcapelin + 0.05, label=d5tice), size=3) + 
      geom_text(aes(x = surface_tows_lag2, y = logcapelin - 0.05, label=year), nudge_x = 100, size=3)
 
-titlenames <- c("D5MedArea-m1", "D5MedArea-m2", "D5MedArea-m3", "D5MedArea-m4", "D5MedArea-m5", "D5MedArea-m6")
 
+
+d5titlenames <- c("D5MedArea-m1", "D5MedArea-m2", "D5MedArea-m3", "D5MedArea-m4", "D5MedArea-m5", "D5MedArea-m6")
+
+var2val(d5med_cape_2001$d5med_m1$d5tice)
+source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+
+MaxTicetest <- calcFit_all3(d5med_cape_2001, 
+                            d5titlenames, 
+                          par = c(1, 200), 
+                          var1 = "d5tice", 
+                          var2 = NULL,
+                          var3 = NULL, 
+                          rv = "logcapelin",
+                          form1 = "Alpha*tmp1*(1 - (tmp1/Beta))",
+                          x1_range = seq(0,150, 10),
+                          x2_range = NULL,
+                          x3_range = NULL)
+
+d5scalTiceSTowPS <- optimSummary(MaxTicetest, titlenames = d5titlenames)
+
+# only works for one variable and convergence is crap - abandon!
