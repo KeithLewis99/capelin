@@ -19,8 +19,6 @@ library(plotly)
 ## read in source code-----
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 
-----------------------------------------------------
-----------------------------------------------------
 ## READ/MANIPULATE DATA----
 ## read original data (Ale)----
 capelin <- read.csv('capelin-ice-2014.csv',header=T)
@@ -41,6 +39,7 @@ capelin_join <- capelin[c("year", "capelin", "capelinlb", "capelinub", "logcapel
 capelinAbun <- read.csv('data/capelin_age_disaggregate_abundance.csv',header=T)
 str(capelinAbun)
 capelinAbun$age2_log <- log(capelinAbun$age2)
+capelinAbun$age2_log10 <- log10(capelinAbun$age2)
 #View(capelinAbun)
 
 # read in capelin condition
@@ -115,10 +114,8 @@ cape_1991 <- map(cape, ~filter(.x, year <= 1991))
 cape_2017 <- map(cape, ~filter(.x, year > 1991))
 cape_2001 <- map(cape, ~filter(.x, year > 2002 & year < 2017))
 
-----------------------------------------------------
-----------------------------------------------------
+
 ## EXPLORATORY ANALYSIS----
-# mimic Murphy et al - not successful
 cape_2017$capelin_m1$log10capelin <- log10(cape_2017$capelin_m1$capelin)
 cape_2017$capelin_m1$log10age2 <- log10(cape_2017$capelin_m1$age2)
 str(cape_2017$capelin_m1)
@@ -126,19 +123,32 @@ sdf_test <- cape_2017$capelin_m1[c("year", "logcapelin", "log10capelin", "log10a
 sdf_test <- filter(sdf_test, year > 1998 & year < 2013)
 plot(sdf_test$ps_meanLog_lag2, sdf_test$log10age2)
 
-# plot explanatory variables against response variable - check for colinearity
+
+# plot explanatory variables against response variable and each other - check for trends and colinearity
 cape_2001$capelin_m1$log10capelin <- log10(cape_2001$capelin_m1$capelin)
-sdf <- cape_2001$capelin_m1[c("year", "tice", "logcapelin", "age2", "age2_log", "surface_tows", "surface_tows_lag2", "ps_meanTot", "ps_meanTot_lag2", "ps_meanLog_lag2")]
+sdf <- cape_2001$capelin_m1[c("year", "tice", "logcapelin", "age2", "age2_log", "surface_tows", "surface_tows_lag2", "ps_meanTot", "ps_meanTot_lag1", "ps_meanTot_lag2", "ps_meanLog_lag2", "ps_meanLog_lag2", "resids_adj")]
 View(sdf)
 str(cape_2001$capelin_m1)
 
-plot(sdf$tice, sdf$surface_tows_lag2)
-plot(sdf$tice, sdf$ps_meanTot_lag2)
+#patterns
+plot(sdf$surface_tows_lag2, sdf$logcapelin)
 plot(sdf$ps_meanLog_lag2, sdf$logcapelin)
 plot(sdf$ps_meanLog_lag2, sdf$log10capelin)
-plot(sdf$surface_tows_lag2, sdf$ps_meanTot_lag2)
+plot(sdf$ps_meanTot_lag1, sdf$logcapelin)
+plot(sdf$ps_meanTot_lag2, sdf$logcapelin)
+plot(sdf$ps_meanTot_lag2, sdf$logcapelin)
+plot(sdf$resids_adj, sdf$logcapelin)
 
-# compare logcapelin (biomass) against age2 (abundance)
+# colinearity
+plot(sdf$tice, sdf$surface_tows_lag2)
+plot(sdf$tice, sdf$surface_tows_lag2)
+plot(sdf$tice, sdf$ps_meanTot_lag2)
+plot(sdf$surface_tows_lag2, sdf$ps_meanTot_lag2)
+plot(sdf$resids_adj, sdf$tice)
+plot(sdf$resids_adj, sdf$surface_tows_lag2)
+plot(sdf$resids_adj, sdf$ps_meanTot_lag2)
+
+# compare logcapelin (biomass) against age2 (abundance) - these are highly correlated
 plot(sdf$logcapelin, sdf$age2_log)
 summary(lm(logcapelin ~ age2_log, data=sdf))
 
@@ -157,15 +167,16 @@ ggplot(data=cape_2001$capelin_m1) + geom_point(aes(x = surface_tows_lag2, y = lo
 
 # Pcalanus(lag1) v capelin
 ggplot(data=cape_2001$capelin_m1) + geom_point(aes(x = ps_meanTot_lag1, y = logcapelin)) +
-     geom_text(aes(x = ps_meanTot_lag1, y = logcapelin + 0.1, label=tice), size=3, ) + 
-     geom_text(aes(x = ps_meanTot_lag1, y = logcapelin - 0.1, label=year), size=3)
+     geom_text(aes(x = ps_meanTot_lag1, y = logcapelin + 0.1, label=tice), size=3) + 
+     geom_text(aes(x = ps_meanTot_lag1, y = logcapelin - 0.1, label=year), size=3, colour = "red")
 
 # Pcalanus(lag2) v capelin
-ggplot(data=cape_2001$capelin_m1) + geom_point(aes(x = ps_meanTot_lag2, y = logcapelin)) +
-     geom_text(aes(x = ps_meanTot_lag2, y = logcapelin + 0.1, label=tice), size=3) + 
-     geom_text(aes(x = ps_meanTot_lag2, y = logcapelin - 0.1, label=year), size=3)
-----------------------------------------------------
-----------------------------------------------------
+# this mimics Murphy et al 2017 perfectly
+ggplot(data=cape_2001$capelin_m1) + geom_point(aes(x = ps_meanLog_lag2, y = age2_log10)) +
+#     geom_text(aes(x = ps_meanTot_lag2, y = logcapelin + 0.1, label=tice), size=3) + 
+     geom_text(aes(x = ps_meanLog_lag2, y = age2_log10 - 0.1, label=year-2), size=3)
+
+
 ## OPTIMIZE
 ## new values for optim functions----
 yearInt <- seq(2002, 2017, by=3)
@@ -190,12 +201,12 @@ MaxTice1a <- calcFit_all3(cape_2001,
                           method = c("L-BFGS-B"))
 
 rawTice <- optimSummary(MaxTice1a, titlenames = titlenames)
-optimGraphs2_all(MaxTice1a, "tice", var2 = NULL, var2val = NULL, file_name = "rawTice", "no")
+optimGraphs2_all(MaxTice1a, "tice", var2 = NULL, var2val = NULL, file_name = "rawTice", "yes")
 
-# Surface tows
+# Surface tows - really, a dome makes no sense here
 MaxTice1b <- calcFit_all3(cape_2001, 
                           titlenames, 
-                          par = c(1, 200), 
+                          par = c(1, 300), 
                           var1 = "Ssurface_tows_lag2", 
                           var2 = NULL,
                           var3 = NULL, 
@@ -206,9 +217,9 @@ MaxTice1b <- calcFit_all3(cape_2001,
                           x3_range = NULL)
 
 scalST <- optimSummary(MaxTice1b, titlenames = titlenames)
-optimGraphs2_all(MaxTice1b, "Ssurface_tows_lag2", var2 = NULL, var2val = NULL, "scalST", "no")
+optimGraphs2_all(MaxTice1b, "Ssurface_tows_lag2", var2 = NULL, var2val = NULL, "scalST", "yes")
 
-# Pseudo calanus
+# Pseudo calanus - dome makes less sense here
 MaxTice1c <- calcFit_all3(cape_2001, 
                           titlenames, 
                           par = c(1, 200), 
@@ -217,12 +228,12 @@ MaxTice1c <- calcFit_all3(cape_2001,
                           var3 = NULL, 
                           rv = "logcapelin",
                           form1 = "Alpha*tmp1*(1 - (tmp1/Beta))",
-                          x1_range = seq(10, 200, 20),
+                          x1_range = seq(10, 280, 20),
                           x2_range = NULL,
                           x3_range = NULL)
 
 scalPS <- optimSummary(MaxTice1c, titlenames = titlenames)
-optimGraphs2_all(MaxTice1c, "ps_meanTot_lag1", var2 = NULL, var2val = NULL, "scalPS", "no")
+optimGraphs2_all(MaxTice1c, "ps_meanTot_lag1", var2 = NULL, var2val = NULL, "scalPS", "yes")
 
 # Surface tows_linear model
 MaxTice1d <- calcFit_all3(cape_2001, 
@@ -238,7 +249,7 @@ MaxTice1d <- calcFit_all3(cape_2001,
                           x3_range = NULL)
 
 scalST_lin <- optimSummary(MaxTice1d, titlenames = titlenames)
-optimGraphs2_all(MaxTice1d, "Ssurface_tows_lag2", var2 = NULL, var2val = NULL, "scalST", "no")
+optimGraphs2_all(MaxTice1d, "Ssurface_tows_lag2", var2 = NULL, var2val = NULL, "scalST_lin", "yes")
 
 # Pseudo calanus_linear model
 MaxTice1e <- calcFit_all3(cape_2001, 
@@ -249,11 +260,11 @@ MaxTice1e <- calcFit_all3(cape_2001,
                           var3 = NULL, 
                           rv = "logcapelin",
                           form1 = "Alpha*tmp1",
-                          x1_range = seq(10, 200, 20),
+                          x1_range = seq(10, 280, 20),
                           x2_range = NULL,
                           x3_range = NULL)
 scalPS_lin <- optimSummary(MaxTice1e, titlenames = titlenames)
-optimGraphs2_all(MaxTice1e, "ps_meanTot_lag1", var2 = NULL, var2val = NULL, "scalPS", "no")
+optimGraphs2_all(MaxTice1e, "ps_meanTot_lag1", var2 = NULL, var2val = NULL, "scalPS_lin", "yes")
 
 # Pseudo calanus_Holling II
 MaxTice1f <- calcFit_all3(cape_2001, 
@@ -264,16 +275,31 @@ MaxTice1f <- calcFit_all3(cape_2001,
                           var3 = NULL, 
                           rv = "logcapelin",
                           form1 = "Alpha*tmp1/(1 + (tmp1*Beta*Alpha))",
-                          x1_range = seq(10, 200, 20),
+                          x1_range = seq(10, 280, 20),
                           x2_range = NULL,
                           x3_range = NULL,
                           method = c("L-BFGS-B"))
 
 scalPS_H2 <- optimSummary(MaxTice1f, titlenames = titlenames)
-optimGraphs2_all(MaxTice1f, "ps_meanTot_lag1", var2 = NULL, var2val = NULL, "scalPS", "no")
+optimGraphs2_all(MaxTice1f, "ps_meanTot_lag1", var2 = NULL, var2val = NULL, "scalPS_H2", "yes")
 
+# Pseudo calanus_linear model10
+MaxTice1g <- calcFit_all3(cape_2001, 
+                          titlenames, 
+                          par = c(1, 5), 
+                          var1 = "resids_adj", 
+                          var2 = NULL,
+                          var3 = NULL, 
+                          rv = "logcapelin",
+                          form1 = "Alpha*tmp1",
+                          x1_range = seq(-60, 50, 20),
+                          x2_range = NULL,
+                          x3_range = NULL)
+scalRA_lin <- optimSummary(MaxTice1g, titlenames = titlenames)
+optimGraphs2_all(MaxTice1g, "resids_adj", var2 = NULL, var2val = NULL, "scalRA_lin", "yes")
 
 ##MaxTice2a - normalized data, 2 parm, 1 var, dome----
+#flattens out the line
 MaxTice2a <- calcFit_all3(cape_2001, 
                           titlenames, 
                           par = c(1, 7), 
@@ -287,7 +313,7 @@ MaxTice2a <- calcFit_all3(cape_2001,
                           x3_range = NULL)
 
 normTice <- optimSummary(MaxTice2a, titlenames = titlenames)
-optimGraphs2_all(MaxTice2a, "Ntice", var2 = NULL, var2val = 0, "normTice", "no")
+optimGraphs2_all(MaxTice2a, "Ntice", var2 = NULL, var2val = 0, "normTice", "yes")
 
 
 ### MaxTice4 log data, 2 parm, 1 var, dome----
@@ -304,7 +330,7 @@ MaxTice4a <- calcFit_all3(cape_2001,
                           x3_range = NULL)
 
 logTice <- optimSummary(MaxTice4a, titlenames = titlenames)
-optimGraphs2_all(MaxTice4a, "logtice", var2 = NULL, var2val = 4.0, file_name = "logTice", "no")
+optimGraphs2_all(MaxTice4a, "logtice", var2 = NULL, var2val = 4.0, file_name = "logTice", "yes")
 
 
 ### MaxTice6 - scaled data, 3 parm, 2 var, dome + line----
@@ -322,10 +348,10 @@ MaxTice6 <- calcFit_all3(cape_2001,
 
 scalTiceSTow <- optimSummary(MaxTice6, titlenames = titlenames)
 var2val(MaxTice6$optim_ls$`MaxTice-m1`$regime2$Ssurface_tows_lag2)
-optimGraphs2_all(MaxTice6, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceSTow", saveGraph = "no")
+optimGraphs2_all(MaxTice6, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceSTow", saveGraph = "yes")
 
 
-### MaxTice6a----
+### MaxTice6a
 # psuedocalanus
 #scaled data, 3 parm, 2 var, dome + line
 MaxTice6a <- calcFit_all3(cape_2001, 
@@ -337,14 +363,15 @@ MaxTice6a <- calcFit_all3(cape_2001,
                          rv = "logcapelin",
                          form1 = "Alpha*tmp1*(1-(tmp1/Beta)) + Gamma*tmp2",
                          x1_range = seq(0, 150, 10),
-                         x2_range = seq(10, 200, 20),
+                         x2_range = seq(10, 280, 20),
                          x3_range = NULL)
 
 scalTicePS <- optimSummary(MaxTice6a, titlenames = titlenames)
 var2val(MaxTice6a$optim_ls$`MaxTice-m1`$regime2$ps_meanTot_lag1)
-optimGraphs2_all(MaxTice6a, "tice", var2 = "ps_meanTot_lag1", var2val = 90, file_name = "scalTicePS", saveGraph = "no")
+optimGraphs2_all(MaxTice6a, "tice", var2 = "ps_meanTot_lag1", var2val = 90, file_name = "scalTicePS", saveGraph = "yes")
 
-### MaxTice6b scaled data, 3 parm, 2 var, dome + line----
+### MaxTice6b scaled data, 3 parm, 2 var, dome + line
+# as above, this really makes no sense biologically
 MaxTice6b <- calcFit_all3(cape_2001, 
                           titlenames, 
                           par = c(1, 200, 1), 
@@ -352,15 +379,16 @@ MaxTice6b <- calcFit_all3(cape_2001,
                           var2 = "ps_meanTot_lag1",
                           var3 = NULL, 
                           rv = "logcapelin",
-                          form1 = "Alpha*tmp1*(1-(tmp1/Beta)) + Gamma*tmp2",
+                          form1 = "Alpha*tmp1 + Gamma*tmp2",
                           x1_range = seq(30, 500, 50),
-                          x2_range = seq(10, 200, 20),
+                          x2_range = seq(10, 280, 20),
                           x3_range = NULL)
-scalSTPS <- optimSummary(MaxTice6b, titlenames = titlenames)
+scalSTowPS <- optimSummary(MaxTice6b, titlenames = titlenames)
 var2val(MaxTice6a$optim_ls$`MaxTice-m1`$regime2$ps_meanTot_lag1)
-optimGraphs2_all(MaxTice6b, "Ssurface_tows_lag2", var2 = "ps_meanTot_lag1", var2val = 90, file_name = "scalSTowPS", saveGraph = "no")
+optimGraphs2_all(MaxTice6b, "Ssurface_tows_lag2", var2 = "ps_meanTot_lag1", var2val = 90, file_name = "scalSTowPS", saveGraph = "yes")
 
-### MaxTice6c - Holling IV: scaled data, 3 parm, 2 var ----
+### MaxTice6c - Holling IV: scaled data, 3 parm, 1 var 
+# this is clunky code - there is only one variable being used but I need to put two in bc of the clunky code
 MaxTice6c <- calcFit_all3(cape_2001, 
                           titlenames, 
                           par = c(1, 200, 1), 
@@ -373,12 +401,13 @@ MaxTice6c <- calcFit_all3(cape_2001,
                           x2_range = seq(30, 500, 50),
                           x3_range = NULL)
 
-scalTiceST_HollingIV <- optimSummary(MaxTice6c, titlenames = titlenames)
+scalTice_H4 <- optimSummary(MaxTice6c, titlenames = titlenames)
 var2val(MaxTice6c$optim_ls$`MaxTice-m1`$regime2$Ssurface_tows_lag2)
-optimGraphs2_all(MaxTice6c, "tice", var2 = "Ssurface_tows_lag2", var2val = 280, file_name = "scalTiceST_HollingIV", saveGraph = "no")
+optimGraphs2_all(MaxTice6c, "tice", var2 = NULL, var2val = 280, file_name = "scalTice_H4", saveGraph = "no")
 
 
-### MaxTice6d - Holling IV: scaled data, 4 parm, 3 var ----
+### MaxTice6d - Holling IV: scaled data, 4 parm, 2 var
+# as above - clunky code
 MaxTice6d <- calcFit_all3(cape_2001, 
                           titlenames, 
                           par = c(1, 200, 1, 1), 
@@ -389,11 +418,28 @@ MaxTice6d <- calcFit_all3(cape_2001,
                           form1 = "Alpha*tmp1^2/(Beta + Gamma*tmp1+tmp1^2)+ Delta*tmp2",
                           x1_range = seq(0, 150, 10),
                           x2_range = seq(30, 500, 50),
-                          x3_range = seq(10, 200, 20))
+                          x3_range = seq(10, 280, 20))
 
-optimSummary(MaxTice6d, titlenames = titlenames)
+scalTiceST_H4 <- optimSummary(MaxTice6d, titlenames = titlenames)
 var2val(MaxTice6c$optim_ls$`MaxTice-m1`$regime2$Ssurface_tows_lag2)
-optimGraphs2_all(MaxTice6d, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceST_HollingIV", saveGraph = "no")
+optimGraphs2_all(MaxTice6d, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceST_H4", saveGraph = "yes")
+
+### MaxTice6e - dome + Holling II: scaled data, 4 parm, 2 var
+# as above - clunky code
+MaxTice6e <- calcFit_all3(cape_2001, 
+                          titlenames, 
+                          par = c(1, 200, 1, 1), 
+                          var1 = "tice", 
+                          var2 = "ps_meanTot_lag1",
+                          var3 = "Ssurface_tows_lag2", 
+                          rv = "logcapelin",
+                          form1 = "Alpha*tmp1*(1 - (tmp1/Beta))+ Gamma*tmp2/(1 + (tmp2*Delta*Gamma))",
+                          x1_range = seq(0, 150, 10),
+                          x2_range = seq(10, 200, 20),
+                          x3_range = seq(30, 500, 50))
+
+scalTiceST_domeH2 <- optimSummary(MaxTice6e, titlenames = titlenames)
+optimGraphs2_all(MaxTice6e, "tice", var2 = "ps_meanTot_lag1", var2val = 230, file_name = "scalTiceST_domeH2", saveGraph = "yes")
 
 
 ### MaxTice8 scaled data, 4 parm, 3 var, dome + 2line----
@@ -407,10 +453,10 @@ MaxTice8 <- calcFit_all3(cape_2001,
                           form1 = "Alpha*tmp1*(1-(tmp1/Beta)) + Gamma*tmp2 + Delta*tmp3",
                           x1_range = seq(0, 150, 10),
                           x2_range = seq(30, 500, 50),
-                          x3_range = seq(10, 200, 20))
+                          x3_range = seq(10, 280, 20))
 
 scalTiceSTowPS <- optimSummary(MaxTice8, titlenames = titlenames)
-optimGraphs2_all(MaxTice8, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceSTowPS", saveGraph = "no")
+optimGraphs2_all(MaxTice8, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceSTowPS", saveGraph = "yes")
 
 # As above but with ps_lag2
 MaxTice8a <- calcFit_all3(cape_2001, 
@@ -423,13 +469,14 @@ MaxTice8a <- calcFit_all3(cape_2001,
                          form1 = "Alpha*tmp1*(1-(tmp1/Beta)) + Gamma*tmp2 + Delta*tmp3",
                          x1_range = seq(0, 150, 10),
                          x2_range = seq(30, 500, 50),
-                         x3_range = seq(10, 200, 20))
+                         x3_range = seq(10, 280, 20))
 
 scalTiceSTowPS_lag2 <- optimSummary(MaxTice8a, titlenames = titlenames)
-optimGraphs2_all(MaxTice8a, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceSTowPS_l2", saveGraph = "no")
+optimGraphs2_all(MaxTice8a, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceSTowPS_lag2", saveGraph = "yes")
 
 # As above but with ps_lag2 and Holling II
-MaxTice8b <- calcFit_all3(cape_2001, 
+# invalid model - not enough parameters
+#MaxTice8b <- calcFit_all3(cape_2001, 
                           titlenames, 
                           par = c(1, 200, 1, 1), 
                           var1 = "tice", 
@@ -441,9 +488,10 @@ MaxTice8b <- calcFit_all3(cape_2001,
                           x2_range = seq(30, 500, 50),
                           x3_range = seq(10, 200, 20))
 
-optimSummary(MaxTice8b, titlenames = titlenames)
-optimGraphs2_all(MaxTice8b, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceSTowPS_l2", saveGraph = "no")
+#optimSummary(MaxTice8b, titlenames = titlenames)
+#optimGraphs2_all(MaxTice8b, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceSTowPS_l2", saveGraph = "no")
 
+### MaxTice8d scaled data, 4 parm, 3 var, dome + 2line
 # as above but with resids adjusted
 range(cape_2001$capelin_m1$resids_adj, na.rm = T)
 MaxTice8d <- calcFit_all3(cape_2001, 
@@ -458,54 +506,36 @@ MaxTice8d <- calcFit_all3(cape_2001,
                           x2_range = seq(30, 500, 50),
                           x3_range = seq(-60, 50, 20))
 
-optimSummary(MaxTice8d, titlenames = titlenames)
+scalTiceSTowRA <- optimSummary(MaxTice8d, titlenames = titlenames)
+optimGraphs2_all(MaxTice8d, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceSTowRA", saveGraph = "yes")
 
-optimGraphs2_all(MaxTice8d, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, file_name = "scalTiceSTowPS_l2", saveGraph = "no")
 
-----------------------------------------------------
-----------------------------------------------------
+####
 ## Table of optimSummary results----
 optimSummary_ls <- list(rawTice=rawTice, 
                         scalST = scalST, 
-                        scalPS = scalPS, 
+                        scalPS = scalPS,
+                        scalST_lin = scalST_lin,
                         scalPS_lin = scalPS_lin,
                         scalPS_H2 = scalPS_H2,
+                        scalRA_lin = scalRA_lin,
                         normTice = normTice, 
                         logTice = logTice, 
-                        scalTiceST_HollingIV = scalTiceST_HollingIV,
-                        scalTiceSTow = scalTiceSTow,                         scalTicePS = scalTicePS, 
-                        #scalSTowPS = scalSTowPS,
+                        scalTiceSTow = scalTiceSTow,
+                        scalTicePS = scalTicePS,
+                        scalSTowPS = scalSTowPS,
+                        scalTice_H4 = scalTice_H4,
+                        scalTiceST_H4 = scalTiceST_H4,
+                                                 scalTicePS = scalTicePS, 
+                        scalTiceST_domeH2 = scalTiceST_domeH2,
+                        
                         scalTiceSTowPS = scalTiceSTowPS, 
-                        scalTiceSTowPS_lag2 = scalTiceSTowPS_lag2)
-write_csv(optimSummary_ls, "optimSummary_ls.csv")
-capture.output(optimSummary_ls, file = "optimSummary_ls.csv")
-optimSummary_df <- do.call("bind_rows", lapply(optimSummary_ls, as.data.frame))
-write_csv(optimSummary_df, "optimSummary_df.csv")
+                        scalTiceSTowPS_lag2 = scalTiceSTowPS_lag2, 
+                        scalTiceSTowRA = scalTiceSTowRA)
 
-test <- data.frame(ID = rep(names(optimSummary_ls), sapply(optimSummary_ls, length)), Obs=unlist(optimSummary_ls))
+#save as a list - pass to console and cut/paste into excel; then use space delimited
+optimSummary_ls
 
-spread(test, "ID")
-data.table::rbindlist(optimSummary_ls, fill = TRUE, use.names = TRUE)
-
-###########data.table test-----
-library(data.table)
-DT1 = data.table(A=1:3,B=letters[1:3])
-DT2 = data.table(B=letters[4:5],A=4:5)
-l = list(DT1,DT2)
-rbindlist(l, use.names=TRUE)
-
-DT1 = data.table(A=1:3,B=letters[1:3])
-DT2 = data.table(B=letters[4:5],C=factor(1:2))
-l = list(DT1,DT2)
-rbindlist(l, use.names=TRUE, fill=TRUE)
-
-# generate index column, auto generates indices
-rbindlist(l, use.names=TRUE, fill=TRUE, idcol=TRUE)
-# let's name the list
-setattr(l, 'names', c("a", "b"))
-rbindlist(l, use.names=TRUE, fill=TRUE, idcol="ID")
-----------------------------------------------------
-----------------------------------------------------
 ## med area -----
 
 # read the datasets and join them to capelin_join
