@@ -227,7 +227,7 @@ optimGraphs2 <- function(df, reg1, reg2, yearLim, yearInt, lnbiomassInt, title, 
           scale_x_continuous(limits = yearLim, breaks = yearInt) +
           xlab('Year') +
           ylab('Capelin biomass (ktons)') + 
-          theme_bw() 
+          theme_bw(panel.grid.minor=element_blank()) 
 #browser()
 #p3
      if(!is.null(var2)){
