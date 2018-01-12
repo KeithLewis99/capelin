@@ -1,8 +1,6 @@
-################################################################
 #  Script written by Keith Lewis (Keith.Lewis@dfo-mpo.gc.ca)  #
 #  Created 2017-08, R version 3.X.x (201X-XX-XX)             #
 #  Last modified by Keith Lewis (2017-09-22) #
-################################################################
 
 # The purpose of this file is to:
 
@@ -49,7 +47,7 @@ load("output-processing/ice-trends-2017-m6-all.Rdata")
 #load("output-processing/ice-trends-2017-m2-subset.Rdata")
 load("output-processing/filters.Rdata")
 
-##################################
+
 # modify data---------
 m1 <- trends.m1[c("date", "area", "volume")]
 m2 <- trends.m2[c("date", "area", "volume")]
@@ -224,7 +222,7 @@ tice.ratio <- c(m1 = range(iceSum.m1$tice)[2]/range(iceSum.m1$tice)[1],
 ice.ranges.ratios <- cbind(ice.ranges, area.ratio, tice.ratio)
 write.csv(iceSum.m1, file = "output-processing/ice-ranges-ratios.csv", row.names=F, na="")
 
-#######################################################################
+
 ##Create maps of the minlats-----------
 # load water SPDF and convert to SP so that plot will work
 load("sp_data/20160606.Rdata") # file doesnot exist - probably doesn't matter
@@ -310,7 +308,7 @@ par(mfrow=c(3,2))
 
 par(mfrow=c(1,1))
 
-###############################################################################
+
 # plot relationships between area, tice, and minlats FOR MAX_AREA-----
 
 source("D:/Keith/capelin/2017-project/area-ice-function.R")
@@ -359,7 +357,6 @@ iceCorr.m6.rsq <- lmoutputSummary(iceCorr.m6)
 write.csv(iceCorr.m6.rsq, file = "output-processing/iceCorr-m6-rsq.csv", row.names=F, na="")
 
 
-#####################################################################
 # explore more rigorous method of determining relationship between tice and minlat-----
 # calculate tice and year
 
@@ -452,7 +449,7 @@ sub1991.m6.sum <- iceSummarylm(sub1991.m6)
 sub1991.m6.rsq <- lmoutputSummary(sub1991.m6.sum)
 write.csv(sub1991.m6.rsq, file = "output-processing/sub1991-m6-rsq.csv", row.names=F, na="")
 
-##############################################################
+
 #####1992-2017------
 ##m1
 sub2017.m1 <- iceMedian(trends.m1, "year > 1991", "tice < 150", iceSum.m1)
@@ -518,8 +515,7 @@ sub2017.m6.sum <- iceSummarylm(sub2017.m6)
 sub2017.m6.rsq <- lmoutputSummary(sub2017.m6.sum)
 write.csv(sub2017.m6.rsq, file = "output-processing/sub2017-m6-rsq.csv", row.names=F, na="")
 
-###############################################
-###############################################
+
 # Median of the top 5 values
 count.year <- trends.m1 %>%
   group_by(year) %>%
@@ -611,7 +607,7 @@ iceMedD5p2017.m6.sum <- iceSummarylm(iceMedD5p2017.m6, med = "d5", med1 = "d5")
 iceMedD5p2017.m6.rsq <- lmoutputSummary(iceMedD5p2017.m6.sum)
 write.csv(iceMedD5p2017.m6.rsq, file = "output-processing/iceMedD5p2017-m6-rsq.csv", row.names=F, na="")
 
-##########################################################################################
+
 ###pre-1992------
 ##m1
 iceMedD5p1992.m1 <- iceMedianD5(trends.m1, "year <= 1991", "tice < 150", iceSum.m1)
@@ -694,7 +690,7 @@ iceMedD5p1992.m6.sum <- iceSummarylm(iceMedD5p1992.m6, med = "d5", med1 = "d5")
 iceMedD5p1992.m6.sum.rsq <- lmoutputSummary(iceMedD5p1992.m6.sum)
 write.csv(iceMedD5p1992.m6.sum.rsq, file = "output-processing/iceMedD5p1992-m6-sum.csv", row.names=F, na="")
 
-###########################################################
+
 # extra graphs
 iceMed.m1 <- iceMedian(trends.m1, "year < 2018", "tice < 150", iceSum.m1)
 iceMed.m2 <- iceMedian(trends.m2, "year < 2018", "tice < 150", iceSum.m2)
@@ -778,7 +774,7 @@ write.csv(iceSum.m5, file = "output-processing/capelin-m5.csv", row.names=F, na=
 iceSum.m6 <- iceSum.m6[c("year", "area", "minlats", "tice")]
 write.csv(iceSum.m6, file = "output-processing/capelin-m6.csv", row.names=F, na="")
 
-#######################################################################################
+
 #######Median values-----------
 ## < 1992
 sub1991.m1a <- sub1991.m1$mall[c("year", "darea", "dminlats", "dtice", "tice")]
@@ -857,7 +853,6 @@ write.csv(iceMedD5p2017.m5a, file = "output-processing/iceMedD5p2017-m5a.csv", r
 iceMedD5p2017.m6a <- iceMedD5p2017.m6$mall[c("year", "d5area", "d5minlats", "d5tice", "tice")]
 write.csv(iceMedD5p2017.m6a, file = "output-processing/iceMedD5p2017-m6a.csv", row.names=F, na="")
 
-#######################################################################################
 #######################################################################################
 ###This is how to make a map with a SPDF - much harder in ggplot - not sure its worth the effort
 # add to data a new column termed "id" composed of the rownames of data

@@ -1,8 +1,8 @@
-################################################################
+
 #  Script written by Alejandro???? (Paul.Regular@dfo-mpo.gc.ca)  #
 #  Created 201X-XX-XX, R version 3.X.x (201X-XX-XX)             #
 #  Last modified by Paul Regular, Alejandro Buren, and Keith Lewis 2017-07.04 #
-################################################################
+
 
 # The purpose of this file is to:
 #1) Plot the optimization curves in comparing capelin abundance with timing of sea ice retreat.
@@ -88,7 +88,7 @@ for(i in 1:length(med_cape_all)){
      d5med_cape_all[[i]]$d5med_area1000 <- d5med_cape_all[[i]]$d5med_area/1000
 }
 
-########################################################################
+
 ## EXPLORATORY PLOTS------
 ## plots - capelin v. area
 source("D:/Keith/capelin/2017-project/ice-capelin-functions.R")
@@ -134,7 +134,7 @@ biomassInt <- seq(0, 8500)
 yearLim <- c(1982, 2014)
 labtice <- expression(paste(italic(t[ice]), '(day of year)')) # label for figures
 
-#################################
+
 ## Ale's original-------------
 ## Optimization - produces lists of the optimization curve for use in figures below
 # up to present
@@ -175,7 +175,8 @@ ggsave("figs/optimization/AleMaxArea.pdf", width=10, height=8, units="in")
 AleMaxArea$cdf$value
 AleMaxArea$cdf$convergence
 str(AleMaxArea, max.level = 2)
-#######################################################
+
+
 ## Optimization for tice using maxarea from m1-m6----
 titlenames <- c("MaxTice-m1", "MaxTice-m2", "MaxTice-m3", "MaxTice-m4", "MaxTice-m5", "MaxTice-m6")
 yearInt <- seq(1982, 2017, by=4)
@@ -235,7 +236,7 @@ test <- testPlot(MaxTice$optim_ls$`MaxTice-m1`$df, MaxTice$optim_ls$`MaxTice-m1`
 ggplotly(test)
 View(MaxTice$optim_ls$`MaxTice-m1`$df)
 
-#############################################################################################
+
 ## Optimization for max_area using maxarea----
 titlenames <- c("MaxArea-m1", "MaxArea-m2", "MaxArea-m3", "MaxArea-m4", "MaxArea-m5", "MaxArea-m6")
 
@@ -272,7 +273,6 @@ for(i in 1:length(MaxArea$optim_ls)){
 }
 
 
-######################################################################
 ## Optimization for med_area using maxarea----
 titlenames <- c("MedArea-m1", "MedArea-m2", "MedArea-m3", "MedArea-m4", "MedArea-m5", "MedArea-m6")
 
@@ -302,7 +302,7 @@ for(i in 1:length(MedArea$optim_ls)){
      print(MedArea$optim_ls[[i]]$cdf$convergence)
 }
 
-######################################################################
+
 ## Optimization for med_area using maxarea----
 titlenames <- c("D5MedArea-m1", "D5MedArea-m2", "D5MedArea-m3", "D5MedArea-m4", "D5MedArea-m5", "D5MedArea-m6")
 
