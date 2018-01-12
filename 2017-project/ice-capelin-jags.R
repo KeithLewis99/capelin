@@ -90,9 +90,20 @@ cbind(test$year, pred)
 plot(test$year, test$logcapelin, ylim = c(0,10))
 lines(test$year, pred, col = 'red')
 
-apply(post, 2, quantile, probs = c(0.025, 0.975))
+ci_test <- apply(post, 2, quantile, probs = c(0.025, 0.975))
 hist(post[, 'alpha'], breaks = 30)
 
+alpha_2.5 <- ci_test[1,1]
+beta_2.5 <- ci_test[1,2]
+alpha_97.5 <- ci_test[2,1]
+beta_97.5 <- ci_test[2,2]
+
+ci_2.5 <- alpha_2.5*test$tice*(1-(test$tice/beta_2.5))
+
+ci_97.5 <- alpha_97.5*test$tice*(1-(test$tice/beta_97.5))
+
+lines(test$year, ci_2.5, col = 'blue')
+lines(test$year, ci_97.5, col = 'blue')
 
 ## test 3 y_pred----
 jags_code = '
