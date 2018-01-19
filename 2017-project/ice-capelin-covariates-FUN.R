@@ -199,6 +199,8 @@ optimGraphs2_all <- function(ls, var, var2=NULL, var2val, file_name, saveGraph){
 #' @param var - the first variable of interest (usually tice)
 #' @param var2 - the second variable of interest
 #' @param var2val - the median value of the second variable - determined by x_range in the calcFit function and used in graph
+#' @param - rv - response variable
+#' @param - rv_label
 #'
 #' @return a set of three graphs for each subset
 #' @export
@@ -227,7 +229,7 @@ optimGraphs2 <- function(df, reg1, reg2, yearLim, yearInt, lnbiomassInt, title, 
           scale_x_continuous(limits = yearLim, breaks = yearInt) +
           xlab('Year') +
           ylab('Capelin biomass (ktons)') + 
-          theme_bw(panel.grid.minor=element_blank()) 
+          theme_bw()
 #browser()
 #p3
      if(!is.null(var2)){
@@ -269,6 +271,19 @@ optimGraphs2 <- function(df, reg1, reg2, yearLim, yearInt, lnbiomassInt, title, 
      } else if(!is.null(var2)){
           cowplot::plot_grid(p1, p2, p3, p4, labels = c(paste(title)), ncol=2)          }
 return(mm)
+}
+
+graph_p1 <- function(){
+     p1 <- ggplot(df, aes(x = year, y = logcapelin)) + 
+          geom_errorbar(width = 0.3, colour = "black", aes(ymin=logcapelinlb, ymax=logcapelinub)) + 
+          geom_point(shape=16, size=3)  +
+          geom_line(aes(y=ExpectedLogBiomass), colour="blue", linetype=1, size=1.25) +
+          #geom_line(aes(y=ExpectedLogBiomassOld), colour="blue", linetype=1, size=1.25) +
+          scale_y_continuous(limits = c(-4,10), breaks = lnbiomassInt) +
+          scale_x_continuous(limits = yearLim, breaks = yearInt) +
+          xlab('Year') +
+          ylab('ln (Capelin biomass (ktons))') + 
+          theme_bw()
 }
 
 
@@ -640,7 +655,7 @@ calcFit_all3 <- function(ls, titlenames, var1, var2=NULL, var3=NULL, rv, par,
      for(i in 1:length(ls)){
           df1 <- as.data.frame(ls[[i]])
           #browser()
-          optim <- calcFit3(df1, var1=var1, var2=var2, var3=var3, rv=rv, par=par, form1 = form1, form2 = form2, x1_range = x1_range, x2_range = x2_range, x3_range = x3_range, method = method)
+          optim <- calcFit3(df1, var1=var1, var2=var2, var3=var3, rv=rv, par=par, form1 = form1, form2 = form2, x1_range = x1_range, x2_range = x2_range, x3_range = x3_range, method = method, lowerLim = lowerLim)
           optim_ls[[i]] <- optim
      }
      return(list(optim_ls = optim_ls))
@@ -667,7 +682,7 @@ calcFit3 <- function(df, var1, var2=NULL, var3=NULL, rv, par,
                      form1 = NULL, form2 = NULL, 
                      x1_range, x2_range=NULL, x3_range=NULL, 
                      method = method,
-                     lowerLim = "no") {
+                     lowerLim = LowerLim) {
      #browser()
      #print(environment())
      if(lowerLim == "yes"){
@@ -809,4 +824,174 @@ var2val <- function(df){
      med <- median(df)
      lev <- levels(as.factor(df))
      return(list(med=med, lev=lev))    
+}
+
+
+#' optimGraphs3_all
+#'
+#' @param ls a list of ice subsets with capelin and pseudocalanus data
+#' @param var the first variable of interest (usually tice)
+#' @param var2 the second variable of interest
+#' @param var2val the value of the second variable - median value
+#' @param file_name an evocative name signifying the type of analysis
+#' @param saveGraph "yes" or "no" - "no" allows you to view graphs
+#'
+#' @return a list of output from function optim (parameter estimates, likelihood values, and convergence)
+#' @export
+#'
+#' @examples optimGraphs2_all(MaxTice7, "tice", "Ssurface_tows_lag2", var2val = 280, "opt_div3c", "yes")
+optimGraphs3_all <- function(ls, var, var2=NULL, var2val, file_name, saveGraph, rv1, rv2, y_axis_lim_p1, ylabel_p1, ylabel_p2, ci, ...){
+     for(i in 1:length(ls$optim_ls)){
+          #browser()
+          df1 <- as.data.frame(ls$optim_ls[[i]]$df)
+          df2 <- as.data.frame(ls$optim_ls[[i]]$regime1)
+          df3 <- as.data.frame(ls$optim_ls[[i]]$regime2)
+          mm <- optimGraphs3(df1, df2, df3, yearLim, yearInt, lnbiomassInt,  titlenames[i], var, var2, var2val, rv1, rv2, y_axis_lim_p1, ylabel_p1, ylabel_p2, ci, ... )
+          if(saveGraph == "yes"){
+               ggsave(mm, filename = paste0("figs/covariates/", file_name, titlenames[i], ".pdf"), width=10, height=8, units="in")
+          }
+          if(saveGraph == "no"){
+               #x <- optimGraphs2(df1, df2, df3, yearLim, yearInt, lnbiomassInt,  titlenames[i], var, var2, var2val)
+               #print(x)
+               print(mm)
+          }
+     }
+}
+
+
+#' optimGraphs3
+#'
+#' @param df the dataframe provided by the list
+#' @param reg1 a set of expected values for pre1990 - deprecated
+#' @param reg2 a set of expected values for post 2002
+#' @param yearLim the year limits
+#' @param yearInt the year intervals
+#' @param lnbiomassInt the ln(Biomass) intervats
+#' @param title - names of the output graphs
+#' @param var - the first variable of interest (usually tice)
+#' @param var2 - the second variable of interest
+#' @param var2val - the median value of the second variable - determined by x_range in the calcFit function and used in graph
+#' @param - rv - response variable
+#' @param - rv_label
+#'
+#' @return a set of three graphs for each subset
+#' @export
+#'
+#' @examples nested in optimGraphs2_all(MaxTice7, "tice", "Ssurface_tows_lag2", var2val = 280, "opt_div3c", "yes")
+optimGraphs3 <- function(df, reg1, reg2, yearLim, yearInt, lnbiomassInt, title, var, var2, var2val, rv1, rv2, y_axis_lim_p1, ylabel_p1, ylabel_p2, ci, ...){
+     #browser()
+     p1 <- graph_p1(df, rv1, y_axis_lim_p1, lnbiomassInt, yearLim, yearInt,  ylabel_p1, ci)
+    
+     p2 <- graph_p2(df, rv2, lnbiomassInt, yearLim, yearInt,  ylabel_p2, ci)
+     
+     if(!is.null(var2)){
+     p4 <- graph_p4(df, var2, rv1, ylabel_p1, ci)
+     }
+
+     #browser()
+     #p3
+     if(!is.null(var2)){
+          p3 <- ggplot() + 
+               geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomass"), colour="red", linetype=1, size=1.25) + 
+               #geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomassOld"), colour="blue", linetype=1, size=1.25) +
+               #               geom_line(data = reg2, eval(parse(text=var2))==var2val), aes_string(x = var, y = "ExpectedLogBiomass"), colour="green", linetype=1, size=1.25) +
+               
+               geom_line(data = subset(reg2, eval(parse(text=var2))==var2val), aes_string(x = var, y = "ExpectedLogBiomass"), colour="green", linetype=1, size=1.25) +
+               geom_point(data = subset(df, year > 1991), aes_string(x = var, y = "logcapelin"), shape=15, size=3) + 
+               geom_errorbar(data = subset(df, year > 1991), aes_string(x = var, ymin="logcapelinlb", ymax="logcapelinub"), width = 0.3, colour = "black") +
+               xlab(paste(var)) +
+               ylab("ln (Capelin biomass (ktons))") + 
+               #ylim(0,9) +
+               theme_bw() 
+     } else if(is.null(var2)){
+          p3 <- ggplot() + 
+               geom_line(data = reg2, aes_string(x = var, y = "ExpectedLogBiomass"), colour="red", linetype=1, size=1.25) + 
+               geom_point(data = subset(df, year > 1991), aes_string(x = var, y = "logcapelin"), shape=15, size=3) +      geom_errorbar(data = subset(df, year > 1991), aes_string(x = var, ymin="logcapelinlb", ymax="logcapelinub"), width = 0.3, colour = "black") +
+               xlab(paste(var)) +
+               ylab("ln (Capelin biomass (ktons))") + 
+               #ylim(0,9) +
+               theme_bw()
+     }
+     #browser()
+     mm <- if(is.null(var2)){
+          cowplot::plot_grid(p1, p2, p3, labels = c(paste(title)), ncol=2)
+     } else if(!is.null(var2)){
+          cowplot::plot_grid(p1, p2, p3, p4, labels = c(paste(title)), ncol=2)          }
+     return(mm)
+}
+
+############################
+
+graph_p1 <- function(df, rv1, y_axis_lim_p1, lnbiomassInt, yearLim, yearInt,  ylabel_p1, ci){
+     #browser()
+     if(ci == "yes"){
+          p1 <- ggplot(df, aes_string(x = "year", y = rv1)) + 
+               geom_errorbar(width = 0.3, colour = "black", aes(ymin=logcapelinlb, ymax=logcapelinub)) + 
+               geom_point(shape=16, size=3)  +
+               geom_line(aes(y=ExpectedLogBiomass), colour="blue", linetype=1, size=1.25) +
+               scale_y_continuous(limits = y_axis_lim_p1, breaks = lnbiomassInt) +
+               scale_x_continuous(limits = yearLim, breaks = yearInt) +
+               xlab('Year') +
+               ylab(paste(ylabel_p1)) + 
+               theme_bw()
+          return(p1)
+     }
+
+     if(ci == "no"){
+          p1 <- ggplot(df, aes_string(x = "year", y = rv1)) + 
+          geom_point(shape=16, size=3)  +
+          geom_line(aes(y=ExpectedLogBiomass), colour="blue", linetype=1, size=1.25) +
+          scale_y_continuous(limits = y_axis_lim_p1, breaks = lnbiomassInt) +
+          scale_x_continuous(limits = yearLim, breaks = yearInt) +
+          xlab('Year') +
+          ylab(paste(ylabel_p1)) + 
+          theme_bw()
+     return(p1)
+     }
+}
+
+graph_p2 <- function(df, rv2, lnbiomassInt, yearLim, yearInt, ylabel_p2, ci){
+     #browser()
+     if(ci == "yes"){
+          p2 <- ggplot(df, aes_string(x = "year", y = rv2)) +
+               geom_errorbar(width = 0.3, colour = "black", aes(ymin=capelinlb, ymax=capelinub)) + 
+               geom_point(shape=16, size=3)  +
+               geom_line(aes(y=exp(ExpectedLogBiomass)), colour="blue", linetype=1, size=1.25) +
+               scale_x_continuous(limits = yearLim, breaks = yearInt) +
+               xlab('Year') +
+               ylab(paste(ylabel_p2)) + 
+               theme_bw()
+     }
+
+     if(ci == "no"){
+          p2 <- ggplot(df, aes_string(x = "year", y = rv2)) +
+               geom_point(shape=16, size=3)  +
+               geom_line(aes(y=exp(ExpectedLogBiomass)), colour="blue", linetype=1, size=1.25) +
+               scale_x_continuous(limits = yearLim, breaks = yearInt) +
+               xlab('Year') +
+               ylab(paste(ylabel_p2)) + 
+               theme_bw()
+     }
+     return(p2)
+}
+
+graph_p4 <- function(df, var2, rv1, ylabel_p1, ci){
+     if(ci == "yes"){
+          p4 <- ggplot() + 
+               geom_point(data = df, aes_string(x = var2, y = rv1), shape=15, size=3) +
+               geom_errorbar(data = df, aes_string(x = var2, ymin= "logcapelinlb", ymax="logcapelinub"), width = 0.3, colour = "black") +
+               xlab(paste(var2)) +
+               ylab(ylabel_p1) + 
+               #ylim(0,9) +
+               theme_bw()
+     }
+     if(ci == "no"){
+          p4 <- ggplot() + 
+               geom_point(data = df, aes_string(x = var2, y = rv1), shape=15, size=3) +
+               xlab(paste(var2)) +
+               ylab(ylabel_p1) + 
+               #ylim(0,9) +
+               theme_bw()
+     }
+     return(p4)
 }
