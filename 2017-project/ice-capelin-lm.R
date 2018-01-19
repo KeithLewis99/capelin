@@ -2,9 +2,6 @@
 #  Created 2018-01-18, R version 3.3.3 (2017-03-06)  
 # the purpose of this file is to explore relationships between capelin abundance/biomass and some explanatory variables using simple linear models.
 
-# testing branching
-# test again
-# why no branch?
 
 library(psych)
 
