@@ -175,8 +175,9 @@ lines(test$year, pred, col = 'red')
 jags_code = '
 model {
      # Likelihood
-     for (i in 2:N) {
-          y[i] ~ dnorm(alpha*y[i-1]*(1-(y[i-1]/beta)), sigma^-2)
+     for (i in 1:N) {
+          mu[i] <- alpha*x[i]*(1-(x[i]/beta))
+          y[i] ~ dnorm(mu[i], sigma^-2)
      }
      # Priors
      alpha ~ dnorm(0, 100^-2)
@@ -186,17 +187,19 @@ model {
 
 num_forecasts = 2 # 10 extra years
 model_data <- list(y = c(test$logcapelin, rep(NA, num_forecasts)), 
+                   x=c(test$tice, c(65, 77)),
                    N = nrow(test) + num_forecasts)
 
 jags_run <- jags(data=model_data,
-                 parameters.to.save = 'y',
+                 parameters.to.save = c('mu', 'sigma'),
                  model.file = textConnection(jags_code))
 
-y_pred = jags_run$BUGSoutput$sims.list$y
+y_pred = jags_run$BUGSoutput$sims.list$mu
 y_med = apply(y_pred,2,'median')
-plot(c(test$year,2017:2018),y_med,type='l')
+plot(c(test$year,2017:2018),y_med,type='l', ylim=c(3,7))
 points(test$year, y_med[1:14])
 points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
+# this makes the credible interval 90%
 lines(c(test$year,2017:2018), ci_test[1, ], lty = 3)
 lines(c(test$year,2017:2018), ci_test[2, ], lty = 3)
 
@@ -211,42 +214,79 @@ ci_test[1, ]
 
 jags_code = '
 model {
-     # Likelihood
-     for (i in 1:N) {
-     y[i] ~ dnorm(alpha*x[i]*(1-(x[i]/beta)), sigma^-2)
-     }
-     # Priors
-  alpha ~ dnorm(0, 100^-2)
-  beta ~ dnorm(5, 2)     
-  sigma ~ dunif(0, 100)
+# Likelihood
+for (i in 1:N) {
+mu[i] <- alpha*x[i]*(1-(x[i]/beta))
+y[i] ~ dnorm(mu[i], sigma^-2)
+}
+# Priors
+alpha ~ dnorm(0, 100^-2)
+beta ~ dgamma(5, 2)     
+sigma ~ dunif(0, 100)
 }'
 
-
-model_data <- list(y = y, x = x, N = N)
-model_parameters <- c("alpha", "beta", "sigma")
+num_forecasts = 2 # 10 extra years
+model_data <- list(y = c(test$logcapelin, rep(NA, num_forecasts)), 
+                   x=c(test$tice, c(65, 77)),
+                   N = nrow(test) + num_forecasts)
 
 jags_run <- jags(data=model_data,
-                 parameters.to.save = model_parameters,
+                 parameters.to.save = c('mu', 'sigma'),
                  model.file = textConnection(jags_code))
 
-print(jags_run)
-plot(jags_run)
+y_pred = jags_run$BUGSoutput$sims.list$mu
+y_med = apply(y_pred,2,'median')
+plot(c(test$year,2017:2018),y_med,type='l', ylim=c(0,9))
+points(test$year, test$logcapelin)
+points(test$year, y_med[1:14])
+points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
+# this makes the credible interval 90%
+lines(c(test$year,2017:2018), ci_test[1, ], lty = 3)
+lines(c(test$year,2017:2018), ci_test[2, ], lty = 3)
 
-post <- jags_run$BUGSoutput$sims.matrix
-head(post)
 
-plot(post[,'alpha'], type = 'l')
-plot(post[,'beta'], type = 'l')
+str(test)
+apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] #these are the extra 2 years
+ci_test <- apply(y_pred,2,'quantile', c(0.05, 0.95))
+ci_test[1, ]
 
-head(post[,'alpha'])
-alpha_mean <- mean(post[,'alpha'])
-beta_mean <- mean(post[,'beta'])
-pred <- alpha_mean*test$tice*(1-(test$tice/beta_mean))
 
-cbind(test$year, pred)
-plot(test$year, test$logcapelin, ylim = c(0,10))
-lines(test$year, pred, col = 'red')
+## sequential model----
 
-apply(post, 2, quantile, probs = c(0.025, 0.975))
-hist(post[, 'alpha'], breaks = 30)
-hist(post[, 'beta'], breaks = 30)
+jags_code = '
+model {
+# Likelihood
+for (i in 1:N) {
+mu[i] <- alpha*x[i]*(1-(x[i]/beta))
+y[i] ~ dnorm(mu[i], sigma^-2)
+}
+# Priors
+alpha ~ dnorm(0, 100^-2)
+beta ~ dgamma(5, 2)     
+sigma ~ dunif(0, 100)
+}'
+
+num_forecasts = 2 # 10 extra years
+model_data <- list(y = c(test$logcapelin, rep(NA, num_forecasts)), 
+                   x=c(test$tice, c(65, 77)),
+                   N = nrow(test) + num_forecasts)
+
+jags_run <- jags(data=model_data,
+                 parameters.to.save = c('mu', 'sigma'),
+                 model.file = textConnection(jags_code))
+
+y_pred = jags_run$BUGSoutput$sims.list$mu
+y_med = apply(y_pred,2,'median')
+plot(c(test$year,2017:2018),y_med,type='l', ylim=c(0,9))
+points(test$year, test$logcapelin)
+points(test$year, y_med[1:14])
+points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
+# this makes the credible interval 90%
+lines(c(test$year,2017:2018), ci_test[1, ], lty = 3)
+lines(c(test$year,2017:2018), ci_test[2, ], lty = 3)
+
+
+str(test)
+apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] #these are the extra 2 years
+ci_test <- apply(y_pred,2,'quantile', c(0.05, 0.95))
+ci_test[1, ]
