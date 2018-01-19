@@ -166,4 +166,4 @@ To keep minlat in degrees and WGS84, calculate iceTiming() before Area and Volum
     - all ice v. Gary's proposed subset v. ?????
   
     
-
+## Decided to 
