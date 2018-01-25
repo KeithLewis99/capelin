@@ -10,10 +10,16 @@
 #So now, we are simply using JAGS as a convenient way to calculate confidence/credible intervals and prediction intervals
 
 # The purpose of this file is to implement
+
+## libraries----
 library(R2jags)
 library(rjags)
 library(readr)
 library(dplyr)
+library(psych)
+
+source('D:/Keith/R/zuur_rcode/MCMCSupportHighstatV2.R')
+source('D:/Keith/R/zuur_rcode/HighstatLibV7.R')
 
 rm(list=ls())
 ## load data----
@@ -21,12 +27,27 @@ rm(list=ls())
 df <- read.csv('figs/covariates/capelin_covariates_2001.csv',header=T)
 str(df)
 
-df1 <- df[c("year", "logcapelin", "tice", "resids_adj", "Ssurface_tows_lag2", "ps_meanTot_lag2")]
+df1 <- df[c("year", "logcapelin", "tice", "resids_adj", "surface_tows_lag2", "ps_meanTot_lag2")]
 str(df1)
+#remove line when new data are available
+df1$resids_adj[14] <- 0.035
 
-df1$resids_adj[14] <- 35
+# standardize the covariates
+df1$tice.std <- scale(df1$tice)
+df1$resids_adj.std <- scale(df1$resids_adj)
+df1$surface_tows_lag2.std <- scale(df1$surface_tows_lag2)
+df1$ps_meanTot_lag2.std <- scale(df1$ps_meanTot_lag2)
 
 
+# relationships and correlations among RV and EV
+pairs.panels(df1[c("logcapelin", "surface_tows_lag2.std", "ps_meanTot_lag2.std", "resids_adj.std",  "tice.std")], 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = F,  # show density plots
+             ellipses = F, # show correlation ellipses,
+             cex.labels = 1.5,
+             cex.cor = 5
+)
 
 df_age <- df[c("year", "logcapelin", "age2", "age3", "age4", "age5", "age6", "age2PerMat", "resids_adj")]
 
@@ -309,19 +330,20 @@ for (i in 1:N) {
 #recruitment
 mu[i] <- delta + alpha*TI[i]*(1-(TI[i])*beta) + gamma*RA[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
-N2_new[i] ~ dnorm(mu[i], sigma^-2)
+N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
 
 # 3. Discrepancy measures
-YNew[i] ~dnorm(mu[i], 100^-2)
 expY[i] <- mu[i]
-varY[i] <- mu[i]
+varY[i] <- 1/sigma^-2
 PRes[i] <- (N2[i] - expY[i]) / sqrt(varY[i])
-PResNew[i] <- (YNew[i] - expY[i]) / sqrt(varY[i])
-D[i] <- pow(PRes[i], 2)
+PResNew[i] <- (N2_new[i] - expY[i]) / sqrt(varY[i])
+#Squared residuals
+D[i] <- pow(PRes[i], 2) #SSQ
 DNew[i] <- pow(PResNew[i], 2)
+CD[i] <- 
 }
-
-Fit <- sum(D[1:N])
+ #Sum of squared Pearson residuals:
+Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
 # 2. Priors
@@ -334,12 +356,12 @@ sigma ~ dunif(0, 100)
 
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df1$logcapelin, rep(NA, num_forecasts)), 
-                   TI=c(df1$tice, c(70, 70)), #from capelin_larval_indices 
-                   RA=c(df1$resids_adj, c(15, 15)), #made up - need new data
+                   TI=c(df1$tice.std, c(0.19, 0.19)), #from capelin_larval_indices 
+                   RA=c(df1$resids_adj.std, c(0.51, 0.51)), #made up - need new data
                    N = nrow(df1) + num_forecasts)
 
 run_mortality <- jags(data=model_data,
-                 parameters.to.save = c('mu', 'sigma', 'N2_new', 'alpha', 'beta', 'gamma', 'delta'),
+                 parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
                  model.file = textConnection(m.mortality))
 
 #UPDATE WITH MORE BURN INS
@@ -347,6 +369,10 @@ run_mortality <- jags(data=model_data,
 # DIAGNOSTICS
 print(run_mortality, intervals=c(0.025, 0.975), digits = 3)
 plot(run_mortality)
+
+out <- run_mortality$BUGSoutput 
+str(out)
+out$mean
 
 # Asess mixing of chains
 post <- run_mortality$BUGSoutput$sims.matrix
@@ -356,8 +382,44 @@ plot(post[, 'beta'], type = 'l')
 plot(post[, 'gamma'], type = 'l')
 plot(post[, 'delta'], type = 'l')
 
-#overdispersion
+# or
+vars <- c('alpha', 'beta', 'gamma', 'delta')
+library(lattice)
+MyBUGSChains(out, vars)
+#autocorrelation
+MyBUGSACF(out, vars)
 
+#overdispersion
+mean(out$sims.list$FitNew > out$sims.list$Fit)
+# mean = 0.546333 and values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
+
+# Model Validation (see Zuuer et al. 2013 for options for calculating Pearson residuals)
+# Residual diagnostics
+E1 <- out$mean$PRes
+str(out$mean)
+F1 <- out$mean$expY
+N2 <- out$mean$N2
+D <- out$mean$D
+
+par(mfrow = c(2,2), mar = c(5,5,2,2))
+plot(x=F1, y = E1, xlab = "Fitted values", ylab = "Pearson residuals")
+abline(h = 0, lty = 2)
+# The below is right but is the not right code.  The code is in ONeNote
+#plot(D, type = "h", xlab = "Observation", ylab = "Cook distance")
+plot(y = N2, x = F1, xlab = "Fitted values", ylab = "Observed data")
+abline(coef = c(0,1), lty = 2)
+par(mfrow = c(1,1))
+
+
+# Residuals v covariates
+par(mfrow = c(2,2), mar = c(5,5,2,2))
+MyVar <- c("tice", "resids_adj")
+test <- as.data.frame(model_data)
+test <- cbind(test, E1)
+#Myxyplot(test, MyVar, "E1")
+plot(test$TI, test$EI, xlab = "Tice", ylab = "Pearson resids")
+plot(test$RA, test$EI, xlab = "Condition", ylab = "Pearson resids")
+par(mfrow = c(1,1))
 
 # CREDIBLE AND PREDICITON INTERVALS
 #generate credible intervals for time series using mu
@@ -391,7 +453,7 @@ lines(c(2017:2018), pi_df1[2, 15:16], lty = 2)
 
 polygon(x = c(2017, 2017, 2018, 2018), y = c(pi_df1[1, 15], pi_df1[2,15], pi_df1[2, 16], pi_df1[1, 16]), col="grey75")
 
-text(2009,8, "log(caplein) = delta + Alpha*tice*(1-(tice/Beta)) + Gamma*resids_adj")
+text(2009,8, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*resids_adj")
 
 #plot credible and prediction intervals
 # better plots
@@ -405,12 +467,12 @@ p <- p + xlab("Year") + ylab("ln(capelin)")
 p <- p + theme(text = element_text(size=15)) + theme_bw()
 p <- p + geom_line(aes(x = c(df1$year, 2017:2018), 
                        y = y_med))
-p <- p + geom_ribbon(aes(x = df1$year, 
+p <- p + geom_ribbon(aes(x = df1$year[1:14], 
                          ymax = ci_df1[2, 1:14], 
                          ymin = ci_df1[1, 1:14]),
                      alpha = 0.5)
 p <- p + geom_ribbon(aes(x = c(2017:2018), 
-                         ymax = pi_df1[2, 14:16], 
-                         ymin = pi_df1[1, 14:16]),
+                         ymax = pi_df1[2, 15:16], 
+                         ymin = pi_df1[1, 15:16]),
                      alpha = 0.3)        
 p
