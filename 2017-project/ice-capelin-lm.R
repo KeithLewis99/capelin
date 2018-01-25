@@ -25,7 +25,7 @@ pairs.panels(df[c("age2_log10", "surface_tows_lag2", "ps_meanTot_lag2", "resids_
              density = F,  # show density plots
              ellipses = F, # show correlation ellipses,
              cex.labels = 2,
-             cex.cor = 1
+             cex.cor = 5
 )
 
 summary(lm(age2_log10 ~ log10surface_tows_lag2, data = sdf1))
