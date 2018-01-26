@@ -2,6 +2,7 @@
 #  Created 2018-01-18, R version 3.3.3 (2017-03-06)  
 # the purpose of this file is to explore relationships between capelin abundance/biomass and some explanatory variables using simple linear models.
 
+
 library(psych)
 
 
@@ -24,17 +25,22 @@ pairs.panels(df[c("age2_log10", "surface_tows_lag2", "ps_meanTot_lag2", "resids_
              density = F,  # show density plots
              ellipses = F, # show correlation ellipses,
              cex.labels = 2,
-             cex.cor = 1
+             cex.cor = 5
 )
 
 summary(lm(age2_log10 ~ log10surface_tows_lag2, data = sdf1))
-m1 <- lm(age2_log10 ~ log10surface_tows_lag2, data = sdf1)
+m1 <- lm(age2_log10 ~ log10surface_tows_lag2, data = sdf1, na.action=na.exclude)
 str(m1)
 str(m1$resid)
 op <- par(mfrow = c(2,2))
 plot(m1, add.smooth=F)
 par(op)
 par(mfrow = c(1,1))
+
+vf1Fixed <- varFixed(~log10surface_tows_lag2)
+m1.vF <- gls(age2_log10 ~ log10surface_tows_lag2, weights = vf1Fixed, data = sdf1, na.action=na.exclude)
+
+AIC(m1, m1.vF)
 
 resids_t <- data.frame(resids = rep(NA, 14))
 resids_t[1:3, ] <- m1$resid[1:3]

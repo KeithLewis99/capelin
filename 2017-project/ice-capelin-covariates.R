@@ -52,6 +52,7 @@ capelinCond <- read.csv('data/capelin_condition_maturation.csv',header=T)
 str(capelinCond)
 #View(capelinCond)
 capelinCond$resids_adj <- lag(capelinCond$resids*1000, 1)
+capelinCond[19:21,3] <- NA
 
 ## read in larval data----
 # from "capelin_age_disaggregate_abundance.xlsx":Larval indices
