@@ -6,7 +6,31 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
+library(xtable)
+library(ggplot2)
+library(readr)
+library(tidyr)
+library(dplyr)
+library(magrittr)
+
 knitr::opts_chunk$set(echo = TRUE)
+df <- read_csv('data/capelin_condition_maturation_v1.csv')
+df1 <- df %>%
+     filter(year > 1992 & sex == 1 & age == 1 & maturity !=6) %>% #one-year males after 1992
+     filter(!is.na(weight)) %>%
+     filter(!is.na(length)) 
+
+cols <- c("project", "nafo_div", "project_code", "sex", "maturity")
+df1 %<>%
+     mutate_each_(funs(factor(.)),cols)
+glimpse(df1)
+
+levels(df1$nafo_div)[levels(df1$nafo_div) == "23"] <- "2J"
+levels(df1$nafo_div)[levels(df1$nafo_div) == "31"] <- "3K"
+levels(df1$nafo_div)[levels(df1$nafo_div) == "32"] <- "3L"
+levels(df1$sex)[levels(df1$sex) == "1"] <- "Male"
+levels(df1$sex)[levels(df1$sex) == "2"] <- "Female"
+
 ```
 
 ## R Markdown
@@ -15,16 +39,32 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
+```{r echo = FALSE, results='hide'}
+m1 <- lm(log10(weight) ~ log10(length), data= df1)
+summary(m1)
+```
+
+```{r 'resids1', fig.cap="Residual diagnostics of log(length) ~ log(weight)",echo = FALSE, results='asis'}
+op <- par(mfrow = c(2,2))
+plot(m1, add.smooth=F)
+par(op)
+par(mfrow = c(1,1))
 ```
 
 ## Including Plots
 
 You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+```{r echo = FALSE, results='asis'}
+df1$fits <- fitted(m1)
+df1$rel.cond <- df1$weight/df1$fits
 
+tab1 <- xtable(df1 %>%
+     group_by(year, nafo_div) %>%
+     summarize(meanCond = round(mean(rel.cond),2), stdCond= round(sd(rel.cond),2)) %>% 
+     unite(mean, meanCond:stdCond, sep = " +/- ") %>%
+     spread(key = nafo_div, value = mean))
+
+print(tab1, comment = FALSE)
+```
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
