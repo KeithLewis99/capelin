@@ -2,8 +2,8 @@
 #  Created 2017-01-25, R version 3.3.3 (2017-03-06)             #
 
 # The purpose of this file is to:
-# 1) Calculate a condition index for capelin: relative condition = observed/predicted
-# 2) turn this into a markdown document
+# 1) Calculate a condition index for capelin: relative condition = observed/predicted for the capelin project
+# 2) turn this into a markdown document for Fran
 
 
 ## libraries------
@@ -12,8 +12,6 @@ library(readr)
 library(tidyr)
 library(dplyr)
 library(magrittr)
-
-cols <- c("A", "C", "D", "H")
 
 rm(list=ls())
 
@@ -46,13 +44,11 @@ levels(as.factor(df1$sample_number))
 levels(as.factor(df1$year))
 levels(as.factor(df1$month))
 levels(df1$nafo_div)
-
 levels(df1$maturity)
 range(df1$weight)
 range(df1$length)
 levels(as.factor(df1$age))
 
-head(df1$age, 100)
 
 ## DATA EXPLORATION - ZUUR 2010----
 ## Step 1 Are there outliers in X and Y?
@@ -113,7 +109,7 @@ p + geom_histogram()
 p <- ggplot(df1, aes(x=weight))
 p + geom_density() 
 
-low_vals <- filter(df1, weight < 1)
+filter(df1, weight < 1)
 
 # Conc: these are skewed to the left: still don't get the normality thing.  There are 0 values < 1, 1090 < 5: see Fran for what to filter
 
@@ -137,7 +133,7 @@ m1 <- lm(log10(weight) ~ log10(length), data= df1)
 summary(m1)
 str(m1)
 str(summary(m1))
-slope <- m1$coefficients[2]
+
 sum <- summary(m1)
 rsq <- sum$r.squared
 slope <- sum$coefficients[2,1]
@@ -147,6 +143,7 @@ op <- par(mfrow = c(2,2))
 plot(m1, add.smooth=F)
 par(op)
 par(mfrow = c(1,1))
+
 # problems with residuals but this may be due to outliers
 # 3 outliers; homogeneity looks good other than than.  Normality stinks but probably not a problem - very few values.
 # 2405, 3962, 2227
@@ -154,7 +151,6 @@ data.frame(df1[2405,])# short and heavy
 data.frame(df1[3962,]) # long and light
 data.frame(df1[2227,])# long and light
 
-glimpse(df1)
 df1$fits <- fitted(m1)
 df1$rel.cond <- df1$weight/df1$fits
 
