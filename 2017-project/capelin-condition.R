@@ -23,7 +23,7 @@ head(df)
 
 #create one filter for ice-capelin project and one for Fran and the markdown doc
 df1 <- df %>%
-     filter(year > 1992 & sex == 1 & age == 1 & maturity !=6) %>% #one-year males after 1992
+     filter(year > 1992 & sex == 1 & age == 1 & maturity != 6 & project != 10) %>% #one-year males after 1992
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
@@ -49,7 +49,18 @@ range(df1$weight)
 range(df1$length)
 levels(as.factor(df1$age))
 
+# filter out 99% by year - how to do this????
+summary(df1$weight)
+mean_w <- mean(df1$weight)
+sd_w <- sd(df1$weight)
+nrow(df1)
+uci <- mean_w + qnorm(0.995)*sd_w/sqrt(nrow(df1))
+quantile(df1$weight, c(0.5, 0.95, 0.99, 0.995, 0.999))
 
+
+test <- filter(df1, weight > uci)
+glimpse(test)
+test$weight
 ## DATA EXPLORATION - ZUUR 2010----
 ## Step 1 Are there outliers in X and Y?
 
@@ -77,13 +88,13 @@ ggplot(data=df1) +
 ggplot(data=df1) +
      geom_boxplot(aes(x = as.factor(year), y = weight))
 
-#month L/W increase with month!
+#month L/W increase with month bc growing 1cm/month
 ggplot(data=df1) +
      geom_boxplot(aes(x = as.factor(month), y = length))
 ggplot(data=df1) +
      geom_boxplot(aes(x = as.factor(month), y = weight))
 
-# nafo_div (3L lower length and weight)
+# nafo_div (3L lower length and weight)- probably older bc of latter in season
 ggplot(data=df1) +
      geom_boxplot(aes(x = nafo_div, y = length))
 ggplot(data=df1) +
@@ -109,7 +120,7 @@ p + geom_histogram()
 p <- ggplot(df1, aes(x=weight))
 p + geom_density() 
 
-filter(df1, weight < 1)
+filter(df1, weight < 5) # no lower limit
 
 # Conc: these are skewed to the left: still don't get the normality thing.  There are 0 values < 1, 1090 < 5: see Fran for what to filter
 
@@ -118,7 +129,7 @@ filter(df1, weight < 1)
 
 ggplot(data=df1) + geom_point(aes(x=length, y = weight))
 
-ggplot(data=df1) + geom_point(aes(x=log10(length), y = log10(weight)))
+ggplot(data=df1) + geom_point(aes(x=log10(length), y = log10(weight), colour=nafo_div))
 
 #Conclusion: collinearity not an issue unless we divide by some factor.  Exponential relationship between weight and length but log-log takes care of that.
 
@@ -128,7 +139,7 @@ ggplot(data=df1) + geom_point(aes(x=log10(length), y = log10(weight)))
 ## Step 8 Are the observations of the response variable independent?
 ### No reason to expect unless there is observer error
 
-## LINEAR MODELLING
+## LINEAR MODELLING----
 m1 <- lm(log10(weight) ~ log10(length), data= df1)
 summary(m1)
 str(m1)
@@ -151,17 +162,17 @@ data.frame(df1[2405,])# short and heavy
 data.frame(df1[3962,]) # long and light
 data.frame(df1[2227,])# long and light
 
+##output----
 df1$fits <- fitted(m1)
-df1$rel.cond <- df1$weight/df1$fits
+m1$fitted.values
+str(m1)
+df1$rel.cond <- log10(df1$weight)/df1$fits
 
 df1 %>%
      group_by(year, nafo_div) %>%
      summarize(meanCond = round(mean(rel.cond),2), stdCond= round(sd(rel.cond),2)) %>% 
      unite(mean, meanCond:stdCond, sep = " +/- ") %>%
      spread(key = nafo_div, value = mean)
-
-     tbl %>% spread(key = nafo_div, value = meanCond, -(stdCond))
-
 View(tbl)
 
 #nafo
@@ -177,7 +188,6 @@ ggplot(data=df1) +
 ggplot(data=df1) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
      facet_wrap(~project)
-
 
 ggplot(data=df1) +
      geom_boxplot(aes(x = month, y = rel.cond, group = month)) + 
