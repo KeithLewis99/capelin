@@ -23,7 +23,7 @@ head(df)
 
 #create one filter for ice-capelin project and one for Fran and the markdown doc
 df1 <- df %>%
-     filter(year > 1992 & sex == 1 & age == 1 & maturity != 6 & project != 10) %>% #one-year males after 1992
+     filter(year > 1992 & sex == 1 & age == 1 & maturity != 6 & project != 10) %>% #one-year males after 1992, just project 23
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
@@ -57,10 +57,20 @@ nrow(df1)
 uci <- mean_w + qnorm(0.995)*sd_w/sqrt(nrow(df1))
 quantile(df1$weight, c(0.5, 0.95, 0.99, 0.995, 0.999))
 
+count_n <- df1 %>%
+     group_by(year) %>%
+     summarize(n = n())
 
-test <- filter(df1, weight > uci)
-glimpse(test)
-test$weight
+quant <- df1 %>%
+     group_by(year) %>%
+     summarize(uci = quantile(weight, c(0.99))) 
+
+df1 <- df1 %>%
+     group_by(year) %>%
+     right_join(x=df1, y=quant, by ="year") %>%
+     filter(weight < uci)
+glimpse(test2)
+
 ## DATA EXPLORATION - ZUUR 2010----
 ## Step 1 Are there outliers in X and Y?
 
@@ -70,7 +80,6 @@ ggplot(df1, aes(x = length)) + geom_dotplot() + facet_wrap(~year)
 ggplot(df1, aes(x = weight)) + geom_dotplot() + facet_wrap(~year)
 
 # Fran - should we got with just project 23 for ice-capelin? yes, based on next analysis?
-ggplot(df1, aes(x = year)) + geom_dotplot() + facet_wrap(~project)
 
 # project - L/W larger in 23
 # outliers generally small
@@ -93,6 +102,9 @@ ggplot(data=df1) +
      geom_boxplot(aes(x = as.factor(month), y = length))
 ggplot(data=df1) +
      geom_boxplot(aes(x = as.factor(month), y = weight))
+
+ggplot(data=df1) +
+     geom_boxplot(aes(x = as.factor(month), y = weight)) +      facet_wrap(~nafo_div)
 
 # nafo_div (3L lower length and weight)- probably older bc of latter in season
 ggplot(data=df1) +
@@ -129,7 +141,8 @@ filter(df1, weight < 5) # no lower limit
 
 ggplot(data=df1) + geom_point(aes(x=length, y = weight))
 
-ggplot(data=df1) + geom_point(aes(x=log10(length), y = log10(weight), colour=nafo_div))
+ggplot(data=df1) + geom_point(aes(x=log10(length), y = log10(weight), colour=nafo_div)) + 
+     facet_wrap(~nafo_div)
 
 #Conclusion: collinearity not an issue unless we divide by some factor.  Exponential relationship between weight and length but log-log takes care of that.
 
@@ -141,6 +154,7 @@ ggplot(data=df1) + geom_point(aes(x=log10(length), y = log10(weight), colour=naf
 
 ## LINEAR MODELLING----
 m1 <- lm(log10(weight) ~ log10(length), data= df1)
+m1 <- lm(log10(weight) ~ log10(length), weights = nafo_div, data= df1)
 summary(m1)
 str(m1)
 str(summary(m1))
@@ -157,10 +171,17 @@ par(mfrow = c(1,1))
 
 # problems with residuals but this may be due to outliers
 # 3 outliers; homogeneity looks good other than than.  Normality stinks but probably not a problem - very few values.
-# 2405, 3962, 2227
+# 2405, 3962, 2227 - outliers before filtering for 99%
 data.frame(df1[2405,])# short and heavy
 data.frame(df1[3962,]) # long and light
 data.frame(df1[2227,])# long and light
+
+# new outliers
+data.frame(df1[2006,])# short and heavy
+data.frame(df1[1828,]) # long and light
+data.frame(df1[3542,])# long and light
+#leverage
+data.frame(df1[332,])# short and light
 
 ##output----
 df1$fits <- fitted(m1)
@@ -168,12 +189,19 @@ m1$fitted.values
 str(m1)
 df1$rel.cond <- log10(df1$weight)/df1$fits
 
+# produce table
 df1 %>%
      group_by(year, nafo_div) %>%
      summarize(meanCond = round(mean(rel.cond),2), stdCond= round(sd(rel.cond),2)) %>% 
      unite(mean, meanCond:stdCond, sep = " +/- ") %>%
      spread(key = nafo_div, value = mean)
 View(tbl)
+
+# produce output for Bayesain analysis
+out <- df1 %>%
+     group_by(year) %>%
+     summarize(meanCond = round(mean(rel.cond),4), stdCond= round(sd(rel.cond),4), medCond = round(median(rel.cond), 4))
+write_csv(out, "data/condition_out.csv")
 
 #nafo
 ggplot(data=df1) +
@@ -192,4 +220,8 @@ ggplot(data=df1) +
 ggplot(data=df1) +
      geom_boxplot(aes(x = month, y = rel.cond, group = month)) + 
      facet_wrap(~nafo_div)
+
+ggplot(data=df1) +
+     geom_point(aes(x = log10(length), y = log10(weight), colour = nafo_div)) + 
+     facet_wrap(~year)
 
