@@ -40,7 +40,6 @@ capelinAbun <- read.csv('data/capelin_age_disaggregate_abundance.csv',header=T)
 str(capelinAbun)
 capelinAbun$age2_log <- log(capelinAbun$age2)
 capelinAbun$age2_log10 <- log10(capelinAbun$age2)
-capelinAbun$capelin_log10 <- log10(capelinAbun$capelin)
 capelinAbun$Ln_adult_abun <- log(sum(capelinAbun$age3, capelinAbun$age4, capelinAbun$age5, capelinAbun$age6, na.rm=T) + capelinAbun$age2*capelinAbun$age2PerMat)
 capelinAbun$adult_abun <- sum(capelinAbun$age3, capelinAbun$age4, capelinAbun$age5, capelinAbun$age6, na.rm=T) + capelinAbun$age2*capelinAbun$age2PerMat
 
@@ -48,16 +47,22 @@ capelinAbun$adult_abun <- sum(capelinAbun$age3, capelinAbun$age4, capelinAbun$ag
 
 # read in capelin condition----
 # from "capelin_condition_maturation.xlsx"
-capelinCond <- read.csv('data/capelin_condition_maturation.csv',header=T)
+capelinCond <- read.csv('data/condition_out.csv')
+capelinCond[22:23,4] <- NA
+capelinCond[c(22, 23), 1] <- matrix(c(2016, 2017), ncol = 1) 
+
 str(capelinCond)
-#View(capelinCond)
-capelinCond$resids_adj <- lag(capelinCond$resids*1000, 1)
-capelinCond[19:21,3] <- NA
+View(capelinCond)
+capelinCond$meanCond_lag <- lag(capelinCond$meanCond, 1)
+capelinCond$medCond_lag <- lag(capelinCond$medCond, 1)
 
 ## read in larval data----
 # from "capelin_age_disaggregate_abundance.xlsx":Larval indices
 larvae <- read.csv('data/capelin_larval_indices.csv',header=T)
 str(larvae)
+larvae[28,] <- NA
+larvae[28, 1] <- matrix(c(2017), ncol = 1) 
+
 larvae$surface_tows_lag2 <- lag(larvae$surface_tows, 2)
 larvae$surface_tows_lag1 <- lag(larvae$surface_tows, 1)
 
@@ -77,6 +82,9 @@ ps_tot <- pscal %>%
      group_by(year) %>%
      summarise(ps_meanTot = mean(density), ps_sdTot = sd(density))
 
+ps_tot[19,] <- NA
+ps_tot[19, 1] <- matrix(c(2017), ncol = 1) 
+
 # lag mean and sd and /1000 to scale to tice
 ps_tot$ps_meanTot_lag1 <- lag(ps_tot$ps_meanTot, 1)/100
 ps_tot$ps_sdTot_lag1 <- lag(ps_tot$ps_sdTot, 1)/100
@@ -84,6 +92,7 @@ ps_tot$ps_meanTot_lag2 <- lag(ps_tot$ps_meanTot, 2)/100
 ps_tot$ps_sdTot_lag2 <- lag(ps_tot$ps_sdTot, 2)/100
 range(ps_tot$ps_meanTot_lag2, na.rm = TRUE)
 ps_tot$ps_meanLog_lag2 <- lag(log10(ps_tot$ps_meanTot), 2)
+View(ps_tot)
 
 ##join the above data sets----
 capelin_join <- left_join(capelin_join, larvae, by = "year")
@@ -119,6 +128,8 @@ cape_2017 <- map(cape, ~filter(.x, year > 1991))
 cape_2001 <- map(cape, ~filter(.x, year > 2002 & year < 2017))
 
 write.csv(cape_2001$capelin_m1, file = "figs/covariates/capelin_covariates_2001.csv", row.names=F, na="")
+
+write.csv(cape_2017$capelin_m1, file = "figs/covariates/capelin_covariates_2017.csv", row.names=F, na="")
 
 ## EXPLORATORY ANALYSIS----
 # simplify dataset
