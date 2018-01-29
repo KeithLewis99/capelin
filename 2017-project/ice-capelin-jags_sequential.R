@@ -18,29 +18,30 @@ library(readr)
 library(dplyr)
 library(psych)
 
+rm(list=ls())
 source('D:/Keith/R/zuur_rcode/MCMCSupportHighstatV2.R')
 source('D:/Keith/R/zuur_rcode/HighstatLibV7.R')
 
-rm(list=ls())
+
 ## load data----
 # this from the ice-capelin-covariates file
-df <- read.csv('figs/covariates/capelin_covariates_2001.csv',header=T)
+df <- read.csv('figs/covariates/capelin_covariates_2017.csv',header=T)
 str(df)
 
-df1 <- df[c("year", "logcapelin", "tice", "resids_adj", "surface_tows_lag2", "ps_meanTot_lag2")]
+df1 <- df[c("year", "logcapelin", "tice", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")]
 str(df1)
 #remove line when new data are available
-df1$resids_adj[14] <- 0.035
+df1$meanCond_lag[26] <- 0.99
 
 # standardize the covariates
 df1$tice.std <- scale(df1$tice)
-df1$resids_adj.std <- scale(df1$resids_adj)
+df1$meanCond_lag.std <- scale(df1$meanCond_lag)
 df1$surface_tows_lag2.std <- scale(df1$surface_tows_lag2)
 df1$ps_meanTot_lag2.std <- scale(df1$ps_meanTot_lag2)
 
 
 # relationships and correlations among RV and EV
-pairs.panels(df1[c("logcapelin", "surface_tows_lag2.std", "ps_meanTot_lag2.std", "resids_adj.std",  "tice.std")], 
+pairs.panels(df1[c("logcapelin", "surface_tows_lag2.std", "ps_meanTot_lag2.std", "meanCond_lag.std",  "tice.std")], 
              method = "pearson", # correlation method
              hist.col = "#00AFBB",
              density = F,  # show density plots
@@ -305,6 +306,8 @@ text(2007,8, "log(caplein) = Alpha*tice*(1-(tice/Beta)) + Gamma*resids_adj")
 ## test 5----
 # not sequential
 #"delta + Alpha*tice*(1-(tice/Beta)) + Gamma*resids_adj"
+
+df2 <- subset(df1, year>1995)
 m.mortality = '
 model {
 # 1. Likelihood
@@ -328,7 +331,7 @@ model {
 # 1. Likelihood
 for (i in 1:N) {
 #recruitment
-mu[i] <- delta + alpha*TI[i]*(1-(TI[i])*beta) + gamma*RA[i]
+mu[i] <- delta + alpha*TI[i]*(1-(TI[i])*beta) + gamma*CO[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
 
@@ -340,7 +343,7 @@ PResNew[i] <- (N2_new[i] - expY[i]) / sqrt(varY[i])
 #Squared residuals
 D[i] <- pow(PRes[i], 2) #SSQ
 DNew[i] <- pow(PResNew[i], 2)
-CD[i] <- 
+#CD[i] <- 
 }
  #Sum of squared Pearson residuals:
 Fit <- sum(D[1:N]) # look at overdispersion
@@ -355,10 +358,10 @@ sigma ~ dunif(0, 100)
 }'
 
 num_forecasts = 2 # 2 extra years
-model_data <- list(N2 = c(df1$logcapelin, rep(NA, num_forecasts)), 
-                   TI=c(df1$tice.std, c(0.19, 0.19)), #from capelin_larval_indices 
-                   RA=c(df1$resids_adj.std, c(0.51, 0.51)), #made up - need new data
-                   N = nrow(df1) + num_forecasts)
+model_data <- list(N2 = c(df2$logcapelin, rep(NA, num_forecasts)), 
+                   TI=c(df2$tice.std, c(1.03, 1.03)), #from capelin_larval_indices 
+                   CO=c(df2$meanCond_lag.std, c(-1, -1)), #made up - need new data
+                   N = nrow(df2) + num_forecasts)
 
 run_mortality <- jags(data=model_data,
                  parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
@@ -413,12 +416,12 @@ par(mfrow = c(1,1))
 
 # Residuals v covariates
 par(mfrow = c(2,2), mar = c(5,5,2,2))
-MyVar <- c("tice", "resids_adj")
+MyVar <- c("tice.std", "meandCond_lag.std")
 test <- as.data.frame(model_data)
 test <- cbind(test, E1)
 #Myxyplot(test, MyVar, "E1")
 plot(test$TI, test$EI, xlab = "Tice", ylab = "Pearson resids")
-plot(test$RA, test$EI, xlab = "Condition", ylab = "Pearson resids")
+plot(test$CO, test$EI, xlab = "Condition", ylab = "Pearson resids")
 par(mfrow = c(1,1))
 
 # CREDIBLE AND PREDICITON INTERVALS
@@ -429,50 +432,50 @@ head(y_pred)
 #look at output
 y_med = apply(y_pred,2,'median')
 apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] 
-ci_df1 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
-ci_df1[1, ]
+ci_df2 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
+ci_df2[1, ]
 
 #generate prediciton intevals using N2_new
 y_new = run_mortality$BUGSoutput$sims.list$N2_new
-pi_df1 <- apply(y_new,2,'quantile', c(0.05, 0.95))
+pi_df2 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 
 #PLOT credible and prediction intervals
-plot(c(df1$year,2017:2018),y_med,type='l', ylim=c(0,9))
-points(df1$year, df1$logcapelin)
-#points(df1$year, y_med[1:14], col = "blue")
+plot(c(df2$year,2018:2019),y_med,type='l', ylim=c(0,9))
+points(df2$year, df2$logcapelin)
+#points(df2$year, y_med[1:14], col = "blue")
 #points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
 # this makes the credible interval 90%
-#lines(c(df1$year,2017:2018), ci_df1[1, ], lty = 3)
-lines(c(df1$year[1:14]), ci_df1[1, 1:14], lty = 3)
-#lines(c(df1$year,2017:2018), ci_df1[2, ], lty = 3)
-lines(c(df1$year[1:14]), ci_df1[2, 1:14], lty = 3)
-#lines(c(df1$year,2017:2018), pi_df1[1, ], lty = 2)
-lines(c(2017:2018), pi_df1[1, 15:16], lty = 2)
-#lines(c(df1$year,2017:2018), pi_df1[2, ], lty = 2)
-lines(c(2017:2018), pi_df1[2, 15:16], lty = 2)
+#lines(c(df2$year,2017:2018), ci_df2[1, ], lty = 3)
+lines(c(df2$year[1:22]), ci_df2[1, 1:22], lty = 3)
+#lines(c(df2$year,2017:2018), ci_df2[2, ], lty = 3)
+lines(c(df2$year[1:22]), ci_df2[2, 1:22], lty = 3)
+#lines(c(df2$year,2017:2018), pi_df2[1, ], lty = 2)
+lines(c(2018:2019), pi_df2[1, 23:24], lty = 2)
+#lines(c(df2$year,2017:2018), pi_df2[2, ], lty = 2)
+lines(c(2018:2019), pi_df2[2, 23:24], lty = 2)
 
-polygon(x = c(2017, 2017, 2018, 2018), y = c(pi_df1[1, 15], pi_df1[2,15], pi_df1[2, 16], pi_df1[1, 16]), col="grey75")
+polygon(x = c(2018, 2018, 2019, 2019), y = c(pi_df2[1, 23], pi_df2[2,23], pi_df2[2, 24], pi_df2[1, 24]), col="grey75")
 
-text(2009,8, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*resids_adj")
+text(2004,8, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*resids_adj")
 
 #plot credible and prediction intervals
 # better plots
 library(ggplot2)
 p <- ggplot()
-p <- p + geom_point(data = df1, 
+p <- p + geom_point(data = df2, 
                     aes(y = logcapelin, x = year),
                     shape = 16, 
                     size = 1.5)
 p <- p + xlab("Year") + ylab("ln(capelin)")
 p <- p + theme(text = element_text(size=15)) + theme_bw()
-p <- p + geom_line(aes(x = c(df1$year, 2017:2018), 
+p <- p + geom_line(aes(x = c(df2$year, 2017:2018), 
                        y = y_med))
-p <- p + geom_ribbon(aes(x = df1$year[1:14], 
-                         ymax = ci_df1[2, 1:14], 
-                         ymin = ci_df1[1, 1:14]),
+p <- p + geom_ribbon(aes(x = df2$year[1:14], 
+                         ymax = ci_df2[2, 1:14], 
+                         ymin = ci_df2[1, 1:14]),
                      alpha = 0.5)
 p <- p + geom_ribbon(aes(x = c(2017:2018), 
-                         ymax = pi_df1[2, 15:16], 
-                         ymin = pi_df1[1, 15:16]),
+                         ymax = pi_df2[2, 15:16], 
+                         ymin = pi_df2[1, 15:16]),
                      alpha = 0.3)        
 p
