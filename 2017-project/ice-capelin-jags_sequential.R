@@ -15,41 +15,115 @@
 library(R2jags)
 library(rjags)
 library(readr)
+library(tidyr)
 library(dplyr)
 library(psych)
+library(ggplot2)
+library(lattice)
 
 rm(list=ls())
+
+## read in source code-----
 source('D:/Keith/R/zuur_rcode/MCMCSupportHighstatV2.R')
 source('D:/Keith/R/zuur_rcode/HighstatLibV7.R')
-
+source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 
 ## load data----
-# this from the ice-capelin-covariates file
-df <- read.csv('figs/covariates/capelin_covariates_2017.csv',header=T)
-str(df)
+## capelin (1985-2017)----
+# source: Age disaggregate abundance for Keith Lewis - 2017 added_v1.xlsx
+cap <- read_csv('data/capelin-2017.csv')
+glimpse(cap)
+View(cap)
+cap$ln_abun_med <- log(cap$abundance_med)
+cap$ln_ab_lci <- log(cap$ab_lci)
+cap$ln_ab_uci <- log(cap$ab_uci)
+cap$ln_biomass_med <- log(cap$biomass_med)
+cap$ln_bm_lci <- log(cap$bm_lci)
+cap$ln_bm_uci <- log(cap$bm_uci)
 
-df1 <- df[c("year", "logcapelin", "tice", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")]
-str(df1)
-#remove line when new data are available
-df1$meanCond_lag[26] <- 0.99
+## ice (1969-2017)----
+#source: ice-chart-processing-data-v3.R
+ice <- read_csv('output-processing/capelin-m1.csv')
+glimpse(ice)
 
-# standardize the covariates
-df1$tice.std <- scale(df1$tice)
-df1$meanCond_lag.std <- scale(df1$meanCond_lag)
-df1$surface_tows_lag2.std <- scale(df1$surface_tows_lag2)
-df1$ps_meanTot_lag2.std <- scale(df1$ps_meanTot_lag2)
+## condition (1995-2015)-----
+# source: capelin-condition.R
+cond <- read_csv('data/condition_out.csv')
+glimpse(cond)
+View(cond)
 
+#add years
+cond[22:23,4] <- NA
+cond[c(22, 23), 1] <- matrix(c(2016, 2017), ncol = 1) 
+
+#lag data
+cond$meanCond_lag <- lag(cond$meanCond, 1)
+cond$medCond_lag <- lag(cond$medCond, 1)
+
+# fill in for 2017 - remove line when new data are available
+cond$meanCond_lag[23] <- cond$meanCond_lag[22]
+
+## larval data (1990-2017)----
+# source "capelin_age_disaggregate_abundance.xlsx":Larval indices
+larvae <- read_csv('data/capelin_larval_indices.csv')
+glimpse(larvae)
+larvae$surface_tows_lag2 <- lag(larvae$surface_tows, 2)
+
+## Pseudocalanus data (1999-2016)----
+# source "Copy of Copy of PSEUSP27_1999_2016.xlsx"
+pscal <- read_csv("data/pseudocal_1999_2016.csv")
+glimpse(pscal)
+pscal$year
+
+# filter out year and use just the "total" stage.  Calcuate mean and sd by year
+ps_tot <- pscal %>%
+     gather(key = stage, value = density, 4:10) %>%
+     filter(doy <= 274 & doy >= 152) %>%
+     filter(stage == "c6") %>%
+     group_by(year) %>%
+     summarise(ps_meanTot = mean(density), ps_sdTot = sd(density))
+
+#add years
+ps_tot[19,] <- NA
+ps_tot[19, 1] <- matrix(c(2017), ncol = 1) 
+
+# lag mean and sd and /1000 to scale to tice
+ps_tot$ps_meanTot_lag2 <- lag(ps_tot$ps_meanTot, 2)
+ps_tot$ps_sdTot_lag2 <- lag(ps_tot$ps_sdTot, 2)
+View(ps_tot)
+
+##join the above data sets----
+capelin_join <- left_join(cap, ice, by = "year")
+capelin_join <- left_join(capelin_join, cond, by = "year")
+capelin_join <- left_join(capelin_join, larvae, by = "year")
+capelin_join <- left_join(capelin_join, ps_tot, by = "year")
+
+df <- capelin_join
+
+glimpse(df)
+df[c("biomass_med", "ln_biomass_med", "tice", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")]
+
+# normalize the data set except for year----
+df1 <- subset(df, year>1995)
+glimpse(df1)
+
+cols <- c("tice", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")
+df1 %<>%
+     mutate_each_(funs(scale),cols)
+glimpse(df1)
 
 # relationships and correlations among RV and EV
-pairs.panels(df1[c("logcapelin", "surface_tows_lag2.std", "ps_meanTot_lag2.std", "meanCond_lag.std",  "tice.std")], 
+pairs.panels(df1[c("ln_biomass_med", "tice", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")], 
              method = "pearson", # correlation method
              hist.col = "#00AFBB",
              density = F,  # show density plots
              ellipses = F, # show correlation ellipses,
              cex.labels = 1.5,
-             cex.cor = 5
+             cex.cor = 2
 )
 
+
+## not sure of use----
 df_age <- df[c("year", "logcapelin", "age2", "age3", "age4", "age5", "age6", "age2PerMat", "resids_adj")]
 
 mean(df_age$age2PerMat, na.rm = T)
@@ -307,39 +381,20 @@ text(2007,8, "log(caplein) = Alpha*tice*(1-(tice/Beta)) + Gamma*resids_adj")
 # not sequential
 #"delta + Alpha*tice*(1-(tice/Beta)) + Gamma*resids_adj"
 
-df2 <- subset(df1, year>1995)
 m.mortality = '
 model {
 # 1. Likelihood
 for (i in 1:N) {
 #recruitment
-mu[i] <- delta + alpha*TI[i]*(1-(TI[i])*beta) + gamma*RA[i]
-N2[i] ~ dnorm(mu[i], sigma^-2)
-N2_new[i] ~ dnorm(mu[i], sigma^-2)
-}
-# 2. Priors
-alpha ~ dnorm(0, 100^-2)
-beta ~ dnorm(0, 100^-2)
-gamma ~ dnorm(0, 100^-2)
-delta ~ dnorm(0, 100^-2)
-sigma ~ dunif(0, 100)
-}'
-
-
-m.mortality = '
-model {
-# 1. Likelihood
-for (i in 1:N) {
-#recruitment
-mu[i] <- delta + alpha*TI[i]*(1-(TI[i])*beta) + gamma*CO[i]
+mu[i] <- delta + alpha*TI[i]*(1-TI[i]/beta) + gamma*CO[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
 
 # 3. Discrepancy measures
 expY[i] <- mu[i]
-varY[i] <- 1/sigma^-2
-PRes[i] <- (N2[i] - expY[i]) / sqrt(varY[i])
-PResNew[i] <- (N2_new[i] - expY[i]) / sqrt(varY[i])
+varY[i] <- sigma^2
+PRes[i] <- (N2[i] - expY[i]) / sigma
+PResNew[i] <- (N2_new[i] - expY[i]) / sigma
 #Squared residuals
 D[i] <- pow(PRes[i], 2) #SSQ
 DNew[i] <- pow(PResNew[i], 2)
@@ -350,17 +405,21 @@ Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
 # 2. Priors
-alpha ~ dnorm(0, 100^-2)
-beta ~ dnorm(0, 100^-2)
-gamma ~ dnorm(0, 100^-2)
-delta ~ dnorm(0, 100^-2)
-sigma ~ dunif(0, 100)
+alpha ~ dgamma(2, 1/3) 
+beta ~ dgamma(8.1, 1/11.11) 
+gamma ~ dnorm(0, 100^-2) 
+delta ~ dnorm(0, 100^-2) 
+sigma ~ dunif(0, 100) 
 }'
 
+#alpha based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
+#beta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
+# gamma,delta, sigma: uninformative for condition
+df2 <- df1
 num_forecasts = 2 # 2 extra years
-model_data <- list(N2 = c(df2$logcapelin, rep(NA, num_forecasts)), 
-                   TI=c(df2$tice.std, c(1.03, 1.03)), #from capelin_larval_indices 
-                   CO=c(df2$meanCond_lag.std, c(-1, -1)), #made up - need new data
+model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)), 
+                   TI=c(df2$tice, c(1.03, 1.03)), #from capelin_larval_indices 
+                   CO=c(df2$meanCond_lag, c(-1, -1)), #made up - need new data
                    N = nrow(df2) + num_forecasts)
 
 run_mortality <- jags(data=model_data,
@@ -369,6 +428,7 @@ run_mortality <- jags(data=model_data,
 
 #UPDATE WITH MORE BURN INS
 
+##Plot 5----
 # DIAGNOSTICS
 print(run_mortality, intervals=c(0.025, 0.975), digits = 3)
 plot(run_mortality)
@@ -387,9 +447,9 @@ plot(post[, 'delta'], type = 'l')
 
 # or
 vars <- c('alpha', 'beta', 'gamma', 'delta')
-library(lattice)
+
 MyBUGSChains(out, vars)
-#autocorrelation
+#autocorrelation - this could be a problem!!!!
 MyBUGSACF(out, vars)
 
 #overdispersion
@@ -429,6 +489,7 @@ par(mfrow = c(1,1))
 y_pred = run_mortality$BUGSoutput$sims.list$mu
 str(y_pred)
 head(y_pred)
+str(run_mortality$BUGSoutput$sims.list)
 #look at output
 y_med = apply(y_pred,2,'median')
 apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] 
@@ -439,9 +500,10 @@ ci_df2[1, ]
 y_new = run_mortality$BUGSoutput$sims.list$N2_new
 pi_df2 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 
+
 #PLOT credible and prediction intervals
-plot(c(df2$year,2018:2019),y_med,type='l', ylim=c(0,9))
-points(df2$year, df2$logcapelin)
+plot(c(df2$year,2018:2019),y_med,type='l', ylim = c(2,8))
+points(df2$year, df2$ln_biomass_med)
 #points(df2$year, y_med[1:14], col = "blue")
 #points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
 # this makes the credible interval 90%
@@ -456,26 +518,41 @@ lines(c(2018:2019), pi_df2[2, 23:24], lty = 2)
 
 polygon(x = c(2018, 2018, 2019, 2019), y = c(pi_df2[1, 23], pi_df2[2,23], pi_df2[2, 24], pi_df2[1, 24]), col="grey75")
 
-text(2004,8, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*resids_adj")
+text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition")
 
 #plot credible and prediction intervals
 # better plots
-library(ggplot2)
+
 p <- ggplot()
 p <- p + geom_point(data = df2, 
-                    aes(y = logcapelin, x = year),
+                    aes(y = ln_biomass_med, x = year),
                     shape = 16, 
                     size = 1.5)
 p <- p + xlab("Year") + ylab("ln(capelin)")
 p <- p + theme(text = element_text(size=15)) + theme_bw()
-p <- p + geom_line(aes(x = c(df2$year, 2017:2018), 
+p <- p + geom_line(aes(x = c(df2$year, 2018:2019), 
                        y = y_med))
-p <- p + geom_ribbon(aes(x = df2$year[1:14], 
-                         ymax = ci_df2[2, 1:14], 
-                         ymin = ci_df2[1, 1:14]),
+p <- p + geom_ribbon(aes(x = df2$year[1:22], 
+                         ymax = ci_df2[2, 1:22], 
+                         ymin = ci_df2[1, 1:22]),
                      alpha = 0.5)
-p <- p + geom_ribbon(aes(x = c(2017:2018), 
-                         ymax = pi_df2[2, 15:16], 
-                         ymin = pi_df2[1, 15:16]),
+p <- p + geom_ribbon(aes(x = c(2018:2019), 
+                         ymax = pi_df2[2, 23:24], 
+                         ymin = pi_df2[1, 23:24]),
                      alpha = 0.3)        
+p
+
+
+# plot posterior against expected distribution
+alpha_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$alpha)
+alpha_prior <- as.data.frame(dnorm(0, 100^-2))
+str(alpha_post)
+dist <- as.data.frame(rnorm(10000000, 0, 10))
+head(dist)
+names(dist)[names(dist) == "rnorm(1e+07, 0, 10)"] <- "v2" 
+
+p <- ggplot()
+p <- p + geom_histogram(data = alpha_post, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
+pnorm(1, mean = 0, sd = 100)
+p <- p + geom_density(data = dist, aes(v2), colour = "red")
 p
