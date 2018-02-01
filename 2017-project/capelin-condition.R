@@ -4,6 +4,9 @@
 # The purpose of this file is to:
 # 1) Calculate a condition index for capelin: relative condition = observed/predicted for the capelin project
 # 2) turn this into a markdown document for Fran
+# From "Fall acoustic and Campelen strat samples 1981-2015 from 2J3KL_v1.xlsx" from F. Mowbray
+# Uses "capelin_condition_maturation_v1.csv" - copied and pasted from above
+# generates "condition_out.csv - used in ice-capelin-jagps_sequential.R
 
 
 ## libraries------
@@ -23,7 +26,7 @@ head(df)
 
 #create one filter for ice-capelin project and one for Fran and the markdown doc
 df1 <- df %>%
-     filter(year > 1992 & sex == 1 & age == 1 & maturity != 6 & project != 10) %>% #one-year males after 1992, just project 23
+     filter(year > 1992 &  sex==1 & age == 1 & maturity != 6 & project != 10) %>% #one-year males after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
@@ -69,7 +72,6 @@ df1 <- df1 %>%
      group_by(year) %>%
      right_join(x=df1, y=quant, by ="year") %>%
      filter(weight < uci)
-glimpse(test2)
 
 ## DATA EXPLORATION - ZUUR 2010----
 ## Step 1 Are there outliers in X and Y?
@@ -154,7 +156,7 @@ ggplot(data=df1) + geom_point(aes(x=log10(length), y = log10(weight), colour=naf
 
 ## LINEAR MODELLING----
 m1 <- lm(log10(weight) ~ log10(length), data= df1)
-m1 <- lm(log10(weight) ~ log10(length), weights = nafo_div, data= df1)
+#m1 <- lm(log10(weight) ~ log10(length), weights = nafo_div, data= df1)
 summary(m1)
 str(m1)
 str(summary(m1))
@@ -187,7 +189,7 @@ data.frame(df1[332,])# short and light
 df1$fits <- fitted(m1)
 m1$fitted.values
 str(m1)
-df1$rel.cond <- log10(df1$weight)/df1$fits
+df1$rel.cond <- df1$weight/10^df1$fits
 
 # produce table
 df1 %>%
@@ -195,7 +197,6 @@ df1 %>%
      summarize(meanCond = round(mean(rel.cond),2), stdCond= round(sd(rel.cond),2)) %>% 
      unite(mean, meanCond:stdCond, sep = " +/- ") %>%
      spread(key = nafo_div, value = mean)
-View(tbl)
 
 # produce output for Bayesain analysis
 out <- df1 %>%
@@ -207,6 +208,9 @@ write_csv(out, "data/condition_out.csv")
 ggplot(data=df1) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
      facet_wrap(~nafo_div)
+# there appear to be a few outliers here but they should have minimal influence on the final outcome
+View(subset(df1, rel.cond > 1.5))
+View(subset(df1, rel.cond < 0.75))
 
 #month
 ggplot(data=df1) +
