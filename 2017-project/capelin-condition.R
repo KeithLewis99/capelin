@@ -26,7 +26,7 @@ head(df)
 
 #create one filter for ice-capelin project and one for Fran and the markdown doc
 df1 <- df %>%
-     filter(year > 1992 &  sex==1 & age == 1 & maturity != 6 & project != 10) %>% #one-year males after 1992, just project 23 sex == 1 &
+     filter(year > 1992 &  sex==1 & age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12")) %>% #one-year males after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
@@ -66,12 +66,18 @@ count_n <- df1 %>%
 
 quant <- df1 %>%
      group_by(year) %>%
-     summarize(uci = quantile(weight, c(0.99))) 
+     summarize(uq = quantile(weight, c(0.99)), lq = quantile(length, c(0.01)))
 
+# for age 2
 df1 <- df1 %>%
      group_by(year) %>%
      right_join(x=df1, y=quant, by ="year") %>%
-     filter(weight < uci)
+     filter(weight < uq & length > lq)
+# for age 1
+#df1 <- df1 %>%
+ #    group_by(year) %>%
+  #   right_join(x=df1, y=quant, by ="year") %>%
+   #  filter(weight < uq)
 
 ## DATA EXPLORATION - ZUUR 2010----
 ## Step 1 Are there outliers in X and Y?
@@ -185,12 +191,18 @@ data.frame(df1[3542,])# long and light
 #leverage
 data.frame(df1[332,])# short and light
 
+# for age 2
+data.frame(df1[2363,])
+
 ##output----
 df1$fits <- fitted(m1)
 m1$fitted.values
 str(m1)
 df1$rel.cond <- df1$weight/10^df1$fits
 
+df1$resids <- df1$weight-10^df1$fits
+
+plot(df1$rel.cond, df1$resids)
 # produce table
 df1 %>%
      group_by(year, nafo_div) %>%
@@ -202,15 +214,16 @@ df1 %>%
 out <- df1 %>%
      group_by(year) %>%
      summarize(meanCond = round(mean(rel.cond),4), stdCond= round(sd(rel.cond),4), medCond = round(median(rel.cond), 4))
-write_csv(out, "data/condition_out.csv")
+#write_csv(out, "data/condition_ag1_out.csv")
+write_csv(out, "data/condition_ag2_out.csv")
 
 #nafo
 ggplot(data=df1) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
      facet_wrap(~nafo_div)
 # there appear to be a few outliers here but they should have minimal influence on the final outcome
-View(subset(df1, rel.cond > 1.5))
-View(subset(df1, rel.cond < 0.75))
+nrow(subset(df1, rel.cond > 1.5))
+nrow(subset(df1, rel.cond < 0.75))
 
 #month
 ggplot(data=df1) +
@@ -229,3 +242,18 @@ ggplot(data=df1) +
      geom_point(aes(x = log10(length), y = log10(weight), colour = nafo_div)) + 
      facet_wrap(~year)
 
+
+## compare observed/expected to residuals - is there a difference
+condResids <- read.csv('data/archive/condition_resids.csv')
+str(condResids)
+condResids[19:20,2] <- NA
+condResids[c(19, 20), 1] <- matrix(c(2016, 2017), ncol = 1) 
+
+str(condResids)
+View(condResids)
+condResids$resids_lag <- lag(condResids$resids, 1)
+
+# compare cond/exp and resids
+comp <- left_join(out, condResids, by = "year")
+plot(comp$meanCond, comp$resids)
+summary(lm(meanCond ~ resids, data = comp))
