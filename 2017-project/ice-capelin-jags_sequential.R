@@ -20,6 +20,7 @@ library(dplyr)
 library(psych)
 library(ggplot2)
 library(lattice)
+library(magrittr)
 
 rm(list=ls())
 
@@ -27,6 +28,9 @@ rm(list=ls())
 source('D:/Keith/R/zuur_rcode/MCMCSupportHighstatV2.R')
 source('D:/Keith/R/zuur_rcode/HighstatLibV7.R')
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
+source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
+
+
 
 ## load data----
 ## capelin (1985-2017)----
@@ -72,7 +76,7 @@ condResids$resids_lag <- lag(condResids$resids, 1)
 condResids$resids_lag[20] <- condResids$resids_lag[19]
 View(condResids)
 
-## larval data (1990-2017)----
+## larval data (2003-2017)----
 # source "capelin_age_disaggregate_abundance.xlsx":Larval indices
 larvae <- read_csv('data/capelin_larval_indices.csv')
 glimpse(larvae)
@@ -118,7 +122,7 @@ df[c("biomass_med", "ln_biomass_med", "tice", "resids_lag", "surface_tows_lag2",
 #df1 <- subset(df, year>1995)
 df1 <- subset(df, year>1998)
 glimpse(df1)
-View(df1)
+#View(df1)
 #cols <- c("tice", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")
 cols <- c("tice", "resids_lag", "surface_tows_lag2", "ps_meanTot_lag2")
 df1 %<>%
@@ -132,264 +136,10 @@ pairs.panels(df1[c("ln_biomass_med", "tice", "resids_lag", "surface_tows_lag2", 
              density = F,  # show density plots
              ellipses = F, # show correlation ellipses,
              cex.labels = 1.5,
-             cex.cor = 2
+             cex.cor = 8
 )
 
-
-## not sure of use----
-df_age <- df[c("year", "logcapelin", "age2", "age3", "age4", "age5", "age6", "age2PerMat", "resids_adj")]
-
-mean(df_age$age2PerMat, na.rm = T)
-summary(df_age$age2PerMat)
-plot(df_age$logcapelin, df_age$age2PerMat)
-plot(df_age$year, df_age$age2PerMat)
-summary(lm(age2PerMat ~ logcapelin, data = df_age))
-m1 <- lm(age2PerMat ~ logcapelin, data = df_age)
-
-layout(matrix(c(1,2,3,4),2,2)) # optional layout 
-plot(m1)
-layout(matrix(1,1))
-
-#test to see if lag occurs
-plot(lag(df_age$logcapelin, 1), df_age$age2PerMat)
-summary(lm(age2PerMat ~ lead(logcapelin, 1), data = df_age))
-# no lag occurs
-
-Age2PMat <- df_age$age2PerMat
-df_age <- df_age %>%
-     mutate(N3_6 = age3 + age4 + age5 + age6)
-N3_6 <- df_age$N3_6
-
-ST <- df$Ssurface_tows_lag2
-TI <- df$tice
-N <- nrow(df)
-
-## test 1 first try----
-jags_code = '
-model {
-# Likelihood
-for (i in 1:N) {
-     #recruitment
-     mu_n2[i] <- beta + alpha*ST[i]
-     N2[i] ~ dnorm(mu_n2[i], sigma^-2)
-     # proportion N2
-     Nsp[i] <- N2[i]*Age2Mat + N3_6
-     # mortality
-     mu_sp[i] <- gamma*TI[i]*(1-(TI[i]/delta))
-     Nsp[i] ~ dnorm(mu_sp[i], sigma^-2)
-}
-# Priors
-alpha ~ dnorm(0, 100^-2)
-beta ~ dnamma(0, 100^-2)
-gamma ~ dnorm(0, 100^-2)
-delta ~ dnorm(0, 100^-2) 
-sigma_r ~ dunif(0, 100)
-sigma_m ~ dunif(0, 100)
-}'
-
-num_forecasts = 2 # 10 extra years
-model_data <- list(L = c(df$logcapelin, rep(NA, num_forecasts)), 
-                   ST=c(df$Ssurface_tows_lag2, c(98, 41)), #from capelin_larval_indices 
-                    RA=c(df$resids_adj, c(15, 15)), #made up - need new data
-                   N = nrow(df) + num_forecasts)
-
-jags_run <- jags(data=model_data,
-                 parameters.to.save = c('mu', 'sigma'),
-                 model.file = textConnection(jags_code))
-
-y_pred = jags_run$BUGSoutput$sims.list$mu
-y_med = apply(y_pred,2,'median')
-plot(c(test$year,2017:2018),y_med,type='l', ylim=c(0,9))
-points(test$year, test$logcapelin)
-points(test$year, y_med[1:14])
-points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
-# this makes the credible interval 90%
-lines(c(test$year,2017:2018), ci_test[1, ], lty = 3)
-lines(c(test$year,2017:2018), ci_test[2, ], lty = 3)
-
-
-str(test)
-apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] #these are the extra 2 years
-ci_test <- apply(y_pred,2,'quantile', c(0.05, 0.95))
-ci_test[1, ]
-
-
-## test 2 ----
-# not sequential
-#"Beta + Alpha*ST+ Gamma*RA",
-jags_code = '
-model {
-# Likelihood
-for (i in 1:N) {
-#recruitment
-mu[i] <- beta + alpha*ST[i] + gamma*RA[i]
-N2[i] ~ dnorm(mu[i], sigma^-2)
-N2_new[i] ~ dnorm(mu[i], sigma^-2)
-}
-# Priors
-alpha ~ dnorm(0, 100^-2)
-beta ~ dnorm(0, 100^-2)
-gamma ~ dnorm(0, 100^-2)
-sigma ~ dunif(0, 100)
-}'
-
-
-num_forecasts = 2 # 2 extra years
-model_data <- list(N2 = c(df1$logcapelin, rep(NA, num_forecasts)), 
-                   ST=c(df1$Ssurface_tows_lag2, c(98, 41)), #from capelin_larval_indices 
-                   RA=c(df1$resids_adj, c(15, 15)), #made up - need new data
-                   N = nrow(df1) + num_forecasts)
-
-jags_run <- jags(data=model_data,
-                 parameters.to.save = c('mu', 'sigma', 'N2_new'),
-                 model.file = textConnection(jags_code))
-
-y_pred = jags_run$BUGSoutput$sims.list$mu
-y_med = apply(y_pred,2,'median')
-
-str(df1)
-apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] #these are the extra 2 years
-ci_df1 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
-ci_df1[1, ]
-
-y_new = jags_run$BUGSoutput$sims.list$N2_new
-pi_df1 <- apply(y_new,2,'quantile', c(0.05, 0.95))
-
-plot(c(df1$year,2017:2018),y_med,type='l', ylim=c(0,9))
-points(df1$year, df1$logcapelin)
-#points(df1$year, y_med[1:14], col = "blue")
-#points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
-# this makes the credible interval 90%
-#lines(c(df1$year,2017:2018), ci_df1[1, ], lty = 3)
-lines(c(df1$year[1:14]), ci_df1[1, 1:14], lty = 3)
-#lines(c(df1$year,2017:2018), ci_df1[2, ], lty = 3)
-lines(c(df1$year[1:14]), ci_df1[2, 1:14], lty = 3)
-#lines(c(df1$year,2017:2018), pi_df1[1, ], lty = 2)
-lines(c(2017:2018), pi_df1[1, 15:16], lty = 2)
-#lines(c(df1$year,2017:2018), pi_df1[2, ], lty = 2)
-lines(c(2017:2018), pi_df1[2, 15:16], lty = 2)
-
-polygon(x = c(2017, 2017, 2018, 2018), y = c(pi_df1[1, 15], pi_df1[2,15], pi_df1[2, 16], pi_df1[1, 16]), col="grey75")
-text(2007,8, "log(caplein) = Beta + Alpha*ST+ Gamma*RA")
-
-
-
-## test 3 ----
-# not sequential
-#"Beta + Alpha*ST+ Gamma*PS",
-jags_code = '
-model {
-# Likelihood
-for (i in 1:N) {
-#recruitment
-mu[i] <- beta + alpha*ST[i] + gamma*PS[i]
-N2[i] ~ dnorm(mu[i], sigma^-2)
-N2_new[i] ~ dnorm(mu[i], sigma^-2)
-}
-# Priors
-alpha ~ dnorm(0, 100^-2)
-beta ~ dnorm(0, 100^-2)
-gamma ~ dnorm(0, 100^-2)
-sigma ~ dunif(0, 100)
-}'
-
-
-num_forecasts = 2 # 2 extra years
-model_data <- list(N2 = c(df1$logcapelin, rep(NA, num_forecasts)), 
-                   ST=c(df1$Ssurface_tows_lag2, c(98, 41)), #from capelin_larval_indices 
-                   PS=c(df1$ps_meanTot_lag2, c(80, 80)), #made up - need new data
-                   N = nrow(df1) + num_forecasts)
-
-jags_run <- jags(data=model_data,
-                 parameters.to.save = c('mu', 'sigma', 'N2_new'),
-                 model.file = textConnection(jags_code))
-
-y_pred = jags_run$BUGSoutput$sims.list$mu
-y_med = apply(y_pred,2,'median')
-
-apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] #these are the extra 2 years
-ci_df1 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
-ci_df1[1, ]
-
-y_new = jags_run$BUGSoutput$sims.list$N2_new
-pi_df1 <- apply(y_new,2,'quantile', c(0.05, 0.95))
-
-plot(c(df1$year,2017:2018),y_med,type='l', ylim=c(0,9))
-points(df1$year, df1$logcapelin)
-#points(df1$year, y_med[1:14], col = "blue")
-#points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
-# this makes the credible interval 90%
-#lines(c(df1$year,2017:2018), ci_df1[1, ], lty = 3)
-lines(c(df1$year[1:14]), ci_df1[1, 1:14], lty = 3)
-#lines(c(df1$year,2017:2018), ci_df1[2, ], lty = 3)
-lines(c(df1$year[1:14]), ci_df1[2, 1:14], lty = 3)
-#lines(c(df1$year,2017:2018), pi_df1[1, ], lty = 2)
-lines(c(2017:2018), pi_df1[1, 15:16], lty = 2)
-#lines(c(df1$year,2017:2018), pi_df1[2, ], lty = 2)
-lines(c(2017:2018), pi_df1[2, 15:16], lty = 2)
-
-polygon(x = c(2017, 2017, 2018, 2018), y = c(pi_df1[1, 15], pi_df1[2,15], pi_df1[2, 16], pi_df1[1, 16]), col="grey75")
-text(2007,8, "log(caplein) = Beta + Alpha*ST+ Gamma*PS")
-
-
-## test 4 ----
-# not sequential
-#"Alpha*tice*(1-(tice/Beta)) + Gamma*resids_adj"
-jags_code = '
-model {
-# Likelihood
-for (i in 1:N) {
-#recruitment
-mu[i] <- alpha*TI[i]*(1-(TI[i])*beta) + gamma*RA[i]
-N2[i] ~ dnorm(mu[i], sigma^-2)
-N2_new[i] ~ dnorm(mu[i], sigma^-2)
-}
-# Priors
-alpha ~ dnorm(0, 100^-2)
-beta ~ dnorm(0, 100^-2)
-gamma ~ dnorm(0, 100^-2)
-sigma ~ dunif(0, 100)
-}'
-
-
-num_forecasts = 2 # 2 extra years
-model_data <- list(N2 = c(df1$logcapelin, rep(NA, num_forecasts)), 
-                   TI=c(df1$tice, c(70, 70)), #from capelin_larval_indices 
-                   RA=c(df1$resids_adj, c(15, 15)), #made up - need new data
-                   N = nrow(df1) + num_forecasts)
-
-jags_run <- jags(data=model_data,
-                 parameters.to.save = c('mu', 'sigma', 'N2_new'),
-                 model.file = textConnection(jags_code))
-
-y_pred = jags_run$BUGSoutput$sims.list$mu
-y_med = apply(y_pred,2,'median')
-
-apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] #these are the extra 2 years
-ci_df1 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
-ci_df1[1, ]
-
-y_new = jags_run$BUGSoutput$sims.list$N2_new
-pi_df1 <- apply(y_new,2,'quantile', c(0.05, 0.95))
-
-plot(c(df1$year,2017:2018),y_med,type='l', ylim=c(0,9))
-points(df1$year, df1$logcapelin)
-#points(df1$year, y_med[1:14], col = "blue")
-#points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
-# this makes the credible interval 90%
-#lines(c(df1$year,2017:2018), ci_df1[1, ], lty = 3)
-lines(c(df1$year[1:14]), ci_df1[1, 1:14], lty = 3)
-#lines(c(df1$year,2017:2018), ci_df1[2, ], lty = 3)
-lines(c(df1$year[1:14]), ci_df1[2, 1:14], lty = 3)
-#lines(c(df1$year,2017:2018), pi_df1[1, ], lty = 2)
-lines(c(2017:2018), pi_df1[1, 15:16], lty = 2)
-#lines(c(df1$year,2017:2018), pi_df1[2, ], lty = 2)
-lines(c(2017:2018), pi_df1[2, 15:16], lty = 2)
-
-polygon(x = c(2017, 2017, 2018, 2018), y = c(pi_df1[1, 15], pi_df1[2,15], pi_df1[2, 16], pi_df1[1, 16]), col="grey75")
-
-text(2007,8, "log(caplein) = Alpha*tice*(1-(tice/Beta)) + Gamma*resids_adj")
-
+#########Bayesian models##############################
 ## Mortality----
 # not sequential
 #"delta + Alpha*tice*(1-(tice/Beta)) + Gamma*resids_adj"
@@ -413,7 +163,7 @@ D[i] <- pow(PRes[i], 2) #SSQ
 DNew[i] <- pow(PResNew[i], 2)
 #CD[i] <- 
 }
- #Sum of squared Pearson residuals:
+#Sum of squared Pearson residuals:
 Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
@@ -436,34 +186,29 @@ model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)),
                    N = nrow(df2) + num_forecasts)
 
 run_mortality <- jags(data=model_data,
-                 parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
-                 model.file = textConnection(m.mortality))
+                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
+                      model.file = textConnection(m.mortality))
 
-#UPDATE WITH MORE BURN INS
+#Do we need to remove the burn-in?  How much?  UPDATE the chain?
 
 ## M-Plot 5----
 # DIAGNOSTICS
 print(run_mortality, intervals=c(0.025, 0.975), digits = 3)
-plot(run_mortality)
-
+# saved as table_1
+write_csv(print(run_mortality, intervals=c(0.025, 0.975), digits = 3), "Bayesian/mortality_1.csv")
+str(run_mortality)
 out <- run_mortality$BUGSoutput 
 str(out)
 out$mean
 
-# Asess mixing of chains
-post <- run_mortality$BUGSoutput$sims.matrix
-head(post)
-plot(post[, 'alpha'], type = 'l')
-plot(post[, 'beta'], type = 'l')
-plot(post[, 'gamma'], type = 'l')
-plot(post[, 'delta'], type = 'l')
-
-# or
+# Asess mixing of chains to see if one MCMC goes badly
 vars <- c('alpha', 'beta', 'gamma', 'delta')
 
-MyBUGSChains(out, vars)
+ggsave(MyBUGSChains(out, vars), filename = "Bayesian/mortality_1/chains.pdf", width=10, height=8, units="in")
+
 #autocorrelation - this could be a problem!!!!
 MyBUGSACF(out, vars)
+ggsave(MyBUGSACF(out, vars), filename = "Bayesian/mortality_1/auto_corr.pdf", width=10, height=8, units="in")
 
 #overdispersion
 mean(out$sims.list$FitNew > out$sims.list$Fit)
@@ -477,7 +222,8 @@ F1 <- out$mean$expY
 N2 <- out$mean$N2
 D <- out$mean$D
 
-par(mfrow = c(2,2), mar = c(5,5,2,2))
+pdf('Bayesian/mortality_1/fit_obs.pdf')
+par(mfrow = c(2,1), mar = c(5,5,2,2))
 plot(x=F1, y = E1, xlab = "Fitted values", ylab = "Pearson residuals")
 abline(h = 0, lty = 2)
 # The below is right but is the not right code.  The code is in ONeNote
@@ -485,9 +231,11 @@ abline(h = 0, lty = 2)
 plot(y = N2, x = F1, xlab = "Fitted values", ylab = "Observed data")
 abline(coef = c(0,1), lty = 2)
 par(mfrow = c(1,1))
+dev.off()
 
 
 # Residuals v covariates
+pdf('Bayesian/mortality_1/resid_covar.pdf')
 par(mfrow = c(2,2), mar = c(5,5,2,2))
 MyVar <- c("tice.std", "meandCond_lag.std")
 test <- as.data.frame(model_data)
@@ -496,13 +244,12 @@ test <- cbind(test, E1)
 plot(test$TI, test$EI, xlab = "Tice", ylab = "Pearson resids")
 plot(test$CO, test$EI, xlab = "Condition", ylab = "Pearson resids")
 par(mfrow = c(1,1))
+dev.off()
 
 # CREDIBLE AND PREDICITON INTERVALS
 #generate credible intervals for time series using mu
 y_pred = run_mortality$BUGSoutput$sims.list$mu
-str(y_pred)
-head(y_pred)
-str(run_mortality$BUGSoutput$sims.list)
+
 #look at output
 y_med = apply(y_pred,2,'median')
 apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] 
@@ -513,56 +260,33 @@ ci_df2[1, ]
 y_new = run_mortality$BUGSoutput$sims.list$N2_new
 pi_df2 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 
-
-#PLOT credible and prediction intervals
-plot(c(df2$year,2018:2019),y_med,type='l', ylim = c(2,8))
-points(df2$year, df2$ln_biomass_med)
-#points(df2$year, y_med[1:14], col = "blue")
-#points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
-# this makes the credible interval 90%
-#lines(c(df2$year,2017:2018), ci_df2[1, ], lty = 3)
-lines(c(df2$year[1:22]), ci_df2[1, 1:22], lty = 3)
-#lines(c(df2$year,2017:2018), ci_df2[2, ], lty = 3)
-lines(c(df2$year[1:22]), ci_df2[2, 1:22], lty = 3)
-#lines(c(df2$year,2017:2018), pi_df2[1, ], lty = 2)
-lines(c(2018:2019), pi_df2[1, 23:24], lty = 2)
-#lines(c(df2$year,2017:2018), pi_df2[2, ], lty = 2)
-lines(c(2018:2019), pi_df2[2, 23:24], lty = 2)
-
-polygon(x = c(2018, 2018, 2019, 2019), y = c(pi_df2[1, 23], pi_df2[2,23], pi_df2[2, 24], pi_df2[1, 24]), col="grey75")
-
-lines(c(df2$year), ci_df2[1, 1:19], lty = 3)
-lines(c(df2$year), ci_df2[2, 1:19], lty = 3)
-lines(c(2018:2019), pi_df2[1, 20:21], lty = 2)
-lines(c(2018:2019), pi_df2[2, 20:21], lty = 2)
-polygon(x = c(2018, 2018, 2019, 2019), y = c(pi_df2[1, 20], pi_df2[2,20], pi_df2[2, 21], pi_df2[1, 21]), col="grey75")
-
-
+## Results
 #text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag2)")
 text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag1)")
 text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(resids)")
 #plot credible and prediction intervals
 # better plots
+txt <- "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(resids)"
 
-p <- ggplot()
-p <- p + geom_point(data = df2, 
-                    aes(y = ln_biomass_med, x = year),
-                    shape = 16, 
-                    size = 1.5)
-p <- p + xlab("Year") + ylab("ln(capelin)")
-p <- p + theme(text = element_text(size=15)) + theme_bw()
-p <- p + geom_line(aes(x = c(df2$year, 2018:2019), 
-                       y = y_med))
-p <- p + geom_ribbon(aes(x = df2$year[1:22], 
-                         ymax = ci_df2[2, 1:22], 
-                         ymin = ci_df2[1, 1:22]),
-                     alpha = 0.5)
-p <- p + geom_ribbon(aes(x = c(2018:2019), 
-                         ymax = pi_df2[2, 23:24], 
-                         ymin = pi_df2[1, 23:24]),
-                     alpha = 0.3)        
-p
+# plot the credible and prediction intervals
+plotCredInt(df2, yaxis = "ln_biomass_med", 
+            ylab = "ln(capelin)", 
+            y_line = y_med, ci_df2, pi_df2, 
+            model = txt, x = 2006, y = 8)
+ggsave("Bayesian/mortality_1/credInt.pdf", width=10, height=8, units="in")
 
+
+plotCredInt(df3, yaxis = "ln_biomass_med", 
+            ylab = "ln(capelin)", 
+            y_line = y_med, ci_df3, pi_df3, 
+            model = txt, x = 2008, y = 8)
+
+# output by parameter
+OUT1 <- MyBUGSOutput(out, vars)
+print(OUT1, digits =5)
+
+# note that code says this is to look at ACF - also, is this matched up properly?
+ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_1/posteriors.pdf", width=10, height=8, units="in")
 
 # plot posterior against expected distribution
 alpha_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$alpha)
@@ -627,7 +351,7 @@ p
 # not sequential
 #"delta + Alpha*surface_tows_lag2) + Gamma*Pseudocal_lag2"
 
-m.recuit = '
+m.recruit = '
 model {
 # 1. Likelihood
 for (i in 1:N) {
@@ -747,47 +471,18 @@ y_new = run_recruit$BUGSoutput$sims.list$N2_new
 pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 
 
+pi_n <- as.data.frame(pi_df3) %>% top_n(-2)
+pi_df3[2, (ncol(pi_df3)-1):ncol(pi_df3)]
 #PLOT credible and prediction intervals
-plot(c(df3$year,2018:2019),y_med,type='l', ylim = c(2,9))
-points(df3$year, df3$ln_biomass_med)
-#points(df2$year, y_med[1:14], col = "blue")
-#points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
-# this makes the credible interval 90%
-#lines(c(df2$year,2017:2018), ci_df2[1, ], lty = 3)
-lines(c(df3$year[1:15]), ci_df3[1, 1:15], lty = 3)
-#lines(c(df3$year,2017:2018), ci_df3[2, ], lty = 3)
-lines(c(df3$year[1:15]), ci_df3[2, 1:15], lty = 3)
-#lines(c(df3$year,2017:2018), pi_df3[1, ], lty = 2)
-lines(c(2018:2019), pi_df3[1, 16:17], lty = 2)
-#lines(c(df3$year,2017:2018), pi_df3[2, ], lty = 2)
-lines(c(2018:2019), pi_df3[2, 16:17], lty = 2)
 
-polygon(x = c(2018, 2018, 2019, 2019), y = c(pi_df3[1, 16], pi_df3[2,16], pi_df3[2, 17], pi_df3[1, 17]), col="grey75")
+txt <- "log(caplein) = alpha +  beta*surface_tows_lag2 \n + gamma*pseudocal_lag2"
 
-
-text(2008,8, "log(caplein) = alpha +  beta*surface_tows_lag2 \n + gamma*pseudocal_lag2")
-
-#plot credible and prediction intervals
-# better plots
-
-p <- ggplot()
-p <- p + geom_point(data = df2, 
-                    aes(y = ln_biomass_med, x = year),
-                    shape = 16, 
-                    size = 1.5)
-p <- p + xlab("Year") + ylab("ln(capelin)")
-p <- p + theme(text = element_text(size=15)) + theme_bw()
-p <- p + geom_line(aes(x = c(df2$year, 2018:2019), 
-                       y = y_med))
-p <- p + geom_ribbon(aes(x = df2$year[1:22], 
-                         ymax = ci_df2[2, 1:22], 
-                         ymin = ci_df2[1, 1:22]),
-                     alpha = 0.5)
-p <- p + geom_ribbon(aes(x = c(2018:2019), 
-                         ymax = pi_df2[2, 23:24], 
-                         ymin = pi_df2[1, 23:24]),
-                     alpha = 0.3)        
-p
+# plot the credible and prediction intervals
+plotCredInt(df3, yaxis = "ln_biomass_med", 
+            ylab = "ln(capelin)", 
+            y_line = y_med, ci_df3, pi_df3, 
+            model = txt, x = 2008, y = 8)
+ggsave("Bayesian/mortality_1/credInt.pdf", width=10, height=8, units="in")
 
 
 # plot posterior against expected distribution
@@ -866,14 +561,6 @@ str(out)
 out$mean
 
 # Asess mixing of chains
-post <- run_RM1$BUGSoutput$sims.matrix
-head(post)
-plot(post[, 'alpha'], type = 'l')
-plot(post[, 'beta'], type = 'l')
-plot(post[, 'gamma'], type = 'l')
-plot(post[, 'delta'], type = 'l')
-
-# or
 vars <- c('alpha', 'beta', 'gamma')
 
 MyBUGSChains(out, vars)
@@ -928,47 +615,12 @@ ci_df3[1, ]
 y_new = run_RM1$BUGSoutput$sims.list$N2_new
 pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 
-
+txt <- "log(caplein) = alpha +  beta*surface_tows_lag2 \n + gamma*resids_adj"
 #PLOT credible and prediction intervals
-plot(c(df3$year,2018:2019),y_med,type='l', ylim = c(2,9))
-points(df3$year, df3$ln_biomass_med)
-#points(df2$year, y_med[1:14], col = "blue")
-#points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
-# this makes the credible interval 90%
-#lines(c(df2$year,2017:2018), ci_df2[1, ], lty = 3)
-lines(c(df3$year[1:15]), ci_df3[1, 1:15], lty = 3)
-#lines(c(df3$year,2017:2018), ci_df3[2, ], lty = 3)
-lines(c(df3$year[1:15]), ci_df3[2, 1:15], lty = 3)
-#lines(c(df3$year,2017:2018), pi_df3[1, ], lty = 2)
-lines(c(2018:2019), pi_df3[1, 16:17], lty = 2)
-#lines(c(df3$year,2017:2018), pi_df3[2, ], lty = 2)
-lines(c(2018:2019), pi_df3[2, 16:17], lty = 2)
-
-polygon(x = c(2018, 2018, 2019, 2019), y = c(pi_df3[1, 16], pi_df3[2,16], pi_df3[2, 17], pi_df3[1, 17]), col="grey75")
-
-text(2008,8, "log(caplein) = alpha +  beta*surface_tows_lag2 \n + gamma*resids_adj")
-
-#plot credible and prediction intervals
-# better plots
-
-p <- ggplot()
-p <- p + geom_point(data = df2, 
-                    aes(y = ln_biomass_med, x = year),
-                    shape = 16, 
-                    size = 1.5)
-p <- p + xlab("Year") + ylab("ln(capelin)")
-p <- p + theme(text = element_text(size=15)) + theme_bw()
-p <- p + geom_line(aes(x = c(df2$year, 2018:2019), 
-                       y = y_med))
-p <- p + geom_ribbon(aes(x = df2$year[1:22], 
-                         ymax = ci_df2[2, 1:22], 
-                         ymin = ci_df2[1, 1:22]),
-                     alpha = 0.5)
-p <- p + geom_ribbon(aes(x = c(2018:2019), 
-                         ymax = pi_df2[2, 23:24], 
-                         ymin = pi_df2[1, 23:24]),
-                     alpha = 0.3)        
-p
+plotCredInt(df3, yaxis = "ln_biomass_med", 
+            ylab = "ln(capelin)", 
+            y_line = y_med, ci_df3, pi_df3, 
+            model = txt, x = 2008, y = 8)
 
 
 # plot posterior against expected distribution
