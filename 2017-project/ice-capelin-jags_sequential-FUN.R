@@ -1,4 +1,4 @@
-#' plotCredInt
+#' plotCredInt---
 #' plot the credible and prediction intervals
 #' @param df 
 #' @param yaxis - variable in df for yaxis
@@ -41,3 +41,22 @@ plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci
      return(p)
      
 }
+
+
+#' prioPosterior----
+#' Plots the values of the posterior with the prior overlaid on top
+#' @param df1 - vector of values for posterior
+#' @param df2 - vector of values for prior
+#' @param xlim - upper and lowe values for df1 - approximate
+#'
+#' @return
+#' @export
+#'
+#' @examples priorPosterior(beta_post, dist, x)
+priorPosterior <- function(df1, df2, xlim){
+     p <- ggplot()
+     p <- p + geom_histogram(data = df1, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
+     p <- p + geom_density(data = df2, aes(v2), colour = "red") + xlim(xlim)  
+     p
+}
+
