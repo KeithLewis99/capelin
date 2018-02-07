@@ -191,50 +191,45 @@ run_mortality <- jags(data=model_data,
 
 #Do we need to remove the burn-in?  How much?  UPDATE the chain?
 
-## M-Plot 5----
-# DIAGNOSTICS
+## M-DIAGNOSTICS----
 print(run_mortality, intervals=c(0.025, 0.975), digits = 3)
 # saved as table_1
-write_csv(print(run_mortality, intervals=c(0.025, 0.975), digits = 3), "Bayesian/mortality_1.csv")
-str(run_mortality)
 out <- run_mortality$BUGSoutput 
-str(out)
 out$mean
 
-# Asess mixing of chains to see if one MCMC goes badly
-vars <- c('alpha', 'beta', 'gamma', 'delta')
+#overdispersion - values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
+mean(out$sims.list$FitNew > out$sims.list$Fit)
+# mean = 0.546333
 
+# Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
+vars <- c('alpha', 'beta', 'gamma', 'delta')
 ggsave(MyBUGSChains(out, vars), filename = "Bayesian/mortality_1/chains.pdf", width=10, height=8, units="in")
 
-#autocorrelation - this could be a problem!!!!
+#autocorrelation - this looks good!!!!
 MyBUGSACF(out, vars)
 ggsave(MyBUGSACF(out, vars), filename = "Bayesian/mortality_1/auto_corr.pdf", width=10, height=8, units="in")
 
-#overdispersion
-mean(out$sims.list$FitNew > out$sims.list$Fit)
-# mean = 0.546333 and values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
-
-# Model Validation (see Zuuer et al. 2013 for options for calculating Pearson residuals)
+# Model Validation (see Zuuer et al. 2013, pg 77-79 for options for calculating Pearson residuals)
 # Residual diagnostics
-E1 <- out$mean$PRes
-str(out$mean)
-F1 <- out$mean$expY
-N2 <- out$mean$N2
-D <- out$mean$D
+E1 <- out$mean$PRes # Pearson resids
+F1 <- out$mean$expY # Expected values
+N2 <- out$mean$N2   # N2 - observed values? Why do these fill in the NAs of df$ln_biomass_med???
+D <- out$mean$D     # this is SSQ - but i'm looking for Cook'sD
 
 pdf('Bayesian/mortality_1/fit_obs.pdf')
 par(mfrow = c(2,1), mar = c(5,5,2,2))
 plot(x=F1, y = E1, xlab = "Fitted values", ylab = "Pearson residuals")
 abline(h = 0, lty = 2)
-# The below is right but is the not right code.  The code is in ONeNote
+# Need to implement the code for Cook's D.  The code is in ONeNote (Capelin- "To do list")
 #plot(D, type = "h", xlab = "Observation", ylab = "Cook distance")
+# this may not be quite right as N2 is not quite the observed values because NA has been estiamted.
 plot(y = N2, x = F1, xlab = "Fitted values", ylab = "Observed data")
 abline(coef = c(0,1), lty = 2)
 par(mfrow = c(1,1))
 dev.off()
 
 
-# Residuals v covariates
+# Residuals v covariates Zuur et al. 2013, pg 59-60: look for no patterns; patterns may indicated non-linear
 pdf('Bayesian/mortality_1/resid_covar.pdf')
 par(mfrow = c(2,2), mar = c(5,5,2,2))
 MyVar <- c("tice.std", "meandCond_lag.std")
@@ -251,101 +246,53 @@ dev.off()
 y_pred = run_mortality$BUGSoutput$sims.list$mu
 
 #look at output
-y_med = apply(y_pred,2,'median')
-apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] 
-ci_df2 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
-ci_df2[1, ]
+y_med = apply(y_pred,2,'median') # median values of y_pred
+ci_df2 <- apply(y_pred,2,'quantile', c(0.05, 0.95)) #credible interval a subscript at end of code can pull out specific values [, 15:16]
 
 #generate prediciton intevals using N2_new
 y_new = run_mortality$BUGSoutput$sims.list$N2_new
 pi_df2 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 
-## Results
-#text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag2)")
-text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag1)")
-text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(resids)")
-#plot credible and prediction intervals
-# better plots
-txt <- "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(resids)"
+## M-Results----
+# Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. Also, is this matched up properly - i haven't used PanelNames
+ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_1/posteriors.pdf", width=10, height=8, units="in")
+
 
 # plot the credible and prediction intervals
+#text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag2)")
+#text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag1)")
+txt <- "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(resids)"
+
 plotCredInt(df2, yaxis = "ln_biomass_med", 
             ylab = "ln(capelin)", 
             y_line = y_med, ci_df2, pi_df2, 
             model = txt, x = 2006, y = 8)
 ggsave("Bayesian/mortality_1/credInt.pdf", width=10, height=8, units="in")
 
-
-plotCredInt(df3, yaxis = "ln_biomass_med", 
-            ylab = "ln(capelin)", 
-            y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2008, y = 8)
-
 # output by parameter
 OUT1 <- MyBUGSOutput(out, vars)
 print(OUT1, digits =5)
+write_csv(as.data.frame(OUT1), "Bayesian/mortality_1/params.csv")
 
-# note that code says this is to look at ACF - also, is this matched up properly?
-ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_1/posteriors.pdf", width=10, height=8, units="in")
-
-# plot posterior against expected distribution
+# plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
 alpha_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$alpha)
-alpha_prior <- as.data.frame(dnorm(0, 100^-2))
-str(alpha_post)
 dist <- as.data.frame(rnorm(10000, 0, 10))
-head(dist)
 names(dist)[names(dist) == "rnorm(10000, 0, 10)"] <- "v2" 
-
-p <- ggplot()
-p <- p + geom_histogram(data = alpha_post, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
-p <- p + geom_density(data = dist, aes(v2), colour = "red")
-p
+x <- c(0,2)
+priorPosterior(alpha_post, dist, x)
 
 alpha_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$alpha)
-alpha_prior <- as.data.frame(dgamma(2, 1/3))
-str(alpha_post)
-dist <- as.data.frame(rgamma(10000, 2, 1/3))
-head(dist)
-names(dist)[names(dist) == "rgamma(10000, 2, 1/3)"] <- "v2" 
-
-p <- ggplot()
-p <- p + geom_histogram(data = alpha_post, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
-p <- p + geom_density(data = dist, aes(v2), colour = "red")
-p
+dist <- as.data.frame(rgamma(1e+05, 2, 1/3))
+names(dist)[names(dist) == "rgamma(1e+05, 2, 1/3)"] <- "v2" 
+priorPosterior(alpha_post, dist, x)
 
 beta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$beta)
-beta_prior <- as.data.frame(dgamma(8.1, 1/11.11))
-str(beta_post)
 dist <- as.data.frame(rgamma(10000, 8, 1/11.11))
-head(dist)
 names(dist)[names(dist) == "rgamma(10000, 8, 1/11.11)"] <- "v2" 
-
-p <- ggplot()
-p <- p + geom_histogram(data = beta_post, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
-p <- p + geom_density(data = dist, aes(v2), colour = "red")
-p
-
-gamma_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$gamma)
-gamma_prior <- as.data.frame(dnorm(0, 100^-2))
-dist <- as.data.frame(rnorm(10000, 0, 10))
-head(dist)
-names(dist)[names(dist) == "rnorm(10000, 0, 10)"] <- "v2" 
-
-p <- ggplot()
-p <- p + geom_histogram(data = gamma_post, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
-p <- p + geom_density(data = dist, aes(v2), colour = "red")
-p
-
-delta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$delta)
-delta_prior <- as.data.frame(dnorm(0, 100^-2))
-dist <- as.data.frame(rnorm(10000, 0, 10))
-head(dist)
-names(dist)[names(dist) == "rnorm(10000, 0, 10)"] <- "v2" 
-
-p <- ggplot()
-p <- p + geom_histogram(data = delta_post, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
-p <- p + geom_density(data = dist, aes(v2), colour = "red")
-p
+range(beta_post)
+range(dist)
+x <- c(20, 300)
+priorPosterior(beta_post, dist, x)
 
 ## Recruitment model----
 # not sequential
