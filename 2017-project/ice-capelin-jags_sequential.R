@@ -130,14 +130,16 @@ df1 %<>%
 glimpse(df1)
 
 # relationships and correlations among RV and EV
+pdf("Bayesian/mortality_1/pairs_resids.pdf")
 pairs.panels(df1[c("ln_biomass_med", "tice", "resids_lag", "surface_tows_lag2", "ps_meanTot_lag2")], 
              method = "pearson", # correlation method
              hist.col = "#00AFBB",
              density = F,  # show density plots
              ellipses = F, # show correlation ellipses,
-             cex.labels = 1.5,
-             cex.cor = 8
+             cex.labels = 1,
+             cex.cor = 1
 )
+dev.off()
 
 #########Bayesian models##############################
 ## Mortality----
@@ -272,19 +274,20 @@ ggsave("Bayesian/mortality_1/credInt.pdf", width=10, height=8, units="in")
 # output by parameter
 OUT1 <- MyBUGSOutput(out, vars)
 print(OUT1, digits =5)
-write_csv(as.data.frame(OUT1), "Bayesian/mortality_1/params.csv")
+write.csv(as.data.frame(OUT1), "Bayesian/mortality_1/params.csv")
+
+# R-squared - see Gelmen paper
 
 # plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
 alpha_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$alpha)
-dist <- as.data.frame(rnorm(10000, 0, 10))
-names(dist)[names(dist) == "rnorm(10000, 0, 10)"] <- "v2" 
+#dist <- as.data.frame(rnorm(10000, 0, 10)) - uninformative prior
+dist <- as.data.frame(rgamma(1e+05, 2, 1/3))
+# names(dist)[names(dist) == "rnorm(10000, 0, 10)"] <- "v2"  uninformative prior
+names(dist)[names(dist) == "rgamma(1e+05, 2, 1/3)"] <- "v2" 
+range(alpha_post)
 x <- c(0,2)
 priorPosterior(alpha_post, dist, x)
-
-alpha_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$alpha)
-dist <- as.data.frame(rgamma(1e+05, 2, 1/3))
-names(dist)[names(dist) == "rgamma(1e+05, 2, 1/3)"] <- "v2" 
-priorPosterior(alpha_post, dist, x)
+ggsave("Bayesian/mortality_1/priorPost_alpha.pdf", width=10, height=8, units="in")
 
 beta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$beta)
 dist <- as.data.frame(rgamma(10000, 8, 1/11.11))
@@ -293,6 +296,7 @@ range(beta_post)
 range(dist)
 x <- c(20, 300)
 priorPosterior(beta_post, dist, x)
+ggsave("Bayesian/mortality_1/priorPost_beta.pdf", width=10, height=8, units="in")
 
 ## Recruitment model----
 # not sequential
