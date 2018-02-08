@@ -141,7 +141,7 @@ pairs.panels(df1[c("ln_biomass_med", "tice", "resids_lag", "surface_tows_lag2", 
 )
 dev.off()
 
-#########Bayesian models##############################
+#########Bayesian models#############################
 ## Mortality----
 #"alpha + beta*TI[i]*(1-TI[i]/gamma) + delta*CO[i]"
 
@@ -177,7 +177,7 @@ sigma ~ dunif(0, 100)
 }'
 
 
-#alpha based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
+#gamma based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
 #beta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
 # gamma,delta, sigma: uninformative for condition
 df2 <- df1
@@ -191,7 +191,7 @@ run_mortality <- jags(data=model_data,
                       parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
                       model.file = textConnection(m.mortality))
 
-#Do we need to remove the burn-in?  How much?  UPDATE the chain?
+#Do we need to remove the burn-in?  How much?  UPDATE the chain? Figure out and apply to all
 
 ## M-DIAGNOSTICS----
 print(run_mortality, intervals=c(0.025, 0.975), digits = 3)
@@ -298,9 +298,8 @@ x <- c(20, 300)
 priorPosterior(beta_post, dist, x)
 ggsave("Bayesian/mortality_1/priorPost_beta.pdf", width=10, height=8, units="in")
 
-## Recruitment model----
-# not sequential
-#"delta + Alpha*surface_tows_lag2) + Gamma*Pseudocal_lag2"
+## Recruitment----
+#"alpha + beta*ST[i] + gamma*PS[i]"
 
 m.recruit = '
 model {
@@ -333,10 +332,9 @@ delta ~ dnorm(0, 100^-2)
 sigma ~ dunif(0, 100) 
 }'
 
-#alpha based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
-#beta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
-# gamma,delta, sigma: uninformative for condition
+#subset data
 df3 <- subset(df2, year>2002)
+
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
                    ST=c(df3$surface_tows_lag2, c(0, 0)), #from capelin_larval_indices 
@@ -349,53 +347,41 @@ run_recruit <- jags(data=model_data,
 
 #UPDATE WITH MORE BURN INS
 
-##R-plot 5----
-# DIAGNOSTICS
+##R-Diagnostics----
 print(run_recruit, intervals=c(0.025, 0.975), digits = 3)
-plot(run_recruit)
-
 out <- run_recruit$BUGSoutput 
-str(out)
 out$mean
 
-# Asess mixing of chains
-post <- run_recruit$BUGSoutput$sims.matrix
-head(post)
-plot(post[, 'alpha'], type = 'l')
-plot(post[, 'beta'], type = 'l')
-plot(post[, 'gamma'], type = 'l')
-plot(post[, 'delta'], type = 'l')
+#overdispersion - values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
+mean(out$sims.list$FitNew > out$sims.list$Fit)
+# mean = 0.546333
 
-# or
+# Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma')
-
+ggsave(MyBUGSChains(out, vars), filename = "Bayesian/recruitment_1/chains.pdf", width=10, height=8, units="in")
 MyBUGSChains(out, vars)
 #autocorrelation - this could be a problem!!!!
 MyBUGSACF(out, vars)
-
-#overdispersion
-mean(out$sims.list$FitNew > out$sims.list$Fit)
-# mean = 0.546333 and values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
+ggsave(MyBUGSACF(out, vars), filename = "Bayesian/recruitment_1/auto_corr.pdf", width=10, height=8, units="in")
 
 # Model Validation (see Zuuer et al. 2013 for options for calculating Pearson residuals)
 # Residual diagnostics
-E1 <- out$mean$PRes
-str(out$mean)
-F1 <- out$mean$expY
-N2 <- out$mean$N2
-D <- out$mean$D
+E1 <- out$mean$PRes # Pearson resids
+F1 <- out$mean$expY # Expected values
+N2 <- out$mean$N2   # N2 - observed values? Why do these fill in the NAs of df$ln_biomass_med???
+D <- out$mean$D     # this is SSQ - but i'm looking for Cook'sD
 
+pdf('Bayesian/recruitment_1/fit_obs.pdf')
 par(mfrow = c(2,2), mar = c(5,5,2,2))
 plot(x=F1, y = E1, xlab = "Fitted values", ylab = "Pearson residuals")
 abline(h = 0, lty = 2)
-# The below is right but is the not right code.  The code is in ONeNote
-#plot(D, type = "h", xlab = "Observation", ylab = "Cook distance")
+# see notes in Mortality model
 plot(y = N2, x = F1, xlab = "Fitted values", ylab = "Observed data")
 abline(coef = c(0,1), lty = 2)
 par(mfrow = c(1,1))
+dev.off()
 
-
-# Residuals v covariates
+# Residuals v covariates Zuur et al. 2013, pg 59-60: look for no patterns; patterns may indicated non-linear
 par(mfrow = c(2,2), mar = c(5,5,2,2))
 MyVar <- c("tice.std", "meandCond_lag.std")
 test <- as.data.frame(model_data)
@@ -407,24 +393,17 @@ par(mfrow = c(1,1))
 
 # CREDIBLE AND PREDICITON INTERVALS
 #generate credible intervals for time series using mu
-y_pred = run_recruit$BUGSoutput$sims.list$mu
-str(y_pred)
-head(y_pred)
-str(run_recruit$BUGSoutput$sims.list)
 #look at output
-y_med = apply(y_pred,2,'median')
-apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] 
-ci_df3 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
-ci_df3[1, ]
+y_med = apply(y_pred,2,'median') # median values of y_pred
+ci_df3 <- apply(y_pred,2,'quantile', c(0.05, 0.95)) #credible interval a subscript at end of code can pull out specific values [, 15:16]
 
 #generate prediciton intevals using N2_new
 y_new = run_recruit$BUGSoutput$sims.list$N2_new
 pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 
-
-pi_n <- as.data.frame(pi_df3) %>% top_n(-2)
-pi_df3[2, (ncol(pi_df3)-1):ncol(pi_df3)]
+## R-Results----
 #PLOT credible and prediction intervals
+ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_1/posteriors.pdf", width=10, height=8, units="in")
 
 txt <- "log(caplein) = alpha +  beta*surface_tows_lag2 \n + gamma*pseudocal_lag2"
 
@@ -433,27 +412,27 @@ plotCredInt(df3, yaxis = "ln_biomass_med",
             ylab = "ln(capelin)", 
             y_line = y_med, ci_df3, pi_df3, 
             model = txt, x = 2008, y = 8)
-ggsave("Bayesian/mortality_1/credInt.pdf", width=10, height=8, units="in")
+ggsave("Bayesian/recruitment_1/credInt.pdf", width=10, height=8, units="in")
+
+# output by parameter
+OUT1 <- MyBUGSOutput(out, vars)
+print(OUT1, digits =5)
+write.csv(as.data.frame(OUT1), "Bayesian/recruitment_1/params.csv")
 
 
 # plot posterior against expected distribution
 alpha_post <- as.data.frame(run_recruit$BUGSoutput$sims.list$alpha)
-alpha_prior <- as.data.frame(dnorm(0, 100^-2))
-str(alpha_post)
 dist <- as.data.frame(rnorm(10000000, 0, 10))
 head(dist)
 names(dist)[names(dist) == "rnorm(1e+07, 0, 10)"] <- "v2" 
+x <- range(alpha_post)
+priorPosterior(alpha_post, dist, x)
+ggsave("Bayesian/recruitment_1/priorPost_alpha.pdf", width=10, height=8, units="in")
 
-p <- ggplot()
-p <- p + geom_histogram(data = alpha_post, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
-pnorm(1, mean = 0, sd = 100)
-p <- p + geom_density(data = dist, aes(v2), colour = "red")
-p
+# need other posteriors
 
-
-## R/M1 model----
-# not sequential
-#"delta + Alpha*surface_tows_lag2) + Gamma*Pseudocal_lag2"
+## RM_1----
+#"mu[i] <- alpha + beta*ST[i] + gamma*CO[i]"
 
 m.RM1 = '
 model {
@@ -485,9 +464,7 @@ gamma ~ dnorm(0, 100^-2)
 sigma ~ dunif(0, 100) 
 }'
 
-#alpha based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
-#beta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
-# gamma,delta, sigma: uninformative for condition
+# priors are uninformative for condition
 #df3 <- subset(df2, year>2002)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
@@ -499,36 +476,32 @@ run_RM1 <- jags(data=model_data,
                       parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
                       model.file = textConnection(m.RM1))
 
-#UPDATE WITH MORE BURN INS
-
-##R/m-plot 5----
-# DIAGNOSTICS
+##RM_1-Diagnostics----
 print(run_RM1, intervals=c(0.025, 0.975), digits = 3)
-plot(run_RM1)
-
 out <- run_RM1$BUGSoutput 
-str(out)
 out$mean
 
-# Asess mixing of chains
-vars <- c('alpha', 'beta', 'gamma')
-
-MyBUGSChains(out, vars)
-#autocorrelation - this could be a problem!!!!
-MyBUGSACF(out, vars)
-
-#overdispersion
+#overdispersion - values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
 mean(out$sims.list$FitNew > out$sims.list$Fit)
-# mean = 0.546333 and values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
+# mean = 0.546333
 
-# Model Validation (see Zuuer et al. 2013 for options for calculating Pearson residuals)
+# Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
+vars <- c('alpha', 'beta', 'gamma')
+ggsave(MyBUGSChains(out, vars), filename = "Bayesian/rm_1/chains.pdf", width=10, height=8, units="in")
+
+#autocorrelation - this looks good!!!!
+MyBUGSACF(out, vars)
+ggsave(MyBUGSACF(out, vars), filename = "Bayesian/rm_1/auto_corr.pdf", width=10, height=8, units="in")
+
+
+# Model Validation (see Zuuer et al. 2013, pg 77-79 for options for calculating Pearson residuals)
 # Residual diagnostics
-E1 <- out$mean$PRes
-str(out$mean)
-F1 <- out$mean$expY
-N2 <- out$mean$N2
-D <- out$mean$D
+E1 <- out$mean$PRes # Pearson resids
+F1 <- out$mean$expY # Expected values
+N2 <- out$mean$N2   # N2 - observed values? Why do these fill in the NAs of df$ln_biomass_med???
+D <- out$mean$D     # this is SSQ - but i'm looking for Cook'sD
 
+pdf('Bayesian/rm_1/fit_obs.pdf')
 par(mfrow = c(2,2), mar = c(5,5,2,2))
 plot(x=F1, y = E1, xlab = "Fitted values", ylab = "Pearson residuals")
 abline(h = 0, lty = 2)
@@ -537,33 +510,33 @@ abline(h = 0, lty = 2)
 plot(y = N2, x = F1, xlab = "Fitted values", ylab = "Observed data")
 abline(coef = c(0,1), lty = 2)
 par(mfrow = c(1,1))
+dev.off()
 
-
-# Residuals v covariates
+# Residuals v covariates Zuur et al. 2013, pg 59-60: look for no patterns; patterns may indicated non-linear
+pdf('Bayesian/rm_1/resid_covar.pdf')
 par(mfrow = c(2,2), mar = c(5,5,2,2))
-MyVar <- c("tice.std", "meandCond_lag.std")
 test <- as.data.frame(model_data)
 test <- cbind(test, E1)
-#Myxyplot(test, MyVar, "E1")
 plot(test$ST, test$EI, xlab = "Tice", ylab = "Pearson resids")
 plot(test$CO, test$EI, xlab = "Condition", ylab = "Pearson resids")
 par(mfrow = c(1,1))
+dev.off()
 
 # CREDIBLE AND PREDICITON INTERVALS
 #generate credible intervals for time series using mu
 y_pred = run_RM1$BUGSoutput$sims.list$mu
-str(y_pred)
-head(y_pred)
-str(run_RM1$BUGSoutput$sims.list)
+
 #look at output
-y_med = apply(y_pred,2,'median')
-apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] 
-ci_df3 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
-ci_df3[1, ]
+y_med = apply(y_pred,2,'median') # median values of y_pred
+ci_df3 <- apply(y_pred,2,'quantile', c(0.05, 0.95)) #credible interval a subscript at end of code can pull out specific values [, 15:16]
 
 #generate prediciton intevals using N2_new
 y_new = run_RM1$BUGSoutput$sims.list$N2_new
 pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
+
+## RM_1-Results----
+# Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
+ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_1/posteriors.pdf", width=10, height=8, units="in")
 
 txt <- "log(caplein) = alpha +  beta*surface_tows_lag2 \n + gamma*resids_adj"
 #PLOT credible and prediction intervals
@@ -571,23 +544,17 @@ plotCredInt(df3, yaxis = "ln_biomass_med",
             ylab = "ln(capelin)", 
             y_line = y_med, ci_df3, pi_df3, 
             model = txt, x = 2008, y = 8)
+ggsave("Bayesian/rm_1/credInt.pdf", width=10, height=8, units="in")
 
-
-# plot posterior against expected distribution
+# plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
 alpha_post <- as.data.frame(run_RM1$BUGSoutput$sims.list$alpha)
-alpha_prior <- as.data.frame(dnorm(0, 100^-2))
-str(alpha_post)
 dist <- as.data.frame(rnorm(10000000, 0, 10))
 names(dist)[names(dist) == "rnorm(1e+07, 0, 10)"] <- "v2" 
+x <- range(alpha_post)
+priorPosterior(alpha_post, dist, x)
+ggsave("Bayesian/rm_1/priorPost_alpha.pdf", width=10, height=8, units="in")
 
-p <- ggplot()
-p <- p + geom_histogram(data = alpha_post, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
-p <- p + geom_density(data = dist, aes(v2), colour = "red")
-p
-
-
-## R/M2 model----
-# not sequential
+## RM_2----
 #"alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta)"
 
 m.RM2 = '
@@ -622,9 +589,8 @@ delta ~ dgamma(8.1, 1/11.11)
 sigma ~ dunif(0, 100) 
 }'
 
-#alpha based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
-#beta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
-# gamma,delta, sigma: uninformative for condition
+#gamma and delta based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
+#gamma: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
 #df3 <- subset(df2, year>2002)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
@@ -638,50 +604,41 @@ run_RM2 <- jags(data=model_data,
 
 #UPDATE WITH MORE BURN INS
 
-##R/M2-plot 5----
-# DIAGNOSTICS
+##RM_2-Diagnostics----
 print(run_RM2, intervals=c(0.025, 0.975), digits = 3)
-plot(run_RM2)
-
 out <- run_RM2$BUGSoutput 
-str(out)
 out$mean
 
-# Asess mixing of chains
-post <- run_RM2$BUGSoutput$sims.matrix
-head(post)
-plot(post[, 'alpha'], type = 'l')
-plot(post[, 'beta'], type = 'l')
-plot(post[, 'gamma'], type = 'l')
-plot(post[, 'delta'], type = 'l')
-
-# or
-vars <- c('alpha', 'beta', 'gamma')
-
-MyBUGSChains(out, vars)
-#autocorrelation - this could be a problem!!!!
-MyBUGSACF(out, vars)
-
-#overdispersion
+#overdispersion - values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
 mean(out$sims.list$FitNew > out$sims.list$Fit)
-# mean = 0.546333 and values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
+# mean = 0.546333
 
-# Model Validation (see Zuuer et al. 2013 for options for calculating Pearson residuals)
+# Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
+vars <- c('alpha', 'beta', 'gamma', 'delta')
+ggsave(MyBUGSChains(out, vars), filename = "Bayesian/rm_2/chains.pdf", width=10, height=8, units="in")
+
+#autocorrelation - this looks good!!!!
+MyBUGSACF(out, vars)
+ggsave(MyBUGSACF(out, vars), filename = "Bayesian/rm_2/auto_corr.pdf", width=10, height=8, units="in")
+
+# Model Validation (see Zuuer et al. 2013, pg 77-79 for options for calculating Pearson residuals)
 # Residual diagnostics
-E1 <- out$mean$PRes
-str(out$mean)
-F1 <- out$mean$expY
-N2 <- out$mean$N2
-D <- out$mean$D
+E1 <- out$mean$PRes # Pearson resids
+F1 <- out$mean$expY # Expected values
+N2 <- out$mean$N2   # N2 - observed values? Why do these fill in the NAs of df$ln_biomass_med???
+D <- out$mean$D     # this is SSQ - but i'm looking for Cook'sD
 
-par(mfrow = c(2,2), mar = c(5,5,2,2))
+pdf('Bayesian/rm_2/fit_obs.pdf')
+par(mfrow = c(2,1), mar = c(5,5,2,2))
 plot(x=F1, y = E1, xlab = "Fitted values", ylab = "Pearson residuals")
 abline(h = 0, lty = 2)
-# The below is right but is the not right code.  The code is in ONeNote
+# Need to implement the code for Cook's D.  The code is in ONeNote (Capelin- "To do list")
 #plot(D, type = "h", xlab = "Observation", ylab = "Cook distance")
+# this may not be quite right as N2 is not quite the observed values because NA has been estiamted.
 plot(y = N2, x = F1, xlab = "Fitted values", ylab = "Observed data")
 abline(coef = c(0,1), lty = 2)
 par(mfrow = c(1,1))
+dev.off()
 
 
 # Residuals v covariates
@@ -697,80 +654,45 @@ par(mfrow = c(1,1))
 # CREDIBLE AND PREDICITON INTERVALS
 #generate credible intervals for time series using mu
 y_pred = run_RM2$BUGSoutput$sims.list$mu
-str(y_pred)
-head(y_pred)
-str(run_RM2$BUGSoutput$sims.list)
+
 #look at output
 y_med = apply(y_pred,2,'median')
-apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] 
 ci_df3 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
-ci_df3[1, ]
 
 #generate prediciton intevals using N2_new
 y_new = run_RM2$BUGSoutput$sims.list$N2_new
 pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 
+## RM_2-Results----
+# Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
+ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_2/posteriors.pdf", width=10, height=8, units="in")
 
-#PLOT credible and prediction intervals
-plot(c(df3$year,2018:2019),y_med,type='l', ylim = c(2,9))
-points(df3$year, df3$ln_biomass_med)
-#points(df2$year, y_med[1:14], col = "blue")
-#points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
-# this makes the credible interval 90%
-#lines(c(df2$year,2017:2018), ci_df2[1, ], lty = 3)
-lines(c(df3$year[1:15]), ci_df3[1, 1:15], lty = 3)
-#lines(c(df3$year,2017:2018), ci_df3[2, ], lty = 3)
-lines(c(df3$year[1:15]), ci_df3[2, 1:15], lty = 3)
-#lines(c(df3$year,2017:2018), pi_df3[1, ], lty = 2)
-lines(c(2018:2019), pi_df3[1, 16:17], lty = 2)
-#lines(c(df3$year,2017:2018), pi_df3[2, ], lty = 2)
-lines(c(2018:2019), pi_df3[2, 16:17], lty = 2)
-
-polygon(x = c(2018, 2018, 2019, 2019), y = c(pi_df3[1, 16], pi_df3[2,16], pi_df3[2, 17], pi_df3[1, 17]), col="grey75")
-
-text(2008,8, "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta))")
+txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta))"
 
 #plot credible and prediction intervals
-# better plots
+plotCredInt(df3, yaxis = "ln_biomass_med", 
+            ylab = "ln(capelin)", 
+            y_line = y_med, ci_df3, pi_df3, 
+            model = txt, x = 2007, y = 8)
+ggsave("Bayesian/rm_2/credInt.pdf", width=10, height=8, units="in")
 
-p <- ggplot()
-p <- p + geom_point(data = df2, 
-                    aes(y = ln_biomass_med, x = year),
-                    shape = 16, 
-                    size = 1.5)
-p <- p + xlab("Year") + ylab("ln(capelin)")
-p <- p + theme(text = element_text(size=15)) + theme_bw()
-p <- p + geom_line(aes(x = c(df2$year, 2018:2019), 
-                       y = y_med))
-p <- p + geom_ribbon(aes(x = df2$year[1:22], 
-                         ymax = ci_df2[2, 1:22], 
-                         ymin = ci_df2[1, 1:22]),
-                     alpha = 0.5)
-p <- p + geom_ribbon(aes(x = c(2018:2019), 
-                         ymax = pi_df2[2, 23:24], 
-                         ymin = pi_df2[1, 23:24]),
-                     alpha = 0.3)        
-p
+# output by parameter
+OUT1 <- MyBUGSOutput(out, vars)
+print(OUT1, digits =5)
+write.csv(as.data.frame(OUT1), "Bayesian/rm_2/params.csv")
 
-
-# plot posterior against expected distribution
+# plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
 alpha_post <- as.data.frame(run_RM2$BUGSoutput$sims.list$alpha)
-alpha_prior <- as.data.frame(dnorm(0, 100^-2))
-str(alpha_post)
 dist <- as.data.frame(rnorm(10000000, 0, 10))
 names(dist)[names(dist) == "rnorm(1e+07, 0, 10)"] <- "v2" 
+x <- range(alpha_post)
+priorPosterior(alpha_post, dist, x)
+ggsave("Bayesian/rm_2/priorPost_alpha.pdf", width=10, height=8, units="in")
 
-p <- ggplot()
-p <- p + geom_histogram(data = alpha_post, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
-p <- p + geom_density(data = dist, aes(v2), colour = "red")
-p
+## M-(uniform)----
+#"alpha + beta*TI[i]*(1-TI[i]/gamma) + delta*CO[i]"
 
-
-## M-Beta(uniform)----
-# not sequential
-#"delta + Alpha*tice*(1-(tice/Beta)) + Gamma*resids_adj"
-
-m.mortality = '
+m.mort_unif = '
 model {
 # 1. Likelihood
 for (i in 1:N) {
@@ -801,7 +723,6 @@ delta ~ dnorm(0, 100^-2)
 sigma ~ dunif(0, 100) 
 }'
 
-
 #alpha based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
 #beta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
 # gamma,delta, sigma: uninformative for condition
@@ -812,59 +733,48 @@ model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)),
                    CO=c(df2$resids_lag, c(0, 0)), #made up - need new data
                    N = nrow(df2) + num_forecasts)
 
-run_mortality <- jags(data=model_data,
+run_mort_unif <- jags(data=model_data,
                       parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
-                      model.file = textConnection(m.mortality))
+                      model.file = textConnection(m.mort_unif))
 
-#UPDATE WITH MORE BURN INS
-
-## M-Beta(uniform)-Plot 5----
-# DIAGNOSTICS
-print(run_mortality, intervals=c(0.025, 0.975), digits = 3)
-plot(run_mortality)
-
-out <- run_mortality$BUGSoutput 
-str(out)
+## M(uniform)-diagnostics----
+print(run_mort_unif, intervals=c(0.025, 0.975), digits = 3)
+out <- run_mort_unif$BUGSoutput 
 out$mean
 
-# Asess mixing of chains
-post <- run_mortality$BUGSoutput$sims.matrix
-head(post)
-plot(post[, 'alpha'], type = 'l')
-plot(post[, 'beta'], type = 'l')
-plot(post[, 'gamma'], type = 'l')
-plot(post[, 'delta'], type = 'l')
-
-# or
-vars <- c('alpha', 'beta', 'gamma', 'delta')
-
-MyBUGSChains(out, vars)
-#autocorrelation - this could be a problem!!!!
-MyBUGSACF(out, vars)
-
-#overdispersion
+#overdispersion - values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
 mean(out$sims.list$FitNew > out$sims.list$Fit)
-# mean = 0.546333 and values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
+# mean = 0.546333
 
-# Model Validation (see Zuuer et al. 2013 for options for calculating Pearson residuals)
+# Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
+vars <- c('alpha', 'beta', 'gamma', 'delta')
+ggsave(MyBUGSChains(out, vars), filename = "Bayesian/mortality_2/chains.pdf", width=10, height=8, units="in")
+
+#autocorrelation - this looks good!!!!
+MyBUGSACF(out, vars)
+ggsave(MyBUGSACF(out, vars), filename = "Bayesian/mortality_2/auto_corr.pdf", width=10, height=8, units="in")
+
+# Model Validation (see Zuuer et al. 2013, pg 77-79 for options for calculating Pearson residuals)
 # Residual diagnostics
-E1 <- out$mean$PRes
-str(out$mean)
-F1 <- out$mean$expY
-N2 <- out$mean$N2
-D <- out$mean$D
+E1 <- out$mean$PRes # Pearson resids
+F1 <- out$mean$expY # Expected values
+N2 <- out$mean$N2   # N2 - observed values? Why do these fill in the NAs of df$ln_biomass_med???
+D <- out$mean$D     # this is SSQ - but i'm looking for Cook'sD
 
-par(mfrow = c(2,2), mar = c(5,5,2,2))
+pdf('Bayesian/mortality_2/fit_obs.pdf')
+par(mfrow = c(2,1), mar = c(5,5,2,2))
 plot(x=F1, y = E1, xlab = "Fitted values", ylab = "Pearson residuals")
 abline(h = 0, lty = 2)
-# The below is right but is the not right code.  The code is in ONeNote
+# Need to implement the code for Cook's D.  The code is in ONeNote (Capelin- "To do list")
 #plot(D, type = "h", xlab = "Observation", ylab = "Cook distance")
+# this may not be quite right as N2 is not quite the observed values because NA has been estiamted.
 plot(y = N2, x = F1, xlab = "Fitted values", ylab = "Observed data")
 abline(coef = c(0,1), lty = 2)
 par(mfrow = c(1,1))
+dev.off()
 
-
-# Residuals v covariates
+# Residuals v covariates Zuur et al. 2013, pg 59-60: look for no patterns; patterns may indicated non-linear
+pdf('Bayesian/mortality_2/resid_covar.pdf')
 par(mfrow = c(2,2), mar = c(5,5,2,2))
 MyVar <- c("tice.std", "meandCond_lag.std")
 test <- as.data.frame(model_data)
@@ -873,56 +783,48 @@ test <- cbind(test, E1)
 plot(test$TI, test$EI, xlab = "Tice", ylab = "Pearson resids")
 plot(test$CO, test$EI, xlab = "Condition", ylab = "Pearson resids")
 par(mfrow = c(1,1))
+dev.off()
 
 # CREDIBLE AND PREDICITON INTERVALS
 #generate credible intervals for time series using mu
-y_pred = run_mortality$BUGSoutput$sims.list$mu
-str(y_pred)
-head(y_pred)
-str(run_mortality$BUGSoutput$sims.list)
+y_pred = run_mort_unif$BUGSoutput$sims.list$mu
+
 #look at output
 y_med = apply(y_pred,2,'median')
-apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] 
 ci_df2 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
-ci_df2[1, ]
 
 #generate prediciton intevals using N2_new
-y_new = run_mortality$BUGSoutput$sims.list$N2_new
+y_new = run_mort_unif$BUGSoutput$sims.list$N2_new
 pi_df2 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 
+## M(uniform)-Results----
+# Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
+ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_2/posteriors.pdf", width=10, height=8, units="in")
 
-#PLOT credible and prediction intervals
-plot(c(df2$year,2018:2019),y_med,type='l', ylim = c(2,8))
-points(df2$year, df2$ln_biomass_med)
-#points(df2$year, y_med[1:14], col = "blue")
-#points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
-# this makes the credible interval 90%
-#lines(c(df2$year,2017:2018), ci_df2[1, ], lty = 3)
-lines(c(df2$year[1:22]), ci_df2[1, 1:22], lty = 3)
-#lines(c(df2$year,2017:2018), ci_df2[2, ], lty = 3)
-lines(c(df2$year[1:22]), ci_df2[2, 1:22], lty = 3)
-#lines(c(df2$year,2017:2018), pi_df2[1, ], lty = 2)
-lines(c(2018:2019), pi_df2[1, 23:24], lty = 2)
-#lines(c(df2$year,2017:2018), pi_df2[2, ], lty = 2)
-lines(c(2018:2019), pi_df2[2, 23:24], lty = 2)
+txt <- "log(caplein) = alpha +  beta*tice*(1-(tice/gamma(unif))) \n + delta*Condition(resids)"
 
-polygon(x = c(2018, 2018, 2019, 2019), y = c(pi_df2[1, 23], pi_df2[2,23], pi_df2[2, 24], pi_df2[1, 24]), col="grey75")
+plotCredInt(df2, yaxis = "ln_biomass_med", 
+            ylab = "ln(capelin)", 
+            y_line = y_med, ci_df2, pi_df2, 
+            model = txt, x = 2006, y = 8)
+ggsave("Bayesian/mortality_2/credInt.pdf", width=10, height=8, units="in")
 
+# output by parameter
+OUT1 <- MyBUGSOutput(out, vars)
+print(OUT1, digits =5)
+write.csv(as.data.frame(OUT1), "Bayesian/mortality_2/params.csv")
 
+# R-squared - see Gelmen paper
+
+# plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
 beta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$beta)
-beta_prior <- as.data.frame(dnorm(0, 100^-2))
-beta_prior <- as.data.frame(dunif(0, 365))
 dist <- as.data.frame(runif(1000000, 0, 365))
-head(dist)
 names(dist)[names(dist) == "runif(1e+06, 0, 365)"] <- "v2" 
-
-p <- ggplot()
-p <- p + geom_histogram(data = beta_post, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
-p <- p + geom_density(data = dist, aes(v2), colour = "red")
-p
+x <- range(beta_post)
+priorPosterior(beta_post, dist, x)
+ggsave("Bayesian/mortality_2/priorPost_alpha.pdf", width=10, height=8, units="in")
 
 ## R/M3 model----
-# not sequential
 #"alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])"
 
 m.RM3 = '
@@ -957,8 +859,8 @@ epsilon ~ dnorm(0, 100^-2)
 sigma ~ dunif(0, 100) 
 }'
 
-#alpha based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
-#beta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
+#gamma and delta based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
+#delta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
 # gamma,delta, sigma: uninformative for condition
 #df3 <- subset(df2, year>2002)
 num_forecasts = 2 # 2 extra years
@@ -977,40 +879,32 @@ run_RM3 <- jags(data=model_data,
 ##R/M3-plot 5----
 # DIAGNOSTICS
 print(run_RM3, intervals=c(0.025, 0.975), digits = 3)
-plot(run_RM3)
-
 out <- run_RM3$BUGSoutput 
-str(out)
 out$mean
 
-# Asess mixing of chains
-post <- run_RM3$BUGSoutput$sims.matrix
-head(post)
-plot(post[, 'alpha'], type = 'l')
-plot(post[, 'beta'], type = 'l')
-plot(post[, 'gamma'], type = 'l')
-plot(post[, 'delta'], type = 'l')
-plot(post[, 'epsilon'], type = 'l')
+#overdispersion - values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
+mean(out$sims.list$FitNew > out$sims.list$Fit)
+# mean = 0.546333
 
-# or
+# Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma', 'delta', 'epsilon')
 
 MyBUGSChains(out, vars)
-#autocorrelation - this could be a problem!!!!
+ggsave(MyBUGSChains(out, vars), filename = "Bayesian/rm_3/chains.pdf", width=10, height=8, units="in")
+
+#autocorrelation - this looks good!!!!
 MyBUGSACF(out, vars)
+ggsave(MyBUGSACF(out, vars), filename = "Bayesian/rm_3/auto_corr.pdf", width=10, height=8, units="in")
 
-#overdispersion
-mean(out$sims.list$FitNew > out$sims.list$Fit)
-# mean = 0.546333 and values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
 
-# Model Validation (see Zuuer et al. 2013 for options for calculating Pearson residuals)
+# Model Validation (see Zuuer et al. 2013, pg 77-79 for options for calculating Pearson residuals)
 # Residual diagnostics
-E1 <- out$mean$PRes
-str(out$mean)
-F1 <- out$mean$expY
-N2 <- out$mean$N2
-D <- out$mean$D
+E1 <- out$mean$PRes # Pearson resids
+F1 <- out$mean$expY # Expected values
+N2 <- out$mean$N2   # N2 - observed values? Why do these fill in the NAs of df$ln_biomass_med???
+D <- out$mean$D     # this is SSQ - but i'm looking for Cook'sD
 
+pdf('Bayesian/rm_3/fit_obs.pdf')
 par(mfrow = c(2,2), mar = c(5,5,2,2))
 plot(x=F1, y = E1, xlab = "Fitted values", ylab = "Pearson residuals")
 abline(h = 0, lty = 2)
@@ -1019,9 +913,10 @@ abline(h = 0, lty = 2)
 plot(y = N2, x = F1, xlab = "Fitted values", ylab = "Observed data")
 abline(coef = c(0,1), lty = 2)
 par(mfrow = c(1,1))
+dev.off()
 
-
-# Residuals v covariates
+# Residuals v covariates Zuur et al. 2013, pg 59-60: look for no patterns; patterns may indicated non-linear
+pdf('Bayesian/rm_3/resid_covar.pdf')
 par(mfrow = c(2,2), mar = c(5,5,2,2))
 MyVar <- c("tice.std", "meandCond_lag.std")
 test <- as.data.frame(model_data)
@@ -1031,75 +926,41 @@ plot(test$ST, test$EI, xlab = "ST", ylab = "Pearson resids")
 plot(test$TI, test$EI, xlab = "Tice", ylab = "Pearson resids")
 plot(test$CO, test$EI, xlab = "Condition", ylab = "Pearson resids")
 par(mfrow = c(1,1))
+dev.off()
 
 # CREDIBLE AND PREDICITON INTERVALS
 #generate credible intervals for time series using mu
 y_pred = run_RM3$BUGSoutput$sims.list$mu
-str(y_pred)
-head(y_pred)
-str(run_RM3$BUGSoutput$sims.list)
+
 #look at output
 y_med = apply(y_pred,2,'median')
-apply(y_pred,2,'quantile', c(0.05, 0.95))[, 15:16] 
 ci_df3 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
-ci_df3[1, ]
 
 #generate prediciton intevals using N2_new
 y_new = run_RM3$BUGSoutput$sims.list$N2_new
 pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 
 
-#PLOT credible and prediction intervals
-plot(c(df3$year,2018:2019),y_med,type='l', ylim = c(2,9))
-points(df3$year, df3$ln_biomass_med)
-#points(df2$year, y_med[1:14], col = "blue")
-#points(c(2017:2018), y_med[15:16], col = 'red', pch=19)
-# this makes the credible interval 90%
-#lines(c(df2$year,2017:2018), ci_df2[1, ], lty = 3)
-lines(c(df3$year[1:15]), ci_df3[1, 1:15], lty = 3)
-#lines(c(df3$year,2017:2018), ci_df3[2, ], lty = 3)
-lines(c(df3$year[1:15]), ci_df3[2, 1:15], lty = 3)
-#lines(c(df3$year,2017:2018), pi_df3[1, ], lty = 2)
-lines(c(2018:2019), pi_df3[1, 16:17], lty = 2)
-#lines(c(df3$year,2017:2018), pi_df3[2, ], lty = 2)
-lines(c(2018:2019), pi_df3[2, 16:17], lty = 2)
-
-polygon(x = c(2018, 2018, 2019, 2019), y = c(pi_df3[1, 16], pi_df3[2,16], pi_df3[2, 17], pi_df3[1, 17]), col="grey75")
-
-text(2008,8, "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta + epsilon*resids_adj))")
+## M-Results----
+# Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
+ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_3/posteriors.pdf", width=10, height=8, units="in")
 
 #plot credible and prediction intervals
 # better plots
+txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta + epsilon*resids_adj))"
 
-p <- ggplot()
-p <- p + geom_point(data = df2, 
-                    aes(y = ln_biomass_med, x = year),
-                    shape = 16, 
-                    size = 1.5)
-p <- p + xlab("Year") + ylab("ln(capelin)")
-p <- p + theme(text = element_text(size=15)) + theme_bw()
-p <- p + geom_line(aes(x = c(df2$year, 2018:2019), 
-                       y = y_med))
-p <- p + geom_ribbon(aes(x = df2$year[1:22], 
-                         ymax = ci_df2[2, 1:22], 
-                         ymin = ci_df2[1, 1:22]),
-                     alpha = 0.5)
-p <- p + geom_ribbon(aes(x = c(2018:2019), 
-                         ymax = pi_df2[2, 23:24], 
-                         ymin = pi_df2[1, 23:24]),
-                     alpha = 0.3)        
-p
+plotCredInt(df3, yaxis = "ln_biomass_med", 
+            ylab = "ln(capelin)", 
+            y_line = y_med, ci_df3, pi_df3, 
+            model = txt, x = 2008, y = 8)
+ggsave("Bayesian/rm_3/credInt.pdf", width=10, height=8, units="in")
 
 
-# plot posterior against expected distribution
+# plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
 alpha_post <- as.data.frame(run_RM3$BUGSoutput$sims.list$alpha)
-alpha_prior <- as.data.frame(dnorm(0, 100^-2))
-str(alpha_post)
 dist <- as.data.frame(rnorm(10000000, 0, 10))
 names(dist)[names(dist) == "rnorm(1e+07, 0, 10)"] <- "v2" 
+x <- range(alpha_post)
 
-p <- ggplot()
-p <- p + geom_histogram(data = alpha_post, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
-p <- p + geom_density(data = dist, aes(v2), colour = "red")
-p
-
+priorPosterior(alpha_post, dist, x)
+ggsave("Bayesian/rm_3/priorPost_alpha.pdf", width=10, height=8, units="in")
