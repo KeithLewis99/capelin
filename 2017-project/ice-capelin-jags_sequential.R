@@ -143,15 +143,14 @@ dev.off()
 
 #########Bayesian models##############################
 ## Mortality----
-# not sequential
-#"delta + Alpha*tice*(1-(tice/Beta)) + Gamma*resids_adj"
+#"alpha + beta*TI[i]*(1-TI[i]/gamma) + delta*CO[i]"
 
 m.mortality = '
 model {
 # 1. Likelihood
 for (i in 1:N) {
-#recruitment
-mu[i] <- delta + alpha*TI[i]*(1-TI[i]/beta) + gamma*CO[i]
+#mortaliyt
+mu[i] <- alpha + beta*TI[i]*(1-TI[i]/gamma) + delta*CO[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
 
@@ -170,12 +169,13 @@ Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
 # 2. Priors
-alpha ~ dgamma(2, 1/3) 
-beta ~ dgamma(8.1, 1/11.11) 
-gamma ~ dnorm(0, 100^-2) 
+alpha ~ dnorm(0, 100^-2) 
+beta ~ dgamma(2, 1/3) 
+gamma ~ dgamma(8.1, 1/11.11) 
 delta ~ dnorm(0, 100^-2) 
 sigma ~ dunif(0, 100) 
 }'
+
 
 #alpha based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
 #beta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
@@ -263,7 +263,7 @@ ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_1/posteriors.pdf", 
 # plot the credible and prediction intervals
 #text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag2)")
 #text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag1)")
-txt <- "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(resids)"
+txt <- "log(caplein) = alpha +  beta*tice*(1-(tice/gamma)) \n + delta*Condition(resids)"
 
 plotCredInt(df2, yaxis = "ln_biomass_med", 
             ylab = "ln(capelin)", 
@@ -482,7 +482,6 @@ FitNew <- sum(DNew[1:N])
 alpha ~ dnorm(0, 100^-2) 
 beta ~ dnorm(0, 100^-2)
 gamma ~ dnorm(0, 100^-2) 
-delta ~ dnorm(0, 100^-2) 
 sigma ~ dunif(0, 100) 
 }'
 
@@ -776,7 +775,7 @@ model {
 # 1. Likelihood
 for (i in 1:N) {
 #recruitment
-mu[i] <- delta + alpha*TI[i]*(1-TI[i]/beta) + gamma*CO[i]
+mu[i] <- alpha + beta*TI[i]*(1-TI[i]/gamma) + delta*CO[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
 
@@ -795,12 +794,13 @@ Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
 # 2. Priors
-alpha ~ dgamma(2, 1/3) 
-beta ~ dunif(0, 365) 
-gamma ~ dnorm(0, 100^-2) 
+alpha ~ dnorm(0, 100^-2) 
+beta ~ dgamma(2, 1/3) 
+gamma ~ dunif(0, 365) 
 delta ~ dnorm(0, 100^-2) 
 sigma ~ dunif(0, 100) 
 }'
+
 
 #alpha based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
 #beta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
