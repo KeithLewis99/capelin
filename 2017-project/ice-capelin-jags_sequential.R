@@ -21,6 +21,7 @@ library(psych)
 library(ggplot2)
 library(lattice)
 library(magrittr)
+library(loo)
 
 rm(list=ls())
 
@@ -152,6 +153,7 @@ for (i in 1:N) {
 mu[i] <- alpha + beta*ST[i] + gamma*PS[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
+log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 
 # 3. Discrepancy measures
 expY[i] <- mu[i]
@@ -186,7 +188,7 @@ model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_recruit <- jags(data=model_data,
-                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
+                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', 'log_lik'),
                       model.file = textConnection(m.recruit))
 
 #UPDATE WITH MORE BURN INS
@@ -253,6 +255,10 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/recruitment_1/pi.cs
 
 
 ## R-Results----
+# Get the log likelihood
+log_lik = run_recruit$BUGSoutput$sims.list$log_lik
+waic(log_lik)
+
 #PLOT credible and prediction intervals
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/recruitment_1/posteriors.pdf", width=10, height=8, units="in")
 
@@ -292,6 +298,7 @@ for (i in 1:N) {
 mu[i] <- alpha + beta*TI[i]*(1-TI[i]/gamma) + delta*CO[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
+log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 
 # 3. Discrepancy measures
 expY[i] <- mu[i]
@@ -327,7 +334,7 @@ model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)),
                    N = nrow(df2) + num_forecasts)
 
 run_mortality <- jags(data=model_data,
-                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
+                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', 'log_lik'),
                       model.file = textConnection(m.mortality))
 
 #Do we need to remove the burn-in?  How much?  UPDATE the chain? Figure out and apply to all
@@ -396,6 +403,10 @@ pi_df2 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 write.csv(pi_df2[, (ncol(pi_df2)-1):ncol(pi_df2)], "Bayesian/mortality_1/pi.csv")
 
 ## M-Results----
+# Get the log likelihood
+log_lik = run_mortality$BUGSoutput$sims.list$log_lik
+waic(log_lik)
+
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. Also, is this matched up properly - i haven't used PanelNames
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_1/posteriors.pdf", width=10, height=8, units="in")
 
@@ -419,25 +430,20 @@ write.csv(as.data.frame(OUT1), "Bayesian/mortality_1/params.csv")
 # R-squared - see Gelmen paper
 
 # plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
-alpha_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$alpha)
-#dist <- as.data.frame(rnorm(10000, 0, 10)) - uninformative prior
-dist <- as.data.frame(rgamma(1e+05, 2, 1/3))
-# names(dist)[names(dist) == "rnorm(10000, 0, 10)"] <- "v2"  uninformative prior
-names(dist)[names(dist) == "rgamma(1e+05, 2, 1/3)"] <- "v2" 
-range(alpha_post)
-x <- c(0,2)
-priorPosterior(alpha_post, dist, x)
-ggsave("Bayesian/mortality_1/priorPost_alpha.pdf", width=10, height=8, units="in")
-
 beta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$beta)
-dist <- as.data.frame(rgamma(10000, 8, 1/11.11))
-names(dist)[names(dist) == "rgamma(10000, 8, 1/11.11)"] <- "v2" 
-range(beta_post)
-range(dist)
-x <- c(20, 300)
-priorPosterior(beta_post, dist, x)
-ggsave("Bayesian/mortality_1/priorPost_beta.pdf", width=10, height=8, units="in")
+dist <- as.data.frame(rgamma(1e+05, 2, 1/3))
+names(dist)[names(dist) == "rgamma(1e+05, 2, 1/3)"] <- "v2" 
+x <- range(beta_post)
+p1 <- priorPosterior(beta_post, dist, x)
 
+gamma_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$gamma)
+dist <- as.data.frame(rgamma(1000000, 8.1, 1/11.11))
+names(dist)[names(dist) == "rgamma(1e+06, 8.1, 1/11.11)"] <- "v2" 
+x <- range(gamma_post)
+p2 <- priorPosterior(gamma_post, dist, x)
+
+cowplot::plot_grid(p1, p2, labels = c("A", "B"), ncol=2)
+ggsave("Bayesian/mortality_1/priorPost.pdf", width=10, height=8, units="in")
 
 
 
@@ -452,6 +458,7 @@ for (i in 1:N) {
 mu[i] <- alpha + beta*TI[i]*(1-TI[i]/gamma) + delta*CO[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
+log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 
 # 3. Discrepancy measures
 expY[i] <- mu[i]
@@ -486,7 +493,7 @@ model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)),
                    N = nrow(df2) + num_forecasts)
 
 run_mort_unif <- jags(data=model_data,
-                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
+                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
                       model.file = textConnection(m.mort_unif))
 
 ## M(uniform)-diagnostics----
@@ -551,6 +558,10 @@ pi_df2 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 write.csv(pi_df2[, (ncol(pi_df2)-1):ncol(pi_df2)], "Bayesian/mortality_2/pi.csv")
 
 ## M(uniform)-Results----
+# Get the log likelihood
+log_lik = run_mort_unif$BUGSoutput$sims.list$log_lik
+waic(log_lik)
+
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_2/posteriors.pdf", width=10, height=8, units="in")
 
@@ -590,6 +601,7 @@ for (i in 1:N) {
 mu[i] <- alpha + beta*ST[i] + gamma*CO[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
+log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 
 # 3. Discrepancy measures
 expY[i] <- mu[i]
@@ -621,7 +633,7 @@ model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_RM1 <- jags(data=model_data,
-                parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
+                parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
                 model.file = textConnection(m.RM1))
 
 
@@ -685,6 +697,11 @@ pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/rm_1/pi.csv")
 
 ## RM_1-Results----
+# Get the log likelihood
+log_lik = run_RM1$BUGSoutput$sims.list$log_lik
+waic(log_lik)
+loo(log_lik)
+
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_1/posteriors.pdf", width=10, height=8, units="in")
 
@@ -722,6 +739,7 @@ for (i in 1:N) {
 mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta)
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
+log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 
 # 3. Discrepancy measures
 expY[i] <- mu[i]
@@ -756,7 +774,7 @@ model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_RM2 <- jags(data=model_data,
-                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
+                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
                       model.file = textConnection(m.RM2))
 
 #UPDATE WITH MORE BURN INS
@@ -825,6 +843,10 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/rm_2/pi.csv")
 
 
 ## RM_2-Results----
+
+# Get the log likelihood
+log_lik = run_RM2$BUGSoutput$sims.list$log_lik
+waic(log_lik)
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_2/posteriors.pdf", width=10, height=8, units="in")
 
@@ -843,13 +865,22 @@ print(OUT1, digits =5)
 write.csv(as.data.frame(OUT1), "Bayesian/rm_2/params.csv")
 
 # plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
-alpha_post <- as.data.frame(run_RM2$BUGSoutput$sims.list$alpha)
-dist <- as.data.frame(rnorm(10000000, 0, 10))
-names(dist)[names(dist) == "rnorm(1e+07, 0, 10)"] <- "v2" 
-x <- range(alpha_post)
-priorPosterior(alpha_post, dist, x)
-ggsave("Bayesian/rm_2/priorPost_alpha.pdf", width=10, height=8, units="in")
+gamma_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$gamma)
+dist <- as.data.frame(rgamma(1e+05, 2, 1/3))
+names(dist)[names(dist) == "rgamma(1e+05, 2, 1/3)"] <- "v2" 
+x <- range(gamma_post)
+p1 <- priorPosterior(gamma_post, dist, x)
 
+delta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$delta)
+dist <- as.data.frame(rgamma(1000000, 8.1, 1/11.11))
+names(dist)[names(dist) == "rgamma(1e+06, 8.1, 1/11.11)"] <- "v2" 
+range(delta_post)
+range(dist)
+x <- c(-0.6, 10)
+p2 <- priorPosterior(delta_post, dist, x)
+
+cowplot::plot_grid(p1, p2, labels = c("A", "B"), ncol=2)
+ggsave("Bayesian/rm_2/priorPost.pdf", width=10, height=8, units="in")
 
 ## R/M3 model----
 #"alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])"
@@ -862,6 +893,7 @@ for (i in 1:N) {
 mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
+log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 
 # 3. Discrepancy measures
 expY[i] <- mu[i]
@@ -898,7 +930,7 @@ model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_RM3 <- jags(data=model_data,
-                parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
+                parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
                 model.file = textConnection(m.RM3))
 
 #UPDATE WITH MORE BURN INS
@@ -970,6 +1002,10 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/rm_3/pi.csv")
 
 
 ## RM_3-Results----
+# Get the log likelihood
+log_lik = run_RM3$BUGSoutput$sims.list$log_lik
+waic(log_lik)
+
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_3/posteriors.pdf", width=10, height=8, units="in")
 
@@ -988,12 +1024,22 @@ print(OUT1, digits =5)
 write.csv(as.data.frame(OUT1), "Bayesian/rm_3/params.csv")
 
 # plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
-alpha_post <- as.data.frame(run_RM2$BUGSoutput$sims.list$alpha)
-dist <- as.data.frame(rnorm(10000000, 0, 10))
-names(dist)[names(dist) == "rnorm(1e+07, 0, 10)"] <- "v2" 
-x <- range(alpha_post)
-priorPosterior(alpha_post, dist, x)
-ggsave("Bayesian/rm_3/priorPost_alpha.pdf", width=10, height=8, units="in")
+gamma_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$gamma)
+dist <- as.data.frame(rgamma(1e+05, 2, 1/3))
+names(dist)[names(dist) == "rgamma(1e+05, 2, 1/3)"] <- "v2" 
+x <- range(gamma_post)
+p1 <- priorPosterior(gamma_post, dist, x)
+
+delta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$delta)
+dist <- as.data.frame(rgamma(1000000, 8.1, 1/11.11))
+names(dist)[names(dist) == "rgamma(1e+06, 8.1, 1/11.11)"] <- "v2" 
+range(delta_post)
+range(dist)
+x <- c(-0.6, 10)
+p2 <- priorPosterior(delta_post, dist, x)
+
+cowplot::plot_grid(p1, p2, labels = c("A", "B"), ncol=2)
+ggsave("Bayesian/rm_3/priorPost.pdf", width=10, height=8, units="in")
 
 
 ## Recruitment - informative prior----
@@ -1007,6 +1053,7 @@ for (i in 1:N) {
 mu[i] <- alpha + beta*ST[i] + gamma*PS[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
+log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 
 # 3. Discrepancy measures
 expY[i] <- mu[i]
@@ -1041,7 +1088,7 @@ model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_recruit_prior <- jags(data=model_data,
-                    parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D'),
+                    parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
                     model.file = textConnection(m.recruit.prior))
 
 #UPDATE WITH MORE BURN INS
@@ -1107,6 +1154,12 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/recruitment_2/pi.cs
 
 
 ## Rprior-Results----
+# Get the log likelihood
+log_lik = run_recruit_prior$BUGSoutput$sims.list$log_lik
+x <- waic(log_lik)
+waic_rprior <-cbind(x$waic, x$se_waic)
+loo(log_lik)
+
 #PLOT credible and prediction intervals
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/recruitment_2/posteriors.pdf", width=10, height=8, units="in")
 
@@ -1124,16 +1177,14 @@ OUT1 <- MyBUGSOutput(out, vars)
 print(OUT1, digits =5)
 write.csv(as.data.frame(OUT1), "Bayesian/recruitment_2/params.csv")
 
-# plot posterior against expected distribution
-beta_post <- as.data.frame(run_recruit_prior$BUGSoutput$sims.list$beta)
-dist <- as.data.frame(rnorm(10000000, 0.42, 0.4464))
-head(dist)
-names(dist)[names(dist) == "rnorm(1e+07, 0.42, 0.4464)"] <- "v2" 
-x <- range(beta_post)
-priorPosterior(beta_post, dist, x)
-ggsave("Bayesian/recruitment_2/priorPost_beta.pdf", width=10, height=8, units="in")
+# plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
+beta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$beta)
+dist <- as.data.frame(rnorm(1e+05, 0.42, 4.6))
+names(dist)[names(dist) == "rnorm(1e+05, 0.42, 4.6)"] <- "v2" 
+range(beta_post)
+x <- c(0,5)
+p1 <- priorPosterior(beta_post, dist, x)
 
-# DIC
-dic_r2 <-dic.samples(run_recruit_prior$model, 1000, "pD")
-dic_r2a <- sum(dic_r2$deviance) + sum(dic_r2$penalty)
+cowplot::plot_grid(p1)
+ggsave("Bayesian/recruitment_2/priorPost.pdf", width=10, height=8, units="in")
 

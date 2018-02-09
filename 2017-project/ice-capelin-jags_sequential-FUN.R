@@ -55,8 +55,8 @@ plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci
 #' @examples priorPosterior(beta_post, dist, x)
 priorPosterior <- function(df1, df2, xlim){
      p <- ggplot()
-     p <- p + geom_histogram(data = df1, aes(x=V1, y = ..ncount..), colour="black", fill="white") 
-     p <- p + geom_density(data = df2, aes(v2), colour = "red") + xlim(xlim)  
+     p <- p + geom_histogram(data = df1, aes(x=V1, y = ..ncount..), colour="black", fill="white") + theme(axis.title = element_blank())
+     p <- p + geom_density(data = df2, aes(v2), colour = "red") + xlim(xlim)  + theme(axis.title = element_blank())
      p
 }
 
