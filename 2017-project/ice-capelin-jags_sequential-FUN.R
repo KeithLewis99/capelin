@@ -60,3 +60,14 @@ priorPosterior <- function(df1, df2, xlim){
      p
 }
 
+
+
+# not using - not appropriate
+DIC_out <- function(df){
+     browser()
+     dic_mod <-dic.samples(df$model, 1000, "pD")
+     dic_val <- sum(dic_mod$deviance) + sum(dic_mod$penalty)
+     return(dic_val)
+     
+}
+
