@@ -5,7 +5,6 @@
 # 1) Use function optim to test additional covariates to improve the Tice model fit
 # 2) focus on capelin recruitment and pseudocalanus abundance. As well as capelin condition
 
-rm(list=ls())
 
 ## libraries------
 library(plotrix)
@@ -16,6 +15,7 @@ library(dplyr)
 library(purrr)
 library(plotly)
 
+rm(list=ls())
 ## read in source code-----
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 
