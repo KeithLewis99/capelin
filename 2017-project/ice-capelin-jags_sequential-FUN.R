@@ -19,13 +19,6 @@ plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci
      
      p <- ggplot()
      #browser()
-     p <- p + geom_point(data = df, 
-                         aes_string(y = yaxis, x = "year"),
-                         shape = 16, 
-                         size = 1.5)
-     p <- p + xlab("Year") + ylab(paste(ylab))
-     p <- p + theme(text = element_text(size=15)) + theme_bw()
-     p <- p + geom_line(aes(x = c(df$year, 2018:2019), y = y_line))
      p <- p + geom_ribbon(aes(x = c(df$year, 2018:2019), 
                               ymax = ci[2, ], 
                               ymin = ci[1, ]),
@@ -36,7 +29,15 @@ plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci
                               ymin = pi_n[1, ]),
                           alpha = 0.5)
      p <- p + geom_text() +
-          annotate("text", label = model, x = x, y = y)
+          annotate("text", label = model, x = x, y = y, size = 7.5)
+     p <- p + geom_point(data = df, 
+                         aes_string(y = yaxis, x = "year"),
+                         shape = 16, 
+                         size = 1.5)
+     p <- p + xlab("Year") + ylab(paste(ylab))
+     p <- p + theme(text = element_text(size=15)) + theme_bw()
+     p <- p + geom_line(aes(x = c(df$year, 2018:2019), y = y_line))
+     
      
      return(p)
      
