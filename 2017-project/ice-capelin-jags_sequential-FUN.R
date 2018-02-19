@@ -72,3 +72,30 @@ DIC_out <- function(df){
      
 }
 
+
+# something not quite right with Ale's original code
+run_mortality_phigh$BUGSoutput$sims.list$beta[,3]
+run_mortality_phigh$sims.list$beta[,3]
+b3 <- run_mortality_phigh$BUGSoutput$sims.list$beta
+str(b3)
+
+b3 <- out.bin$sims.list$beta[,3]
+
+
+priormean <- 0
+priorsd <- 3
+prior <- rnorm(n = 1000, priormean, priorsd)
+plot(density(prior))
+limits <- c(min(b3)-0.3, max(b3) + 0.3)
+
+p <- ggplot(data = as.data.frame(prior), aes(x=prior)) + geom_density() 
+p <- p + coord_cartesian(xlim = c(limits[1], limits[2])) 
+p <- p + geom_histogram(data = as.data.frame(b3), 
+                        aes(x = b3, y=..density..), 
+                        col="white", fill="purple",
+                        alpha=.6,
+                        breaks = seq(limits[1], limits[2], by=0.01))
+p <- p + geom_rug(data=data.frame(y=b3), aes(x=y), size=2, alpha=1) 
+p <- p + geom_vline(aes(xintercept = 0), colour = "red") 
+# add data points to rug in white???
+
