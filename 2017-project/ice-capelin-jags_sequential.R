@@ -338,13 +338,14 @@ gamma <- posterior_fig(out$sims.list$gamma)
 
 #alpha
 priormean <- 0
-priorsd <- 1/100^2
-prior <- rnorm(n = 10000, shape = priormean, rate = priorsd)
+priorsd <- 10
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
 x_label <- "alpha"
 bin_1 <- mean(alpha$df)/100
 
 p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
 
 #beta
 limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
@@ -397,10 +398,9 @@ FitNew <- sum(DNew[1:N])
 alpha ~ dnorm(0, 20^-2) 
 beta ~ dnorm(0, 10^-2) 
 gamma ~ dgamma(5, 1/3) 
-delta ~ dgamma(2.3, 1)
+delta ~ dgamma(2.8, 1)
 sigma ~ dunif(0, 10) 
 }'
-
 
 # alpha and beta are based on normalized means and large uniformed priors
 #gamma based on Bolker pg 132 - Fig4.13 - trying for an uniformative prior 
@@ -512,7 +512,6 @@ print(OUT1, digits =5)
 write.csv(as.data.frame(OUT1), "Bayesian/mortality_1/params.csv")
 
 # plot posterior against expected distribution
-# gamma dist
 alpha <- posterior_fig(out$sims.list$alpha)
 beta <- posterior_fig(out$sims.list$beta)
 gamma <- posterior_fig(out$sims.list$gamma)
@@ -525,8 +524,8 @@ delta ~ dgamma(2.3, 1)
 
 #alpha
 priormean <- 0
-priorsd <- 1/100^2
-prior <- rnorm(n = 10000, shape = priormean, rate = priorsd)
+priorsd <- 20
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
 x_label <- "alpha"
 bin_1 <- mean(alpha$df)/100
@@ -548,9 +547,17 @@ bin_1 <- mean(gamma$df)/100
 
 p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-mm <- cowplot::plot_grid(p1, p2, p3, ncol=2)
 
-ggsave("Bayesian/recruitment_1/priorpost.pdf", width=10, height=8, units="in")
+#delta
+limits <- c(min(delta$df)-0.3, max(delta$df) + 0.3)
+x_label <- "delta"
+bin_1 <- mean(delta$df)/100
+
+p4 <- postPriors(df = delta$df, df2 = prior, df3 = delta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+mm <- cowplot::plot_grid(p1, p2, p3, p4, ncol=2)
+
+ggsave("Bayesian/mortality_1/priorpost.pdf", width=10, height=8, units="in")
 
 
 
@@ -739,7 +746,7 @@ sigma ~ dunif(0, 100)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
                    ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
-                   CO=c(df3$resids_lag, c(0, -0.024866638
+                   CO=c(df3$resids_lag, c(0, 0
 )), #see df_norm
                    N = nrow(df3) + num_forecasts)
 
@@ -759,6 +766,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma')
+MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = "Bayesian/rm_1/chains.pdf", width=10, height=8, units="in")
 
 #autocorrelation - this looks good!!!!
@@ -808,13 +816,8 @@ pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/rm_1/pi.csv")
 
 ## RM_1-Results----
-# Get the log likelihood
-log_lik_rm1 = run_RM1$BUGSoutput$sims.list$log_lik
-w_rm1 <- waic(log_lik_rm1)
-w_rm1 <- loo(log_lik_rm1)
-
-compare(w_r1, w_rm1)
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
+MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_1/posteriors.pdf", width=10, height=8, units="in")
 
 txt <- "log(caplein) = alpha +  beta*surface_tows_lag2 \n + gamma*resids_adj"
@@ -825,18 +828,52 @@ plotCredInt(df3, yaxis = "ln_biomass_med",
             model = txt, x = 2008, y = 8)
 ggsave("Bayesian/rm_1/credInt.pdf", width=10, height=8, units="in")
 
-# plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
-alpha_post <- as.data.frame(run_RM1$BUGSoutput$sims.list$alpha)
-dist <- as.data.frame(rnorm(10000000, 0, 10))
-names(dist)[names(dist) == "rnorm(1e+07, 0, 10)"] <- "v2" 
-x <- range(alpha_post)
-priorPosterior(alpha_post, dist, x)
-ggsave("Bayesian/rm_1/priorPost_alpha.pdf", width=10, height=8, units="in")
-
 # output by parameter
 OUT1 <- MyBUGSOutput(out, vars)
 print(OUT1, digits =5)
 write.csv(as.data.frame(OUT1), "Bayesian/rm_1/params.csv")
+
+alpha ~ dnorm(0, 100^-2) 
+beta ~ dnorm(0, 100^-2)
+gamma ~ dnorm(0, 100^-2) 
+
+
+# plot posterior against expected distribution
+# gamma dist
+alpha <- posterior_fig(out$sims.list$alpha)
+beta <- posterior_fig(out$sims.list$beta)
+gamma <- posterior_fig(out$sims.list$gamma)
+
+#alpha
+priormean <- 0
+priorsd <- 10
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
+limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
+x_label <- "alpha"
+bin_1 <- mean(alpha$df)/100
+
+p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+
+#beta
+limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
+x_label <- "beta"
+bin_1 <- mean(beta$df)/100
+
+p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+
+#gamma
+limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
+x_label <- "gamma"
+bin_1 <- mean(gamma$df)/100
+
+p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+mm <- cowplot::plot_grid(p1, p2, p3, ncol=2)
+
+ggsave("Bayesian/rm_1/priorpost.pdf", width=10, height=8, units="in")
+
 
 
 
@@ -883,21 +920,21 @@ num_forecasts = 2 # 2 extra years
 
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
                    ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
-                   TI=c(df3$tice, c(0.42, 0.7)), #made up - need new data
+                   TI=c(df3$tice, c(0.42, 0.788)), #made up - need new data
                    N = nrow(df3) + num_forecasts)
 
 run_RM2 <- jags(data=model_data,
                       parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
                       model.file = textConnection(m.RM2))
 
+#UPDATE WITH MORE BURN INS
 run_RM2 <-update(run_RM2, n.iter = 300000, n.thin = 50, n.burnin = 100000)
 
-#UPDATE WITH MORE BURN INS
 
 ##RM_2-Diagnostics----
 print(run_RM2, intervals=c(0.025, 0.975), digits = 3)
 out <- run_RM2$BUGSoutput 
-out$mean
+
 
 #overdispersion - values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
 mean(out$sims.list$FitNew > out$sims.list$Fit)
@@ -939,8 +976,8 @@ MyVar <- c("tice.std", "meandCond_lag.std")
 test <- as.data.frame(model_data)
 test <- cbind(test, E1)
 #Myxyplot(test, MyVar, "E1")
-plot(test$ST, test$EI, xlab = "Tice", ylab = "Pearson resids")
-plot(test$TI, test$EI, xlab = "Condition", ylab = "Pearson resids")
+plot(test$ST, test$EI, xlab = "Surface tow", ylab = "Pearson resids")
+plot(test$TI, test$EI, xlab = "Tice", ylab = "Pearson resids")
 par(mfrow = c(1,1))
 dev.off()
 
@@ -959,10 +996,6 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/rm_2/pi.csv")
 
 
 ## RM_2-Results----
-
-# Get the log likelihood
-log_lik = run_RM2$BUGSoutput$sims.list$log_lik
-waic(log_lik)
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_2/posteriors.pdf", width=10, height=8, units="in")
@@ -982,40 +1015,56 @@ print(OUT1, digits =5)
 write.csv(as.data.frame(OUT1), "Bayesian/rm_2/params.csv")
 
 
-# gamma dist
-g3 <- out$sims.list$delta
-g3_quant <- quantile(g3, c(0.025, 0.975))
-g3_cred <- subset(g3, g3 > g3_quant[1] & g3 < g3_quant[2])
+# plot posterior against expected distribution
+alpha <- posterior_fig(out$sims.list$alpha)
+beta <- posterior_fig(out$sims.list$beta)
+gamma <- posterior_fig(out$sims.list$gamma)
+delta <- posterior_fig(out$sims.list$delta)
 
+
+#alpha
+priormean <- 0
+priorsd <- 20
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
+limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
+x_label <- "alpha"
+bin_1 <- mean(alpha$df)/100
+
+p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = -bin_1)
+
+#beta
+priorsd <- 10
+limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
+x_label <- "beta"
+bin_1 <- mean(beta$df)/100
+
+p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+#gamma
+priormean <- 5
+priorsd <- 1/3
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
+x_label <- "gamma"
+bin_1 <- mean(gamma$df)/100
+
+p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+
+#delta
 priormean <- 2.8
 priorsd <- 1
 prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
-limits <- c(min(g3)-0.3, max(g3) + 0.3)
-limits <- c(0, 4)
+limits <- c(min(delta$df)-0.3, max(delta$df) + 0.3)
+x_label <- "delta"
+bin_1 <- mean(delta$df)/100
 
-x_label <- "Delta"
+p4 <- postPriors(df = delta$df, df2 = prior, df3 = delta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-bin_1 <- mean(g3)/100
-postPriors(df = g3, df2 = prior, df3 = g3_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+mm <- cowplot::plot_grid(p1, p2, p3, p4, ncol=2)
 
+ggsave("Bayesian/rm_1/priorpost.pdf", width=10, height=8, units="in")
 
-# plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
-gamma_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$gamma)
-dist <- as.data.frame(rgamma(1e+05, 2, 1/3))
-names(dist)[names(dist) == "rgamma(1e+05, 2, 1/3)"] <- "v2" 
-x <- range(gamma_post)
-p1 <- priorPosterior(gamma_post, dist, x)
-
-delta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$delta)
-dist <- as.data.frame(rgamma(1000000, 8.1, 1/11.11))
-names(dist)[names(dist) == "rgamma(1e+06, 8.1, 1/11.11)"] <- "v2" 
-range(delta_post)
-range(dist)
-x <- c(-0.6, 10)
-p2 <- priorPosterior(delta_post, dist, x)
-
-cowplot::plot_grid(p1, p2, labels = c("A", "B"), ncol=2)
-ggsave("Bayesian/rm_2/priorPost.pdf", width=10, height=8, units="in")
 
 ## R/M3 model----
 #"alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])"
@@ -1045,11 +1094,11 @@ Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
 # 2. Priors
-alpha ~ dnorm(0, 100^-2) 
-beta ~ dnorm(0, 100^-2) 
-gamma ~ dgamma(2, 1/1) 
-delta ~ dgamma(32.4, 1/11.11) 
-epsilon ~ dnorm(0, 100^-2) 
+alpha ~ dnorm(0, 20^-2) 
+beta ~ dnorm(0, 10^-2) 
+gamma ~ dgamma(5, 1/3) 
+delta ~ dgamma(2.8, 1)
+epsilon ~ dnorm(0, 20^-2) 
 sigma ~ dunif(0, 100) 
 }'
 
@@ -1060,7 +1109,7 @@ df3 <- subset(df2, year>2002)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
                    ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
-                   TI=c(df3$tice, c(-2.190133, 0)), #made up - need new data
+                   TI=c(df3$tice, c(0.43, 0.788)), #made up - need new data
                    CO=c(df3$resids_lag, c(0, 0)),
                    N = nrow(df3) + num_forecasts)
 
@@ -1069,6 +1118,8 @@ run_RM3 <- jags(data=model_data,
                 model.file = textConnection(m.RM3))
 
 #UPDATE WITH MORE BURN INS
+run_RM3 <-update(run_RM3, n.iter = 300000, n.thin = 50, n.burnin = 100000)
+
 
 ##R/M3-plot 5----
 # DIAGNOSTICS
@@ -1082,7 +1133,6 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma', 'delta', 'epsilon')
-
 MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = "Bayesian/rm_3/chains.pdf", width=10, height=8, units="in")
 
@@ -1137,25 +1187,11 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/rm_3/pi.csv")
 
 
 ## RM_3-Results----
-# Get the log likelihood
-log_lik_rm3 = run_RM3$BUGSoutput$sims.list$log_lik
-waic(log_lik_rm3)
-
-w_rm3 <- waic(log_lik_rm3)
-w_rm3 <- loo(log_lik_rm3)
-plot(w_rm3)
-x <- print(w_rm3$paretok_k)
-cbind(w_rm3$pointwise, x)
-str(w_rm3)
-pareto_k_table(w_rm3)
-pareto_k_ids(w_rm3)
-print(w_rm3$pareto_k)
-
-
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
+MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_3/posteriors.pdf", width=10, height=8, units="in")
 
-txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta))"
+txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta)) + epsilon*CO"
 
 #plot credible and prediction intervals
 plotCredInt(df3, yaxis = "ln_biomass_med", 
@@ -1169,22 +1205,68 @@ OUT1 <- MyBUGSOutput(out, vars)
 print(OUT1, digits =5)
 write.csv(as.data.frame(OUT1), "Bayesian/rm_3/params.csv")
 
-# plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
-gamma_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$gamma)
-dist <- as.data.frame(rgamma(1e+05, 2, 1/3))
-names(dist)[names(dist) == "rgamma(1e+05, 2, 1/3)"] <- "v2" 
-x <- range(gamma_post)
-p1 <- priorPosterior(gamma_post, dist, x)
 
-delta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$delta)
-dist <- as.data.frame(rgamma(1000000, 8.1, 1/11.11))
-names(dist)[names(dist) == "rgamma(1e+06, 8.1, 1/11.11)"] <- "v2" 
-range(delta_post)
-range(dist)
-x <- c(-0.6, 10)
-p2 <- priorPosterior(delta_post, dist, x)
+# plot posterior against expected distribution
+alpha <- posterior_fig(out$sims.list$alpha)
+beta <- posterior_fig(out$sims.list$beta)
+gamma <- posterior_fig(out$sims.list$gamma)
+delta <- posterior_fig(out$sims.list$delta)
+epsilon <- posterior_fig(out$sims.list$epsilon)
 
-cowplot::plot_grid(p1, p2, labels = c("A", "B"), ncol=2)
+"log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta))"
+
+
+#alpha
+priormean <- 0
+priorsd <- 20
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
+limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
+x_label <- "alpha"
+bin_1 <- mean(alpha$df)/100
+
+p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+#beta
+priorsd <- 10
+limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
+x_label <- "beta"
+bin_1 <- mean(beta$df)/100
+
+p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+#gamma
+priormean <- 5
+priorsd <- 1/3
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
+x_label <- "gamma"
+bin_1 <- mean(gamma$df)/100
+
+p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+
+#delta
+priormean <- 2.8
+priorsd <- 1
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+limits <- c(min(delta$df)-0.3, max(delta$df) + 0.3)
+x_label <- "delta"
+bin_1 <- mean(delta$df)/100
+
+p4 <- postPriors(df = delta$df, df2 = prior, df3 = delta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+#epsilon
+priormean <- 0
+priorsd <- 20
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
+limits <- c(min(epsilon$df)-0.3, max(epsilon$df) + 0.3)
+x_label <- "epsilon"
+bin_1 <- mean(epsilon$df)/100
+
+p5 <- postPriors(df = epsilon$df, df2 = prior, df3 = epsilon$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+mm <- cowplot::plot_grid(p1, p2, p3, p4, p5, labels = c("A", "B", "C", "D", "E"), ncol=2)
+
 ggsave("Bayesian/rm_3/priorPost.pdf", width=10, height=8, units="in")
 
 
