@@ -92,6 +92,24 @@ postPriors <- function(df, df2, df3, limits = limits, x_label = x_label, priorme
 
 
 
+#' Title
+#'
+#' @param ls 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+posterior_fig <- function(ls){
+     #browser()
+     df <- ls
+     df_quant <- quantile(ls, c(0.025, 0.975))
+     df_cred <- subset(df, df > df_quant[1] & df < df_quant[2])
+     return(list(df = df, df_quant = df_quant, df_cred = df_cred))
+     
+}
+
+
 
 # not using - not appropriate
 DIC_out <- function(df){
