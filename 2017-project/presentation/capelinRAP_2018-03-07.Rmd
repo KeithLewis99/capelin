@@ -1,0 +1,77 @@
+---
+title: "Predicting capelin abundance using indices of mortality and recruitment"
+#subtitle: "A key component of reproducible research"
+author: "K. Lewis, A. Buren, and P. Regular"
+date: "NAFC | Fisheries and Oceans Canada | 2018-03-07"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+#    logo: rmarkdown.png
+---
+
+```{r setup, echo=FALSE, results="hide", message=FALSE, warning=FALSE}
+knitr::opts_knit$set(root.dir = '../')
+knitr::opts_chunk$set(cache = TRUE, 
+                      fig.align = "center", 
+                      fig.height = 4.5, 
+                      fig.width = 7.5,
+                      dev = "svg")
+
+library(readr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+
+file.exists("../data/trawl_abiotic.csv")
+file.exists("../data/trawl_biomass.csv")
+
+# load the data
+abiotic <- read_csv("../data/trawl_abiotic.csv", guess_max = 5000)
+head(abiotic)
+
+# modify the data
+abiotic_abrev <- filter(abiotic, year < 2005)
+```
+
+## Outline
+
+
+## Introduction
+
+## Early work (multiplicative model??)
+
+## Ale's work
+Fig 2
+
+## Hannah's work
+
+## Inability to predict capelin abundance {.smaller}
+
+## Explain general process
+Bayesian
+Forecast
+
+## Data streams - graphic/table
+Ale's figure 5
+
+## Data streams - graphic/table
+```{r echo = FALSE, results='asis'}
+tab1 <- xtable(abiotic %>%
+  group_by(nafo_div) %>%
+  summarise(mean_depth = mean(depth), std_depth = sd(depth)))
+print(tab1, comment = FALSE)
+```
+
+## Models
+Mortality
+Recruitment
+RM2/3
+
+
+## Results
+
+## Future work
+
+## Summary (to be used Assessment Doc)
+
