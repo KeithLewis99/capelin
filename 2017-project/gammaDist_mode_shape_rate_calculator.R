@@ -18,3 +18,14 @@ plot( x , dgamma( x , shape=sh , rate=ra ) , type="l" ,
       ylab=paste("dgamma( shape=",signif(sh,3)," , rate=",signif(ra,3)," )",
                  sep="") )
 abline( v=mode , lty="dotted" )
+
+
+
+x <- seq(1, 100, 1)
+y <- log(x)
+plot(x, y)
+
+
+x <- seq(100, 5000, 10)
+y <- log(x)
+plot(x, y)
