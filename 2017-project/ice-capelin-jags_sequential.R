@@ -317,12 +317,15 @@ pareto_k_table(w_r1)
 pareto_k_ids(w_r1)
 print(w_r1$pareto_k)
 compare(w_r1, w_m1)
+dic_R1 <- dic.samples(run_recruit$model, n.iter=1000, type="pD")
+str(x)
+dic_R1sum <- sum(dic_R1$deviance)
 
 #PLOT credible and prediction intervals
 MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/recruitment_1/posteriors.pdf", width=10, height=8, units="in")
 
-txt <- "log(caplein) = alpha +  beta*surface_tows_lag2 \n + gamma*pseudocal_lag2"
+#txt <- "log(caplein) = alpha +  beta*surface_tows_lag2 \n + gamma*pseudocal_lag2"
 
 # plot the credible and prediction intervals
 plotCredInt(df3, yaxis = "ln_biomass_med", 
@@ -410,13 +413,14 @@ delta ~ dnorm(0, 10^-2)
 sigma ~ dunif(0, 10) 
 }'
 
-# alpha and beta are based on normalized means and large uniformed priors
-#gamma based on Bolker pg 132 - Fig4.13 - trying for an uniformative prior 
+# alpha and delta are based on normalized means and large uniformed priors
+#beta based on Bolker pg 132 - Fig4.13 - trying for an uniformative prior 
 #delta: see gammaDist_mode_shape_rate_calculator.R - 
-# mode = 1.86 - based on Ale's value of 93 for beta/2 -> 186
+# mode = 1.86 - based on Ale's value of 93 for beta*2 -> 186
 # sd = 1
 #shape(a) is mean^2/var; scale(s) equal Var/mean - but we use rate so mean/Var
 # sigma: uninformative for condition
+
 df2 <- df1
 x <- as.Date('2018-02-12') # this is a minimum - I looked at the ice maps on 2018-02-16 and the ice is comming!
 lubridate::yday(x)
@@ -498,6 +502,11 @@ pi_df2 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 write.csv(pi_df2[, (ncol(pi_df2)-1):ncol(pi_df2)], "Bayesian/mortality_1/pi.csv")
 
 ## M-Results----
+
+dic_M1 <- dic.samples(run_mortality$model, n.iter=1000, type="pD")
+str(x)
+dic_M1sum <- sum(dic_M1$deviance)
+
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. Also, is this matched up properly - i haven't used PanelNames
 MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_1/posteriors.pdf", width=10, height=8, units="in")
@@ -506,7 +515,7 @@ ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_1/posteriors.pdf", 
 # plot the credible and prediction intervals
 #text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag2)")
 #text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag1)")
-txt <- "log(capelin) = alpha +  beta*tice*(1-(tice/gamma)) \n + delta*Condition(resids)"
+#txt <- "log(capelin) = alpha +  beta*tice*(1-(tice/gamma)) \n + delta*Condition(resids)"
 
 plotCredInt(df2, yaxis = "ln_biomass_med", 
             ylab = "ln(capelin)", 
@@ -829,11 +838,14 @@ pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/rm_1/pi.csv")
 
 ## RM_1-Results----
+dic_RM1 <- dic.samples(run_RM1$model, n.iter=1000, type="pD")
+dic_RM1sum <- sum(dic_RM1$deviance)
+
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_1/posteriors.pdf", width=10, height=8, units="in")
 
-txt <- "log(caplein) = alpha +  beta*surface_tows_lag2 \n + gamma*resids_adj"
+#txt <- "log(caplein) = alpha +  beta*surface_tows_lag2 \n + gamma*resids_adj"
 #PLOT credible and prediction intervals
 plotCredInt(df3, yaxis = "ln_biomass_med", 
             ylab = "ln(capelin)", 
@@ -1005,11 +1017,14 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/rm_2/pi.csv")
 
 
 ## RM_2-Results----
+dic_RM2 <- dic.samples(run_RM2$model, n.iter=1000, type="pD")
+dic_RM2sum <- sum(dic_RM2$deviance)
+
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_2/posteriors.pdf", width=10, height=8, units="in")
 
-txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta))"
+#txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta))"
 
 #plot credible and prediction intervals
 plotCredInt(df3, yaxis = "ln_biomass_med", 
@@ -1194,11 +1209,14 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/rm_3/pi.csv")
 
 
 ## RM_3-Results----
+dic_RM3 <- dic.samples(run_RM3$model, n.iter=1000, type="pD")
+dic_RM3sum <- sum(dic_RM3$deviance)
+
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm_3/posteriors.pdf", width=10, height=8, units="in")
 
-txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta)) + epsilon*CO"
+#txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta)) + epsilon*CO"
 
 #plot credible and prediction intervals
 plotCredInt(df3, yaxis = "ln_biomass_med", 
@@ -1308,7 +1326,6 @@ FitNew <- sum(DNew[1:N])
 alpha ~ dnorm(0, 100^-2) 
 beta ~ dnorm(0.42, 4.6) 
 gamma ~ dnorm(0, 100^-2) 
-delta ~ dnorm(0, 100^-2) 
 sigma ~ dunif(0, 100) 
 }'
 # For beta: mean from Murphy 2018 - var from my own regression which doesnn't quite match
@@ -1390,11 +1407,10 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/recruitment_2/pi.cs
 
 ## Rprior-Results----
 # Get the log likelihood
-log_lik = run_recruit_prior$BUGSoutput$sims.list$log_lik
-x <- as.data.frame(waic(log_lik))
-waic_rprior <-cbind(x$waic, x$se_waic)
-class(x)
-loo(log_lik)
+dic_R2 <- dic.samples(run_recruit_prior$model, n.iter=1000, type="pD")
+str(x)
+dic_R2sum <- sum(dic_R2$deviance)
+
 
 #PLOT credible and prediction intervals
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/recruitment_2/posteriors.pdf", width=10, height=8, units="in")
@@ -1424,6 +1440,48 @@ p1 <- priorPosterior(beta_post, dist, x)
 cowplot::plot_grid(p1)
 ggsave("Bayesian/recruitment_2/priorPost.pdf", width=10, height=8, units="in")
 
+# plot posterior against expected distribution
+# gamma dist
+alpha <- posterior_fig(out$sims.list$alpha)
+beta <- posterior_fig(out$sims.list$beta)
+gamma <- posterior_fig(out$sims.list$gamma)
+
+
+#alpha
+priormean <- 0
+priorsd <- 10
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
+limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
+x_label <- "alpha"
+bin_1 <- mean(alpha$df)/100
+
+p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+
+#beta
+priormean <- 0.42
+priorsd <- 4.6
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
+limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
+x_label <- "beta"
+bin_1 <- mean(beta$df)/100
+
+p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+
+#gamma
+priormean <- 0
+priorsd <- 10
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
+limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
+x_label <- "gamma"
+bin_1 <- mean(gamma$df)/100
+
+p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+mm <- cowplot::plot_grid(p1, p2, p3, ncol=2)
+
+ggsave("Bayesian/recruitment_2/priorpost.pdf", width=10, height=8, units="in")
 
 
 ## Mortality_COalt----
@@ -1703,7 +1761,9 @@ y_new = run_mortality_null$BUGSoutput$sims.list$N2_new
 pi_df2 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 write.csv(pi_df2[, (ncol(pi_df2)-1):ncol(pi_df2)], "Bayesian/mortality_0/pi.csv")
 
-## M-Results_Null----
+## M-Null_Results----
+dic_Mo <- dic.samples(run_mortality_null$model, n.iter=1000, type="pD")
+dic_Mosum <- sum(dic_Mo$deviance)
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. Also, is this matched up properly - i haven't used PanelNames
 MyBUGSHist(out, vars)
@@ -1712,7 +1772,7 @@ ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_0/posteriors.pdf", 
 # plot the credible and prediction intervals
 #text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag2)")
 #text(2004,7, "log(caplein) = delta +  Alpha*tice*(1-(tice/Beta)) \n + Gamma*Condition(ag1)")
-txt <- "log(caplein) = beta*tice*(1-(tice/gamma))"
+#txt <- "log(caplein) = beta*tice*(1-(tice/gamma))"
 
 plotCredInt(df2, yaxis = "ln_biomass_med", 
             ylab = "ln(capelin)", 
@@ -1868,10 +1928,13 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/recruitment_0/pi.cs
 
 
 ## R_NUll-Results----
+dic_Ro <- dic.samples(run_recruit_null$model, n.iter=1000, type="pD")
+dic_Rosum <- sum(dic_Ro$deviance)
+
 #PLOT credible and prediction intervals
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/recruitment_0/posteriors.pdf", width=10, height=8, units="in")
 
-txt <- "log(caplein) = alpha +  beta*surface_tows_lag2"
+#txt <- "log(caplein) = alpha +  beta*surface_tows_lag2"
 
 # plot the credible and prediction intervals
 plotCredInt(df3, yaxis = "ln_biomass_med", 
@@ -2038,7 +2101,7 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/rm3_1p_med/pi.csv")
 MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm3_1p_med/posteriors.pdf", width=10, height=8, units="in")
 
-txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta)) + epsilon*CO"
+#txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta)) + epsilon*CO"
 
 #plot credible and prediction intervals
 plotCredInt(df3, yaxis = "ln_biomass_med", 
@@ -2244,7 +2307,7 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/rm3_1p_high/pi.csv"
 MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/rm3_1p_high/posteriors.pdf", width=10, height=8, units="in")
 
-txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta)) + epsilon*CO"
+#txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta)) + epsilon*CO"
 
 #plot credible and prediction intervals
 plotCredInt(df3, yaxis = "ln_biomass_med", 
@@ -2321,3 +2384,26 @@ p5 <- postPriors(df = epsilon$df, df2 = prior, df3 = epsilon$df_cred, limits, x_
 mm <- cowplot::plot_grid(p1, p2, p3, p4, p5, labels = c("A", "B", "C", "D", "E"), ncol=2)
 
 ggsave("Bayesian/rm3_1p_high/priorPost.pdf", width=10, height=8, units="in")
+
+
+## DIC table ----
+dic_R1sum
+dic_M1sum
+dic_RM1sum
+dic_RM1sum
+dic_RM2sum
+dic_RM2sum
+dic_RM3sum
+dic_RM3sum
+dic_Rosum
+dic_Mosum
+rbind(dic_R1sum,
+      dic_M1sum,
+      dic_RM1sum,
+      dic_RM1sum,
+      dic_RM2sum,
+      dic_RM2sum,
+      dic_RM3sum,
+      dic_RM3sum,
+      dic_Rosum,
+      dic_Mosum)
