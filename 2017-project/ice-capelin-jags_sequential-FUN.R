@@ -17,7 +17,7 @@
 
 plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpi = dpi, model = model, x = x, y = y){
      p <- ggplot()
-     #browser()
+     browser()
      p <- p + geom_ribbon(aes(x = c(df$year, 2018:2019), 
                               ymax = ci[2, ], 
                               ymin = ci[1, ]),
@@ -26,15 +26,17 @@ plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci
      p <- p + geom_ribbon(aes(x = c(2018:2019), 
                               ymax = pi_n[2, ], 
                               ymin = pi_n[1, ]))
-     p <- p + geom_text() +
-          annotate("text", label = model, x = x, y = y, size = 7.5)
+     #p <- p + geom_text() +
+         # annotate("text", label = model, x = x, y = y, size = 7.5)
      p <- p + geom_point(data = df, 
                          aes_string(y = yaxis, x = "year"),
                          shape = 16, 
                          size = 1.5)
      p <- p + xlab("Year") + ylab(paste(ylab))
-     p <- p + theme(text = element_text(size=15)) + theme_bw()
+    # p <- p + theme(axis.title = element_text(size=30), axis.text = element_text(size = 20)) 
+     #p <- p + theme(text = element_text(size=25)) + theme_bw()
      p <- p + geom_line(aes(x = c(df$year, 2018:2019), y = y_line))
+     p <- p + theme_bw(base_size = 30)
      return(p)
 }
 
@@ -77,7 +79,7 @@ priorPosterior <- function(df1, df2, xlim){
 #' @examples
 postPriors <- function(df, df2, df3, limits = limits, x_label = x_label, priormean, priorsd, by_bin = 1){
      #browser()
-     p <- ggplot() + theme_bw()
+     p <- ggplot() + theme_bw(base_size = 20)
      p <- p + coord_cartesian(xlim = c(limits[1], limits[2])) 
      p <- p + geom_histogram(data = as.data.frame(df), 
                              aes(x = V1, y=..density..), 
