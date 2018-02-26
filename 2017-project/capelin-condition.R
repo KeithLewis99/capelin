@@ -21,12 +21,23 @@ rm(list=ls())
 ## load data----
 # this from the ice-capelin-covariates file
 df <- read_csv('data/capelin_condition_maturation_v1.csv')
+df <- df[c(1:5, 7:15)]
 glimpse(df)
 head(df)
 
+df_1617 <- read_csv('data/capelin_condition_maturation_v2.csv')
+glimpse(df_1617)
+df_1617$stomach_fullness <- as.integer(df_1617$stomach_fullness)
+df_1617$age <- as.integer(df_1617$age)
+df_1617$gonad <- as.integer(df_1617$gonad)
+
+head(df_1617)
+
+df <- rbind(df, df_1617)
+glimpse(df)
 #create one filter for ice-capelin project and one for Fran and the markdown doc
 df1 <- df %>%
-     filter(year > 1992 &  sex==1 & age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12")) %>% #one-year males after 1992, just project 23 sex == 1 &
+     filter(year > 1992 &  sex==1 & age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c (23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
@@ -215,7 +226,9 @@ out <- df1 %>%
      group_by(year) %>%
      summarize(meanCond = round(mean(rel.cond),4), stdCond= round(sd(rel.cond),4), medCond = round(median(rel.cond), 4))
 #write_csv(out, "data/condition_ag1_out.csv")
-write_csv(out, "data/condition_ag2_out.csv")
+#this was for data to 2015 only
+#write_csv(out, "data/condition_ag2_out.csv")
+write_csv(out, "data/condition_ag3_out.csv")
 
 #nafo
 ggplot(data=df1) +
@@ -257,3 +270,24 @@ condResids$resids_lag <- lag(condResids$resids, 1)
 comp <- left_join(out, condResids, by = "year")
 plot(comp$meanCond, comp$resids)
 summary(lm(meanCond ~ resids, data = comp))
+
+
+# can we reproduce Fran's results
+
+glimpse(df)
+glimpse(df1)
+df10 <- df %>%
+     filter(year > 1998 &  sex==1 & age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c (23, 31 )) %>% #one-year males after 1992, just project 23 sex == 1 &
+     filter(!is.na(weight)) %>%
+     filter(!is.na(length)) 
+
+m1 <- lm(length ~ weight, data = df10)
+fits <- m1$fitted.values
+res <- m1$residuals
+names()
+df11 <- cbind(df10, fits, res)
+
+head(df11)
+temp <- df11 %>%
+     group_by(year) %>%
+     summarize(mean_resid = mean(res))
