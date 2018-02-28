@@ -17,7 +17,7 @@
 
 plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpi = dpi, model = model, x = x, y = y){
      p <- ggplot()
-     browser()
+     #browser()
      p <- p + geom_ribbon(aes(x = c(df$year, 2018:2019), 
                               ymax = ci[2, ], 
                               ymin = ci[1, ]),

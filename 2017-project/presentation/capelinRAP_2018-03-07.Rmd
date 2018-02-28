@@ -73,5 +73,5 @@ RM2/3
 
 ## Future work
 
-## Summary (to be used Assessment Doc)
+## Summary (to be used Assessment Doc, i.e. take home messages)
 
