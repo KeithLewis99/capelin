@@ -80,29 +80,35 @@ x <- as.data.frame(cbind(year, month, month_seq))
 x <- x[6:44, ]
 lab_1 <- rep(c("Jun", "Sep", "Dec", "Mar"), 4)
 lab_2 <- lab_1[1:13]
-plot(x$month_seq, x$year, type='n', xaxt = 'n', yaxt = 'n', xlab = 'Month', ylab = '')
-axis(1, at = seq(6, 44, 3), labels = lab_2, col = "#0000ff00", 
-     col.ticks = "black")
 
+plot(x$month_seq, x$year, type='n', xaxt = 'n', yaxt = 'n', xlab = 'Month', ylab = '')
+axis(1, at = seq(6, 44, 3), labels = lab_2, col = "#0000ff00", col.ticks = "black")
+
+#year(t+2)
 arrows(6, 3, 18, 3, length = 0.1, angle = 20, 
        code = 3, col = "blue", lwd = 1.5)
-text(8, 3.2, "year(t)", col = "#FF6699", adj = 0.5, 
+text(8, 3.2, "year(t-2)", col = "#FF6699", adj = 0.5, 
      cex = 1)
-text(8, 2.5, "larval \n emergence", col = "#FF6699", adj = 0.5,      cex = 1)
-text(12, 2.3, bquote(atop(italic("Psuedocalanus"), "emergece")), col = "#FF6699", adj = 0.5, cex = 1)
+text(9, 2.8, "larval \n emergence", col = "#FF6699", adj = 0.5,      cex = 1)
+text(12, 2.3, bquote(atop(italic("Psuedocalanus"), "emergence")), col = "#FF6699", adj = 0.5, cex = 1)
+
+#year(t-1)
 arrows(18, 3, 30, 3, length = 0.1, angle = 20, 
        code = 3, col = "red", lwd = 1.5)
-text(20, 3.2, "year(t+1)", col = "#FF6699", adj = 0.5, 
+text(20, 3.2, "year(t-1)", col = "#FF6699", adj = 0.5, 
      cex = 1)
-text(28, 2.5, "condition", col = "#FF6699", adj = 0.5, 
+text(28, 2.8, "condition", col = "#FF6699", adj = 0.5, 
      cex = 1)
 
+#year(t)
 arrows(30, 3, 43, 3, length = 0.1, angle = 20, 
        code = 3, col = "black", lwd = 1.5)
-text(32, 3.2, "year(t+2)", col = "#FF6699", adj = 0.5, 
+text(32, 3.2, "year(t)", col = "#FF6699", adj = 0.5, 
      cex = 1)
-text(34, 2.5, "tice", col = "#FF6699", adj = 0.5, 
+text(34, 2.8, expression("t"[italic(ice)]), col = "#FF6699", adj = 0.5, 
      cex = 1)
-text(36, 2.3, "spring survey", col = "#FF6699", adj = 0.5, 
+text(36, 2.6, "spring survey", col = "#FF6699", adj = 0.5, 
      cex = 1)
 
+
+#plot(1:10, xlab=expression('hi'[5]*'there'[6]^8*'you'[2]))

@@ -37,7 +37,7 @@ df <- rbind(df, df_1617)
 glimpse(df)
 #create one filter for ice-capelin project and one for Fran and the markdown doc
 df1 <- df %>%
-     filter(year > 1992 &  sex==1 & age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c (23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
+     filter(year > 1992 &  sex==1 & age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
@@ -221,6 +221,8 @@ df1 %>%
      unite(mean, meanCond:stdCond, sep = " +/- ") %>%
      spread(key = nafo_div, value = mean)
 
+filter(df1, year >1998) %>%
+     count()
 # produce output for Bayesain analysis
 out <- df1 %>%
      group_by(year) %>%
@@ -228,7 +230,7 @@ out <- df1 %>%
 #write_csv(out, "data/condition_ag1_out.csv")
 #this was for data to 2015 only
 #write_csv(out, "data/condition_ag2_out.csv")
-write_csv(out, "data/condition_ag3_out.csv")
+write_csv(out, "data/condition_ag2a_out.csv")
 
 #nafo
 ggplot(data=df1) +
@@ -277,11 +279,16 @@ summary(lm(meanCond ~ resids, data = comp))
 glimpse(df)
 glimpse(df1)
 df10 <- df %>%
-     filter(year > 1998 &  sex==1 & age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c (23, 31 )) %>% #one-year males after 1992, just project 23 sex == 1 &
+     filter(year > 1998 &  sex==1 & age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12")) %>% #one-year males after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
-m1 <- lm(length ~ weight, data = df10)
+df10 <- df %>%
+     filter(year > 1997 & year < 2016 &  sex==1 & age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12")) %>% #one-year males after 1992, just project 23 sex == 1 &
+     filter(!is.na(weight)) %>%
+     filter(!is.na(length)) 
+
+m1 <- lm(log10(length) ~ log10(weight), data = df10)
 fits <- m1$fitted.values
 res <- m1$residuals
 names()
@@ -291,3 +298,5 @@ head(df11)
 temp <- df11 %>%
      group_by(year) %>%
      summarize(mean_resid = mean(res))
+df1
+levels(as.factor(df1$nafo_div))
