@@ -126,7 +126,7 @@ df[c("biomass_med", "ln_biomass_med", "tice", "meanCond_lag", "resids_lag", "sur
 df1 <- subset(df, year>1998)
 glimpse(df1)
 
-#View(df1)
+View(df1)
 #cols <- c("tice", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")
 
 cols <- c("tice", "meanCond_lag", "resids_lag", "surface_tows_lag2", "ps_meanTot_lag2")
@@ -380,7 +380,6 @@ ggsave("Bayesian/recruitment_1/priorpost.pdf", width=10, height=8, units="in")
 
 ## Mortality----
 #"alpha + beta*TI[i]*(1-TI[i]/gamma) + delta*CO[i]"
-
 m.mortality = '
 model {
 # 1. Likelihood
@@ -422,12 +421,12 @@ sigma ~ dunif(0, 10)
 # sigma: uninformative for condition
 
 df2 <- df1
-x <- as.Date('2018-02-12') # this is a minimum - I looked at the ice maps on 2018-02-16 and the ice is comming!
+x <- as.Date('2018-02-19') # this is a minimum - I looked at the ice maps on 2018-02-16 and the ice is comming!
 lubridate::yday(x)
 
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)), 
-                   TI=c(df2$tice, c(0.43, 0.788)), #from capelin_larval_indices 
+                   TI=c(df2$tice, c(0.5, 0.788)), #from capelin_larval_indices 
                    CO=c(df2$resids_lag, c(0, 0)), #made up - need new data
                    N = nrow(df2) + num_forecasts)
 
@@ -1058,6 +1057,7 @@ p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_labe
 
 #beta
 priorsd <- 10
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
 x_label <- "beta"
 bin_1 <- mean(beta$df)/100
@@ -1065,7 +1065,13 @@ bin_1 <- mean(beta$df)/100
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
 #gamma
-v
+priormean <- 5
+priorsd <- 1/3
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+str(prior)
+plot(density(prior))
+plot(density(prior), xlim = c(0,5))
+
 limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
 x_label <- "gamma"
 bin_1 <- mean(gamma$df)/100
@@ -1077,6 +1083,9 @@ p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_labe
 priormean <- 2.8
 priorsd <- 1
 prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+plot(density(prior))
+plot(density(prior), xlim = c(0,2))
+
 limits <- c(min(delta$df)-0.3, max(delta$df) + 0.3)
 x_label <- "delta"
 bin_1 <- mean(delta$df)/100
