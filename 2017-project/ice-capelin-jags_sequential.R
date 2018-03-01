@@ -149,11 +149,7 @@ write_csv(df1, "Bayesian/all_data.csv")
 # shrink df - not normal but small and easy to interpret parameters
 
 
-# not sure what this is for
-cols1 <- c("surface_tows", "ps_meanTot")
-df_norm <- df1 %<>%
-     mutate_each_(funs(scale),cols1)
-
+# names for pairs-plot
 df_name <- df1
 names(df_name)[names(df_name) == "ln_biomass_med"] <- "ln capelin biomass"
 names(df_name)[names(df_name) == "resids_lag"] <- "condition l1"
@@ -161,15 +157,16 @@ names(df_name)[names(df_name) == "surface_tows_lag2"] <- "larval abundance l2"
 names(df_name)[names(df_name) == "ps_meanTot_lag2"] <- "zooplankton abun l2"
 
 str(df_name)
+df_name <- subset(df_name, year >= 2003)
 # pairs-plot: relationships and correlations among RV and EV----
-pdf("Bayesian/mortality_1/pairs_resids.pdf")
+pdf("Bayesian/pairs_resids.pdf")
 pairs.panels(df_name[c("ln capelin biomass", "tice", "condition l1", "larval abundance l2", "zooplankton abun l2")], 
              method = "pearson", # correlation method
              hist.col = "#00AFBB",
              density = F,  # show density plots
              ellipses = F, # show correlation ellipses,
              cex.labels = 1,
-             cex.cor = 1
+             cex.cor = 2
 )
 dev.off()
 
@@ -419,9 +416,12 @@ sigma ~ dunif(0, 10)
 # sd = 1
 #shape(a) is mean^2/var; scale(s) equal Var/mean - but we use rate so mean/Var
 # sigma: uninformative for condition
-
+#df2 <- subset(df1, year>2002)
 df2 <- df1
 x <- as.Date('2018-02-19') # this is a minimum - I looked at the ice maps on 2018-02-16 and the ice is comming!
+lubridate::yday(x)
+
+x <- as.Date('2018-03-17')
 lubridate::yday(x)
 
 num_forecasts = 2 # 2 extra years
@@ -612,8 +612,8 @@ FitNew <- sum(DNew[1:N])
 
 # 2. Priors
 alpha ~ dnorm(0, 100^-2) 
-beta ~ dunif(0, 2) 
-gamma ~ dunif(-2.99, 3) 
+beta ~ dunif(0, 100) 
+gamma ~ dunif(0, 10) 
 delta ~ dnorm(0, 100^-2) 
 sigma ~ dunif(0, 100) 
 }'
@@ -621,16 +621,20 @@ sigma ~ dunif(0, 100)
 #alpha based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
 #beta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
 # gamma,delta, sigma: uninformative for condition
+#df2 <- subset(df1, year>2002)
 df2 <- df1
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)), 
-                   TI=c(df2$tice, c(-2.190133, 0)), #from capelin_larval_indices 
+                   TI=c(df2$tice, c(0.5, 0.788)), #from capelin_larval_indices 
                    CO=c(df2$resids_lag, c(0, 0)), #made up - need new data
                    N = nrow(df2) + num_forecasts)
 
 run_mort_unif <- jags(data=model_data,
                       parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
                       model.file = textConnection(m.mort_unif))
+
+run_mort_unif <-update(run_mort_unif, n.iter = 300000, n.thin = 50, n.burnin = 100000)
+
 
 ## M(uniform)-diagnostics----
 print(run_mort_unif, intervals=c(0.025, 0.975), digits = 3)
@@ -643,6 +647,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma', 'delta')
+MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = "Bayesian/mortality_2/chains.pdf", width=10, height=8, units="in")
 
 #autocorrelation - this looks good!!!!
@@ -695,12 +700,11 @@ write.csv(pi_df2[, (ncol(pi_df2)-1):ncol(pi_df2)], "Bayesian/mortality_2/pi.csv"
 
 ## M(uniform)-Results----
 # Get the log likelihood
-log_lik_m2 = run_mort_unif$BUGSoutput$sims.list$log_lik
-w_m2 <- waic(log_lik)
-w_m2 <- loo(log_lik)
-compare(w_m1, w_m2)
+dic_M_unif <- dic.samples(run_mort_unif$model, n.iter=1000, type="pD")
+dic_M_unifsum <- sum(dic_M_unif$deviance)
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
+MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/mortality_2/posteriors.pdf", width=10, height=8, units="in")
 
 txt <- "log(caplein) = alpha +  beta*tice*(1-(tice/gamma(unif))) \n + delta*Condition(resids)"
@@ -719,12 +723,57 @@ write.csv(as.data.frame(OUT1), "Bayesian/mortality_2/params.csv")
 # R-squared - see Gelmen paper
 
 # plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
-beta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$beta)
-dist <- as.data.frame(runif(1000000, 0, 365))
-names(dist)[names(dist) == "runif(1e+06, 0, 365)"] <- "v2" 
-x <- range(beta_post)
-priorPosterior(beta_post, dist, x)
-ggsave("Bayesian/mortality_2/priorPost_alpha.pdf", width=10, height=8, units="in")
+# plot posterior against expected distribution
+alpha <- posterior_fig(out$sims.list$alpha)
+beta <- posterior_fig(out$sims.list$beta)
+gamma <- posterior_fig(out$sims.list$gamma)
+delta <- posterior_fig(out$sims.list$delta)
+
+#alpha
+priormean <- 0
+priorsd <- 100
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
+limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
+x_label <- "alpha"
+bin_1 <- mean(alpha$df)/100
+
+p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+#beta
+prior <- runif(n = 10000, 0, 100)
+limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
+x_label <- "beta"
+bin_1 <- mean(beta$df)/100
+
+p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+#gamma
+prior <- runif(n = 10000, 0, 10)
+limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
+x_label <- "gamma"
+bin_1 <- mean(gamma$df)/100
+
+p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+mean(gamma$df)/2
+
+alpha ~ dnorm(0, 100^-2) 
+beta ~ dunif(0, 100) 
+gamma ~ dunif(0, 10) 
+delta ~ dnorm(0, 100^-2) 
+
+#delta
+priormean <- 0
+priorsd <- 100
+prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
+limits <- c(min(delta$df)-0.3, max(delta$df) + 0.3)
+x_label <- "delta"
+bin_1 <- mean(delta$df)/100
+
+p4 <- postPriors(df = delta$df, df2 = prior, df3 = delta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+
+mm <- cowplot::plot_grid(p1, p2, p3, p4, ncol=2)
+
+ggsave("Bayesian/mortality_2/priorpost.pdf", width=10, height=8, units="in")
 
 
 
@@ -940,7 +989,7 @@ num_forecasts = 2 # 2 extra years
 
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
                    ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
-                   TI=c(df3$tice, c(0.42, 0.788)), #made up - need new data
+                   TI=c(df3$tice, c(0.5, 0.788)), #made up - need new data
                    N = nrow(df3) + num_forecasts)
 
 run_RM2 <- jags(data=model_data,
@@ -1140,7 +1189,7 @@ df3 <- subset(df2, year>2002)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
                    ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
-                   TI=c(df3$tice, c(0.43, 0.788)), #made up - need new data
+                   TI=c(df3$tice, c(0.5, 0.788)), #made up - need new data
                    CO=c(df3$resids_lag, c(0, 0)),
                    N = nrow(df3) + num_forecasts)
 
@@ -1304,7 +1353,7 @@ mm <- cowplot::plot_grid(p1, p2, p3, p4, p5, labels = c("A", "B", "C", "D", "E")
 ggsave("Bayesian/rm_3/priorPost.pdf", width=10, height=8, units="in")
 
 
-## Recruitment - informative prior----
+## R1- informative prior----
 #"alpha + beta*ST[i] + gamma*PS[i]"
 
 m.recruit.prior = '
@@ -1333,19 +1382,18 @@ FitNew <- sum(DNew[1:N])
 
 # 2. Priors
 alpha ~ dnorm(0, 100^-2) 
-beta ~ dnorm(0.42, 4.6) 
+beta ~ dnorm(0.35, 7.25) 
 gamma ~ dnorm(0, 100^-2) 
 sigma ~ dunif(0, 100) 
 }'
-# For beta: mean from Murphy 2018 - var from my own regression which doesnn't quite match
-#subset data.  SE was 0.4664.  0.4464^-2 = 4.6
-df2 <- df1
+
+# For beta: I ran the same regression as Murphy et al. (2018) in ice-capelin-covariates but for normalized values.  I got somewhat different values. ST slope = 0.35, SE = 0.138 (inverse = 7.25)
 df3 <- subset(df2, year>2002)
 
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
-                   ST=c(df3$surface_tows_lag2, c(0, 0)), #from capelin_larval_indices 
-                   PS=c(df3$ps_meanTot_lag2, c(0, 0)), #made up - need new data
+                   ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices 
+                   PS=c(df3$ps_meanTot_lag2, c(-0.024866638, 0)), #made up - need new data
                    N = nrow(df3) + num_forecasts)
 
 run_recruit_prior <- jags(data=model_data,
@@ -1354,19 +1402,20 @@ run_recruit_prior <- jags(data=model_data,
 
 #UPDATE WITH MORE BURN INS
 
-##Rprior-Diagnostics----
+##R1-infor_prior-Diagnostics----
 print(run_recruit_prior, intervals=c(0.025, 0.975), digits = 3)
 out <- run_recruit_prior$BUGSoutput 
 out$mean
-dic.samples(out)
+
 #overdispersion - values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
 mean(out$sims.list$FitNew > out$sims.list$Fit)
 # mean = 0.546333
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma')
-ggsave(MyBUGSChains(out, vars), filename = "Bayesian/recruitment_2/chains.pdf", width=10, height=8, units="in")
 MyBUGSChains(out, vars)
+ggsave(MyBUGSChains(out, vars), filename = "Bayesian/recruitment_2/chains.pdf", width=10, height=8, units="in")
+
 #autocorrelation - this could be a problem!!!!
 MyBUGSACF(out, vars)
 ggsave(MyBUGSACF(out, vars), filename = "Bayesian/recruitment_2/auto_corr.pdf", width=10, height=8, units="in")
@@ -1414,7 +1463,7 @@ pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], "Bayesian/recruitment_2/pi.csv")
 
 
-## Rprior-Results----
+## R1-inform_prior-Results----
 # Get the log likelihood
 dic_R2 <- dic.samples(run_recruit_prior$model, n.iter=1000, type="pD")
 str(x)
@@ -1422,6 +1471,7 @@ dic_R2sum <- sum(dic_R2$deviance)
 
 
 #PLOT credible and prediction intervals
+MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = "Bayesian/recruitment_2/posteriors.pdf", width=10, height=8, units="in")
 
 txt <- "log(caplein) = alpha +  beta(prior)*surface_tows_lag2 \n + gamma*pseudocal_lag2"
@@ -1439,16 +1489,6 @@ print(OUT1, digits =5)
 write.csv(as.data.frame(OUT1), "Bayesian/recruitment_2/params.csv")
 
 # plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
-beta_post <- as.data.frame(run_mortality$BUGSoutput$sims.list$beta)
-dist <- as.data.frame(rnorm(1e+05, 0.42, 4.6))
-names(dist)[names(dist) == "rnorm(1e+05, 0.42, 4.6)"] <- "v2" 
-range(beta_post)
-x <- c(0,5)
-p1 <- priorPosterior(beta_post, dist, x)
-
-cowplot::plot_grid(p1)
-ggsave("Bayesian/recruitment_2/priorPost.pdf", width=10, height=8, units="in")
-
 # plot posterior against expected distribution
 # gamma dist
 alpha <- posterior_fig(out$sims.list$alpha)
@@ -1458,7 +1498,7 @@ gamma <- posterior_fig(out$sims.list$gamma)
 
 #alpha
 priormean <- 0
-priorsd <- 10
+priorsd <- 100
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
 x_label <- "alpha"
@@ -1468,19 +1508,19 @@ p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_labe
 
 
 #beta
-priormean <- 0.42
-priorsd <- 4.6
+priormean <- 0.35
+priorsd <- 0.138
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
+plot(density(prior))
 limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
 x_label <- "beta"
 bin_1 <- mean(beta$df)/100
 
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-
 #gamma
 priormean <- 0
-priorsd <- 10
+priorsd <- 100
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
 x_label <- "gamma"
@@ -1562,7 +1602,7 @@ ggsave(MyBUGSChains(out, vars), filename = "Bayesian/mortality_3/chains.pdf", wi
 
 #autocorrelation - this looks good!!!!
 MyBUGSACF(out, vars)
-ggsave(MyBUGSACF(out, vars), filename = "Bayesian/mortality_1/auto_corr.pdf", width=10, height=8, units="in")
+ggsave(MyBUGSACF(out, vars), filename = "Bayesian/mortality_3/auto_corr.pdf", width=10, height=8, units="in")
 
 # Model Validation (see Zuuer et al. 2013, pg 77-79 for options for calculating Pearson residuals)
 # Residual diagnostics
@@ -1692,10 +1732,11 @@ sigma ~ dunif(0, 10)
 #gamma based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
 #beta: shape(a) is mean^2/var; we used 180 days based on Ales original #work; scale(s) equal Var/mean
 # gamma,delta, sigma: uninformative for condition
+#df2 <- subset(df1, year>2002)
 df2 <- df1
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)), 
-                   TI=c(df2$tice, c(0.7, 0.7)), #from capelin_larval_indices 
+                   TI=c(df2$tice, c(0.5, 0.789)), #from capelin_larval_indices 
                    N = nrow(df2) + num_forecasts)
 
 run_mortality_null <- jags(data=model_data,
@@ -1724,7 +1765,7 @@ ggsave(MyBUGSChains(out, vars), filename = "Bayesian/mortality_0/chains.pdf", wi
 
 #autocorrelation - this looks good!!!!
 MyBUGSACF(out, vars)
-ggsave(MyBUGSACF(out, vars), filename = "Bayesian/mortality_1/auto_corr.pdf", width=10, height=8, units="in")
+ggsave(MyBUGSACF(out, vars), filename = "Bayesian/mortality_0/auto_corr.pdf", width=10, height=8, units="in")
 
 # Model Validation (see Zuuer et al. 2013, pg 77-79 for options for calculating Pearson residuals)
 # Residual diagnostics
@@ -1861,7 +1902,7 @@ sigma ~ dunif(0, 100)
 }'
 
 #subset data
-df2 <- df1
+#df2 <- df1
 df3 <- subset(df2, year>2002)
 
 num_forecasts = 2 # 2 extra years
@@ -2406,13 +2447,20 @@ dic_RM3sum
 dic_RM3sum
 dic_Rosum
 dic_Mosum
-rbind(dic_R1sum,
+tab1 <- as.data.frame(rbind(
+     dic_R1sum,
       dic_M1sum,
       dic_RM1sum,
-      dic_RM1sum,
       dic_RM2sum,
-      dic_RM2sum,
-      dic_RM3sum,
       dic_RM3sum,
       dic_Rosum,
-      dic_Mosum)
+      dic_Mosum,
+      dic_M_unifsum,
+     dic_R2sum
+     
+      ))
+str(tab1)
+names(tab1)[names(tab1)=="V1"] <- "DIC"
+tab1 <- tab1[order(tab1$DIC), , drop = F]
+tab1$dDIC <- tab1$DIC-tab1$DIC[1]
+tab1
