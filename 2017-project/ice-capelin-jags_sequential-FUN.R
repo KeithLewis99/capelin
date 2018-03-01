@@ -16,7 +16,7 @@
 #' @examples plotCredInt(df2, yaxis = "ln_biomass_med", ylab = "ln(capelin)", y_line = y_med, ci_df2, pi_df2, model = txt, x = 2006, y = 8)
 
 plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpi = dpi, model = model, x = x, y = y){
-     p <- ggplot()
+     p <- ggplot()  
      #browser()
      p <- p + geom_ribbon(aes(x = c(df$year, 2018:2019), 
                               ymax = ci[2, ], 
@@ -32,10 +32,12 @@ plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci
                          aes_string(y = yaxis, x = "year"),
                          shape = 16, 
                          size = 1.5)
+     p <- p + geom_errorbar(data = df, width = 0.3, colour = "black", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
      p <- p + xlab("Year") + ylab(paste(ylab))
     # p <- p + theme(axis.title = element_text(size=30), axis.text = element_text(size = 20)) 
      #p <- p + theme(text = element_text(size=25)) + theme_bw()
      p <- p + geom_line(aes(x = c(df$year, 2018:2019), y = y_line))
+    
      p <- p + theme_bw(base_size = 30)
      return(p)
 }
