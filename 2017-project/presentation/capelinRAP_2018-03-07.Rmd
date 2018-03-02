@@ -1,7 +1,7 @@
 ---
 title: "Predicting capelin abundance using indices of mortality and recruitment"
 #subtitle: "A key component of reproducible research"
-author: "K. Lewis, A. Buren, and P. Regular"
+author: "K. Lewis, A. Buren, P. Regular"
 date: "NAFC | Fisheries and Oceans Canada | 2018-03-07"
 output: 
   ioslides_presentation:
@@ -23,15 +23,15 @@ library(tidyr)
 library(dplyr)
 library(ggplot2)
 
-file.exists("../data/trawl_abiotic.csv")
-file.exists("../data/trawl_biomass.csv")
+#file.exists("../data/trawl_abiotic.csv")
+#file.exists("../data/trawl_biomass.csv")
 
 # load the data
-abiotic <- read_csv("../data/trawl_abiotic.csv", guess_max = 5000)
-head(abiotic)
+#abiotic <- read_csv("../data/trawl_abiotic.csv", guess_max = 5000)
+#head(abiotic)
 
 # modify the data
-abiotic_abrev <- filter(abiotic, year < 2005)
+#abiotic_abrev <- filter(abiotic, year < 2005)
 ```
 
 ## Outline
@@ -42,9 +42,23 @@ abiotic_abrev <- filter(abiotic, year < 2005)
 ## Early work (multiplicative model??)
 
 ## Ale's work
-Fig 2
+<style> 
+  #slideID > p { 
+    margin-top: -100px; 
+  } 
+</style>
+<img src="presentation/Buren2015_dome.png" 
+width="90%" />
 
 ## Hannah's work
+<style> 
+  #slideID > p { 
+    margin-top: -100px; 
+  } 
+</style>
+<img src="presentation/Murhpy2018FishRes_fig2.png" 
+width="90%" />
+
 
 ## Inability to predict capelin abundance {.smaller}
 
@@ -53,15 +67,23 @@ Bayesian
 Forecast
 
 ## Data streams - graphic/table
-Ale's figure 5
+<style> 
+  #slideID > p { 
+    margin-top: -100px; 
+  } 
+</style>
+<img src="presentation/variables.png" 
+width="90%" />
+
 
 ## Data streams - graphic/table
-```{r echo = FALSE, results='asis'}
-tab1 <- xtable(abiotic %>%
-  group_by(nafo_div) %>%
-  summarise(mean_depth = mean(depth), std_depth = sd(depth)))
-print(tab1, comment = FALSE)
-```
+<style> 
+  #slideID > p { 
+    margin-top: -100px; 
+  } 
+</style>
+<img src="presentation/ResDoc_table1.png" 
+width="90%" />
 
 ## Models
 Mortality
@@ -72,6 +94,6 @@ RM2/3
 ## Results
 
 ## Future work
+- 2010
 
 ## Summary (to be used Assessment Doc, i.e. take home messages)
-
