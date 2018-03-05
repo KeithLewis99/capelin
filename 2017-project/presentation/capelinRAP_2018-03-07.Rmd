@@ -1,13 +1,11 @@
 ---
 title: "Predicting capelin abundance using indices of mortality and recruitment"
-#subtitle: "A key component of reproducible research"
-author: "K. Lewis, A. Buren, P. Regular"
+author: "K. Lewis, A. Buren, P. Regular, F. Mowbray, and H. Murphy"
 date: "NAFC | Fisheries and Oceans Canada | 2018-03-07"
 output: 
   ioslides_presentation:
     incremental: true
     widescreen: true
-#    logo: rmarkdown.png
 ---
 
 ```{r setup, echo=FALSE, results="hide", message=FALSE, warning=FALSE}
@@ -35,65 +33,126 @@ library(ggplot2)
 ```
 
 ## Outline
+- Rationale
+- Regulating mechanisms
+- Forecasting
+- Results
+- Future work
+- Take home messages
 
+## Rationale
+- At the last capelin assessment (2015)
+     - Update of ice capelin (mortality) model
+     - Provide projection ability
+          - currently: 1 year
 
-## Introduction
+## Regulating mechanisms: early models
+- The wind model (Frank and Legget 1981, 9982, Legget et al. 1984)
+     - sustained onshore winds
+          - eggs off beach
+          - increased availability of zooplankton
+     - fails after 1991 (Murphy et al. 2018)
+- The multiplicative model (Evans and Nakashima 2002)
+     - based on 12 indices
+     - only 3 indices still in effect (in a good year)
 
-## Early work (multiplicative model??)
-
-## Ale's work
+## Regulating mechanisms: the mortality model
 <style> 
-  #slideID > p { 
+  #slide-2 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="Buren_fig6.png" 
+width="55%" />
+
+
+##Regulating mechanisms: the ice capelin (mortality) model
+<style> 
+  #slide-1 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="Buren2015fig5_dome.png" 
+width="80%" />
+
+## Update of the mortality model
+<style> 
+  #slide-2 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="../Bayesian/mortality_0/CredInt.png" 
+width="70%" />
+
+## Regulating mechanisms: the recruitment model
+<style> 
+  #slide-2 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="Murphy2018FishRes_fig2.png" 
+width="80%" />
+
+## Update of the recruitment model
+<style> 
+  #slide-2 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="../Bayesian/recruitment_0/CredInt.png" 
+width="70%" />
+
+## Update models and develop predictive capacity
+- Standard regression type models
+- Combine mortality and recruitment models in Bayesian framework
+- Develop forecast using existing data
+
+## Data series
+<style> 
+  #slide-4 > p { 
     margin-top: -100px; 
   } 
 </style>
-<img src="presentation/Buren2015_dome.png" 
-width="90%" />
+<img src="ResDoc_table1.png" 
+width="80%" />
 
-## Hannah's work
+## Data series
 <style> 
-  #slideID > p { 
+  #slide-2 > p { 
     margin-top: -100px; 
   } 
 </style>
-<img src="presentation/Murhpy2018FishRes_fig2.png" 
-width="90%" />
+<img src="variables.png" 
+width="55%" />
 
-
-## Inability to predict capelin abundance {.smaller}
-
-## Explain general process
-Bayesian
-Forecast
-
-## Data streams - graphic/table
+## Mortality and recruitment
 <style> 
-  #slideID > p { 
-    margin-top: -100px; 
+  #slide-2 > p { 
+    margin-top: -50px; 
   } 
 </style>
-<img src="presentation/variables.png" 
-width="90%" />
+<img src="../Bayesian/rm_3/CredInt.png" 
+width="70%" />
 
-
-## Data streams - graphic/table
+## Mortality and recruitment
 <style> 
-  #slideID > p { 
-    margin-top: -100px; 
+  #slide-2 > p { 
+    margin-top: -50px; 
   } 
 </style>
-<img src="presentation/ResDoc_table1.png" 
-width="90%" />
-
-## Models
-Mortality
-Recruitment
-RM2/3
-
-
-## Results
+<img src="../Bayesian/rm_3/priorPost.png" 
+width="70%" />
 
 ## Future work
-- 2010
+- Test forecast ability with 
+     - updated t~*ice*~ value 
+     - spring survey
+- Assess the influence of 2010 acoustic survey
+- Test additional variables (e.g., zooplankton)
 
-## Summary (to be used Assessment Doc, i.e. take home messages)
+- Integration with harp seal and cod work
+
+## Summary messages
+- Existing models do not explain full variability of capelin abundance
+- The integration of recruitment and mortality provides a good fit
+- Potential to predict capelin biomass 1-2 years in advance
