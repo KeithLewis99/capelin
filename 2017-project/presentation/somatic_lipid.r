@@ -8,7 +8,7 @@ for (i in 1:12) {
 }
 Imon <- order(fat$month)
 
-
+png("presentation/Buren_fig6.png", family = "Arial Black")
 par(mfrow = c(1, 1))
 par(bty = "o")
 par(mar = c(4, 4, 0, 1))  # set margins(bottom,left,top,right)
@@ -64,10 +64,14 @@ arrows(13, 21.5, 15.5, 21.5, length = 0.05, angle = 90,
        code = 3, col = "#FF6699", lwd = 1.5)
 text(14.3, 22, emerge, col = "#FF6699", adj = 0.5, 
      cex = 1)
-
+text(9, 2, "Buren et al. 2014 \n PlosOne")
+dev.off()
 
 
 ## next plot
+install.packages("extrafont")
+library(extrafont)
+font_import()
 
 year <- c(1, 2, 3, 4)
 month <- c(1:12)
@@ -77,38 +81,55 @@ year <- sort(rep(year, 12))
 month <- rep(month, 4)
 
 x <- as.data.frame(cbind(year, month, month_seq))
-x <- x[6:44, ]
-lab_1 <- rep(c("Jun", "Sep", "Dec", "Mar"), 4)
+x <- x[1:36, ]
+lab_1 <- rep(c("Dec", "Mar", "Jun", "Sep"), 4)
 lab_2 <- lab_1[1:13]
 
+png("presentation/variables.png", family = "Arial Black", width = 6, height = 4, units = "in")
+par(mar = c(4, 4, 0, 1))  # set margins(bottom,left,top,right)
+
 plot(x$month_seq, x$year, type='n', xaxt = 'n', yaxt = 'n', xlab = 'Month', ylab = '')
-axis(1, at = seq(6, 44, 3), labels = lab_2, col = "#0000ff00", col.ticks = "black")
+axis(1, at = seq(1, 37, 3), labels = lab_2, col = "#0000ff00", col.ticks = "black")
 
 #year(t+2)
-arrows(6, 3, 18, 3, length = 0.1, angle = 20, 
-       code = 3, col = "blue", lwd = 1.5)
-text(8, 3.2, "year(t-2)", col = "#FF6699", adj = 0.5, 
-     cex = 1)
-text(9, 2.8, "larval \n emergence", col = "#FF6699", adj = 0.5,      cex = 1)
-text(12, 2.3, bquote(atop(italic("Psuedocalanus"), "emergence")), col = "#FF6699", adj = 0.5, cex = 1)
+arrows(1, 2.5, 12, 2.5, length = 0.1, angle = 20, 
+       code = 3, col = "blue", lwd = 3)
+text(3, 2.7, "year(t-2)", col = "blue", adj = 0.5, 
+     cex = 1.5)
+text(9, 2.3, "larval \n emergence", col = "blue", adj = 0.5,      cex = 1.5)
+text(10, 2, bquote(atop(italic("Psuedocalanus"), "emergence")), col = "blue", adj = 0.5, cex = 1.5)
 
 #year(t-1)
-arrows(18, 3, 30, 3, length = 0.1, angle = 20, 
-       code = 3, col = "red", lwd = 1.5)
-text(20, 3.2, "year(t-1)", col = "#FF6699", adj = 0.5, 
-     cex = 1)
-text(28, 2.8, "condition", col = "#FF6699", adj = 0.5, 
-     cex = 1)
+arrows(12, 2.5, 24, 2.5, length = 0.1, angle = 20, 
+       code = 3, col = "red", lwd = 3)
+text(14, 2.7, "year(t-1)", col = "red", adj = 0.5, 
+     cex = 1.5)
+text(23, 2.3, "condition", col = "red", adj = 0.5, 
+     cex = 1.5)
 
 #year(t)
-arrows(30, 3, 43, 3, length = 0.1, angle = 20, 
-       code = 3, col = "black", lwd = 1.5)
-text(32, 3.2, "year(t)", col = "#FF6699", adj = 0.5, 
-     cex = 1)
-text(34, 2.8, expression("t"[italic(ice)]), col = "#FF6699", adj = 0.5, 
-     cex = 1)
-text(36, 2.6, "spring survey", col = "#FF6699", adj = 0.5, 
-     cex = 1)
-
+arrows(24, 2.5, 36, 2.5, length = 0.1, angle = 20, 
+       code = 3, col = "black", lwd = 3)
+text(26, 2.7, "year(t)", col = "black", adj = 0.5, 
+     cex = 1.5)
+text(28, 2.3, expression("t"[italic(ice)]), col = "black", adj = 0.5, 
+     cex = 1.5)
+text(31, 2.1, "spring \n survey", col = "black", adj = 0.5, 
+     cex = 1.5)
+dev.off()
 
 #plot(1:10, xlab=expression('hi'[5]*'there'[6]^8*'you'[2]))
+
+
+plot(density(rnorm(10000, 0, 10000)))
+plot(density(rnorm(10000, 0, 1000)))
+plot(density(rnorm(10000, 0, 10)))
+plot(density(rnorm(10000, 0, 1)))
+lines(density(rnorm(10000, 0.35, 0.138)))
+
+plot(density(rgamma(10000, 5, 1/3)))
+lines(density(rgamma(10000, 1, 1/10)))
+lines(density(rgamma(10000, 10, 1/10)))
+curve(dgamma(x, .001, .001))
+
+
