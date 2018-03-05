@@ -24,7 +24,7 @@ df <- read_csv('data/capelin_condition_maturation_v1.csv')
 df <- df[c(1:5, 7:15)]
 glimpse(df)
 head(df)
-
+df$weight
 df_1617 <- read_csv('data/capelin_condition_maturation_v2.csv')
 glimpse(df_1617)
 df_1617$stomach_fullness <- as.integer(df_1617$stomach_fullness)
@@ -35,6 +35,8 @@ head(df_1617)
 
 df <- rbind(df, df_1617)
 glimpse(df)
+View(tail(df, 100))
+write_csv(df, "data/condition_1979_2017.csv")
 #create one filter for ice-capelin project and one for Fran and the markdown doc
 df1 <- df %>%
      filter(year > 1992 &  sex==1 & age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
@@ -232,27 +234,33 @@ out <- df1 %>%
 #write_csv(out, "data/condition_ag2_out.csv")
 write_csv(out, "data/condition_ag2a_out.csv")
 
-#nafo
+#nafo by year
 ggplot(data=df1) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
-     facet_wrap(~nafo_div)
+     ylab("Relative condition") +
+     xlab("Year") +
+     facet_wrap(~nafo_div, ncol=1) + 
+     theme_bw()
+levels(as.factor(df1$year))
 # there appear to be a few outliers here but they should have minimal influence on the final outcome
 nrow(subset(df1, rel.cond > 1.5))
 nrow(subset(df1, rel.cond < 0.75))
 
-#month
+#month by year
 ggplot(data=df1) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
      facet_wrap(~month)
-#project
+#project by year
 ggplot(data=df1) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
      facet_wrap(~project)
 
+#nafo by month
 ggplot(data=df1) +
      geom_boxplot(aes(x = month, y = rel.cond, group = month)) + 
      facet_wrap(~nafo_div)
 
+# year by condition
 ggplot(data=df1) +
      geom_point(aes(x = log10(length), y = log10(weight), colour = nafo_div)) + 
      facet_wrap(~year)
@@ -270,12 +278,13 @@ condResids$resids_lag <- lag(condResids$resids, 1)
 
 # compare cond/exp and resids
 comp <- left_join(out, condResids, by = "year")
-plot(comp$meanCond, comp$resids)
+comp <- subset(comp, year > 1998)
+plot(comp$meanCond, comp$resids) 
 summary(lm(meanCond ~ resids, data = comp))
+points(comp$meanCond[6], comp$resids[6], col = "red") #show 2004 
 
 
 # can we reproduce Fran's results
-
 glimpse(df)
 glimpse(df1)
 df10 <- df %>%
