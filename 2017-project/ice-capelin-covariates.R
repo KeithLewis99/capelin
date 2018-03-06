@@ -133,7 +133,7 @@ write.csv(cape_2017$capelin_m1, file = "figs/covariates/capelin_covariates_2017.
 
 ## EXPLORATORY ANALYSIS----
 # simplify dataset
-sdf <- cape_2001$capelin_m1[c("year", "tice", "logcapelin", "age2", "age2_log", "age2_log10", "surface_tows", "surface_tows_lag2", "log10surface_tows_lag2", "ps_meanTot", "ps_meanTot_lag1", "ps_meanTot_lag2", "ps_meanLog_lag2", "resids_adj")]
+sdf <- cape_2001$capelin_m1[c("year", "tice", "logcapelin", "age2", "age2_log", "age2_log10", "surface_tows", "surface_tows_lag2", "log10surface_tows_lag2", "ps_meanTot", "ps_meanTot_lag1", "ps_meanTot_lag2", "ps_meanLog_lag2")]#, "resids_adj")]
 #View(sdf)
 str(cape_2001$capelin_m1)
 
@@ -197,6 +197,9 @@ ggplot(data=cape_2001$capelin_m1) +
      geom_text(aes(x = log10surface_tows_lag2, y = age2_log10 - 0.1, label=year-2), size=3)
 
 
+sdf$log10surface_tows_lag2_n <- scale(sdf$log10surface_tows_lag2)
+
+summary(lm(age2_log10 ~ log10surface_tows_lag2, data = sdf))
 
 ## OPTIMIZE
 ## new values for optim functions----
