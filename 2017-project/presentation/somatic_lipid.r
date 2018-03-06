@@ -11,11 +11,11 @@ Imon <- order(fat$month)
 png("presentation/Buren_fig6.png", family = "Arial Black")
 par(mfrow = c(1, 1))
 par(bty = "o")
-par(mar = c(4, 4, 0, 1))  # set margins(bottom,left,top,right)
+par(mar = c(4, 4.5, 0, 1))  # set margins(bottom,left,top,right)
 plot(fat$month[Imon], fat$lipid[Imon], type = "l", 
      lwd = 1.5, col = "red", ylim = c(0, 22.5), yaxp = c(0, 
                                                          18, 2), ylab = "Somatic lipid content (%)", 
-     xlab = "Month", xaxt = "n", yaxt = "n")
+     xlab = "Month", xaxt = "n", yaxt = "n", cex.lab = 1.5)
 axis(1, at = c(8, 10, 12, 14, 16, 18), labels = c("Aug", 
                                                   "Oct", "Dec", "Feb", "Apr", "Jun"), col = "#0000ff00", 
      col.ticks = "black")
@@ -72,7 +72,7 @@ dev.off()
 install.packages("extrafont")
 library(extrafont)
 font_import()
-
+y
 year <- c(1, 2, 3, 4)
 month <- c(1:12)
 month_seq <- c(1:48)
@@ -85,7 +85,7 @@ x <- x[1:36, ]
 lab_1 <- rep(c("Dec", "Mar", "Jun", "Sep"), 4)
 lab_2 <- lab_1[1:13]
 
-png("presentation/variables.png", family = "Arial Black", width = 6, height = 4, units = "in")
+png("presentation/variables.png", family = "Arial Black")
 par(mar = c(4, 4, 0, 1))  # set margins(bottom,left,top,right)
 
 plot(x$month_seq, x$year, type='n', xaxt = 'n', yaxt = 'n', xlab = 'Month', ylab = '')
@@ -118,8 +118,8 @@ text(31, 2.1, "spring \n survey", col = "black", adj = 0.5,
      cex = 1.5)
 dev.off()
 
-#plot(1:10, xlab=expression('hi'[5]*'there'[6]^8*'you'[2]))
 
+#plot(1:10, xlab=expression('hi'[5]*'there'[6]^8*'you'[2]))
 
 plot(density(rnorm(10000, 0, 10000)))
 plot(density(rnorm(10000, 0, 1000)))
