@@ -32,7 +32,6 @@ source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
 
 
-
 ## load data----
 ## capelin (1985-2017)----
 # source: Age disaggregate abundance for Keith Lewis - 2017 added_v1.xlsx
@@ -45,6 +44,15 @@ cap$ln_ab_uci <- log(cap$ab_uci)
 cap$ln_biomass_med <- log(cap$biomass_med)
 cap$ln_bm_lci <- log(cap$bm_lci)
 cap$ln_bm_uci <- log(cap$bm_uci)
+
+#cap[26,11:13]
+#temp <- subset(cap, year>1998)
+#x <- (temp$ln_biomass_med[4] - temp$ln_biomass_med[12])/2
+
+
+#cap$ln_biomass_med[26] <- cap$ln_biomass_med[26] + x
+#cap$ln_bm_lci[26] <- log(cap$bm_lci)[26] + x
+#cap$ln_bm_uci[26] <- log(cap$bm_uci)[26] + x
 
 ## ice (1969-2017)----
 #source: ice-chart-processing-data-v3.R
@@ -236,7 +244,7 @@ model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_recruit <- jags(data=model_data,
-                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', 'log_lik'),
+                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'Fit', 'FitNew', 'PRes', 'expY', 'D', 'log_lik'),
                       model.file = textConnection(m.recruit))
 
 #UPDATE WITH MORE BURN INS
@@ -329,7 +337,7 @@ plotCredInt(df3, yaxis = "ln_biomass_med",
             ylab = "ln(capelin)", 
             y_line = y_med, ci_df3, pi_df3, 
             model = txt, x = 2008, y = 8)
-ggsave("Bayesian/recruitment_1/credInt.pdf", width=10, height=8, units="in")
+ggsave("Bayesian/recruitment_1/credInt.png", width=10, height=8, units="in")
 
 # output by parameter
 OUT1 <- MyBUGSOutput(out, vars)
@@ -418,7 +426,7 @@ sigma ~ dunif(0, 10)
 # sigma: uninformative for condition
 #df2 <- subset(df1, year>2002)
 df2 <- df1
-x <- as.Date('2018-02-19') # this is a minimum - I looked at the ice maps on 2018-02-16 and the ice is comming!
+x <- as.Date('2018-02-26') # this is a minimum - I looked at the ice maps on 2018-03-02 and the ice is comming!
 lubridate::yday(x)
 
 x <- as.Date('2018-03-17')
@@ -1281,7 +1289,7 @@ plotCredInt(df3, yaxis = "ln_biomass_med",
             ylab = "ln(capelin)", 
             y_line = y_med, ci_df3, pi_df3, 
             model = txt, x = 2010, y = 8)
-ggsave("Bayesian/rm_3/credInt.pdf", width=10, height=8, units="in")
+ggsave("Bayesian/rm_3/credInt.png", width=10, height=8, units="in")
 
 # output by parameter
 OUT1 <- MyBUGSOutput(out, vars)
@@ -1350,7 +1358,7 @@ p5 <- postPriors(df = epsilon$df, df2 = prior, df3 = epsilon$df_cred, limits, x_
 
 mm <- cowplot::plot_grid(p1, p2, p3, p4, p5, labels = c("A", "B", "C", "D", "E"), ncol=2)
 
-ggsave("Bayesian/rm_3/priorPost.pdf", width=10, height=8, units="in")
+ggsave("Bayesian/rm_3/priorPost.png", width=10, height=8, units="in")
 
 
 ## R1- informative prior----
@@ -1829,6 +1837,7 @@ plotCredInt(df2, yaxis = "ln_biomass_med",
             y_line = y_med, ci_df2, pi_df2, 
             model = txt, x = 2006, y = 8)
 ggsave("Bayesian/mortality_0/credInt.pdf", width=10, height=8, units="in")
+ggsave("Bayesian/mortality_0/credInt.png", width=11, height=8, units="in")
 
 # output by parameter
 OUT1 <- MyBUGSOutput(out, vars)
@@ -1992,6 +2001,7 @@ plotCredInt(df3, yaxis = "ln_biomass_med",
             y_line = y_med, ci_df3, pi_df3, 
             model = txt, x = 2008, y = 8)
 ggsave("Bayesian/recruitment_0/credInt.pdf", width=10, height=8, units="in")
+ggsave("Bayesian/recruitment_0/credInt.png", width=10, height=8, units="in")
 
 # output by parameter
 OUT1 <- MyBUGSOutput(out, vars)

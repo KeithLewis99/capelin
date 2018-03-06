@@ -38,7 +38,7 @@ plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci
      #p <- p + theme(text = element_text(size=25)) + theme_bw()
      p <- p + geom_line(aes(x = c(df$year, 2018:2019), y = y_line))
     
-     p <- p + theme_bw(base_size = 30)
+     p <- p + theme_bw(base_size = 30) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
      return(p)
 }
 
