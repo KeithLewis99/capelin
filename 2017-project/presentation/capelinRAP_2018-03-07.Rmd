@@ -2,10 +2,13 @@
 title: "Predicting capelin abundance using indices of mortality and recruitment"
 author: "K. Lewis, A. Buren, P. Regular, F. Mowbray, and H. Murphy"
 date: "NAFC | Fisheries and Oceans Canada | 2018-03-07"
-output: 
+output:
+  beamer_presentation:
+    incremental: yes
   ioslides_presentation:
-    incremental: true
-    widescreen: true
+    fontsize: 15pt
+    incremental: yes
+    widescreen: yes
 ---
 
 ```{r setup, echo=FALSE, results="hide", message=FALSE, warning=FALSE}
@@ -35,20 +38,24 @@ library(ggplot2)
 ## Outline
 - Rationale
 - Regulating mechanisms
-- Forecasting
-- Results
-- Future work
-- Take home messages
+- Model update
+- Data series
+- Results: new models
+- Summary/Take home messages
 
 ## Rationale
 - At the last capelin assessment (2015)
      - Update of ice capelin (mortality) model
      - Provide projection ability
-          - currently: 1 year
+          - currently: < 1 year
+     - Wasp-waist food web
+          - marine mammals
+          - cod
+          - seabirds
 
 ## Regulating mechanisms: early models
 - The wind model (Frank and Legget 1981, 9982, Legget et al. 1984)
-     - sustained onshore winds
+     - sustained onshore winds in June
           - eggs off beach
           - increased availability of zooplankton
      - fails after 1991 (Murphy et al. 2018)
@@ -59,12 +66,11 @@ library(ggplot2)
 ## Regulating mechanisms: the mortality model
 <style> 
   #slide-2 > p { 
-    margin-top: -50px; 
+    margin-top: -150px; 
   } 
 </style>
-<img src="Buren_fig6.png" 
-width="55%" />
-
+<img src="Buren_fig6_1.png" 
+width="100%" />
 
 ##Regulating mechanisms: the ice capelin (mortality) model
 <style> 
@@ -73,39 +79,48 @@ width="55%" />
   } 
 </style>
 <img src="Buren2015fig5_dome.png" 
-width="80%" />
+width="60%" />
 
-## Update of the mortality model
+## Update of the ice-capelin (mortality) model|biomass ~  t~*ice*~
 <style> 
   #slide-2 > p { 
-    margin-top: -50px; 
+    margin-top: -100px; 
   } 
 </style>
 <img src="../Bayesian/mortality_0/CredInt.png" 
-width="70%" />
+width="60%" />
 
-## Regulating mechanisms: the recruitment model
+## Regulating mechanisms: the recruitment model|larval capelin and zooplankton
 <style> 
   #slide-2 > p { 
-    margin-top: -50px; 
+    margin-top: -150px; 
   } 
 </style>
 <img src="Murphy2018FishRes_fig2.png" 
 width="80%" />
 
-## Update of the recruitment model
+## Update of the recruitment model|biomass ~ larval abundance 
 <style> 
   #slide-2 > p { 
-    margin-top: -50px; 
+    margin-top: -150px; 
   } 
 </style>
 <img src="../Bayesian/recruitment_0/CredInt.png" 
-width="70%" />
+width="60%" />
 
 ## Update models and develop predictive capacity
 - Standard regression type models
-- Combine mortality and recruitment models in Bayesian framework
-- Develop forecast using existing data
+- Combine mortality and recruitment covariates in Bayesian framework
+- Provide forecasts of capelin biomass/abundance using existing data
+
+## Data series
+<style> 
+  #slide-2 > p { 
+    margin-top: -150px; 
+  } 
+</style>
+<img src="variables_1.png" 
+width="60%" />
 
 ## Data series
 <style> 
@@ -116,32 +131,14 @@ width="70%" />
 <img src="ResDoc_table1.png" 
 width="80%" />
 
-## Data series
-<style> 
-  #slide-2 > p { 
-    margin-top: -100px; 
-  } 
-</style>
-<img src="variables.png" 
-width="55%" />
-
-## Mortality and recruitment
+## Results: mortality and recruitment|biomass ~ larval abundance + t~*ice*~ + condition
 <style> 
   #slide-2 > p { 
     margin-top: -50px; 
   } 
 </style>
 <img src="../Bayesian/rm_3/CredInt.png" 
-width="70%" />
-
-## Mortality and recruitment
-<style> 
-  #slide-2 > p { 
-    margin-top: -50px; 
-  } 
-</style>
-<img src="../Bayesian/rm_3/priorPost.png" 
-width="70%" />
+width="60%" />
 
 ## Future work
 - Test forecast ability with 
@@ -150,9 +147,45 @@ width="70%" />
 - Assess the influence of 2010 acoustic survey
 - Test additional variables (e.g., zooplankton)
 
-- Integration with harp seal and cod work
+- Integrate results with harp seal and cod work
+- Explore spatial variability
 
 ## Summary messages
-- Existing models do not explain full variability of capelin abundance
-- The integration of recruitment and mortality provides a good fit
-- Potential to predict capelin biomass 1-2 years in advance
+- Existing models do not explain full variability of capelin biomass/abundance
+- The integration of recruitment and mortality into one model provides a good fit of data
+- Potential to predict capelin biomass/abundance 1-2 years in advance
+
+## Acknowledgements
+> - Gary Stenson
+> - Gary Maillet
+> - Pierre Pepin
+> - Mariano Koen-Alonso
+> - Bill Montevecchi
+> - Pelagics Section
+
+## Priors and Posteriors |biomass ~ larval abundance + t~*ice*~ + condition
+<style> 
+  #slide-2 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="../Bayesian/rm_3/priorPost.png" 
+width="55%" />
+
+## Model selection summary
+<style> 
+  #slide-2 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="../presentation/DIC_table.png" 
+width="70%" />
+
+## Models
+<style> 
+  #slide-2 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="../presentation/model_summary.png" 
+width="70%" />
