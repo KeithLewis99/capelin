@@ -48,8 +48,8 @@ text(18.5, 17.5, "not feeding", col = "blue", adj = 0.5,
      cex = 1)
 arrows(18, 20, 19, 20, length = 0.05, angle = 90, code = 3, 
        col = "orange", lwd = 1.5)
-text(18.5, 20.5, "spawning", col = "orange", adj = 0.5, 
-     cex = 1)
+text(18.75, 20.5, "spawning", col = "orange", adj = 0.5, 
+     cex = 0.8)
 arrows(16.75, 20, 17.8, 20, length = 0.05, angle = 90, 
        code = 3, col = "black", lwd = 1.5)
 # text(5.45,21.2,'acoustic',col='black',adj=0.5,cex=1)
