@@ -3,12 +3,12 @@ title: "Predicting capelin abundance using indices of mortality and recruitment"
 author: "K. Lewis, A. Buren, P. Regular, F. Mowbray, and H. Murphy"
 date: "NAFC | Fisheries and Oceans Canada | 2018-03-07"
 output:
-  beamer_presentation:
-    incremental: yes
   ioslides_presentation:
     fontsize: 15pt
     incremental: yes
     widescreen: yes
+  beamer_presentation:
+    incremental: yes
 ---
 
 ```{r setup, echo=FALSE, results="hide", message=FALSE, warning=FALSE}
@@ -45,16 +45,15 @@ library(ggplot2)
 
 ## Rationale
 - At the last capelin assessment (2015)
-     - Update of ice capelin (mortality) model
+     - Update of ice-capelin (mortality) model
      - Provide projection ability
           - currently: < 1 year
      - Wasp-waist food web
-          - marine mammals
-          - cod
-          - seabirds
+          - marine mammals/cod/seabirds
+          - zooplankton
 
 ## Regulating mechanisms: early models
-- The wind model (Frank and Legget 1981, 9982, Legget et al. 1984)
+- The wind model (Frank and Legget 1981, 1982, Legget et al. 1984)
      - sustained onshore winds in June
           - eggs off beach
           - increased availability of zooplankton
@@ -63,7 +62,7 @@ library(ggplot2)
      - based on 12 indices
      - only 3 indices still in effect (in a good year)
 
-## Regulating mechanisms: the mortality model
+## Regulating mechanisms: the ice-capelin (mortality) model
 <style> 
   #slide-2 > p { 
     margin-top: -150px; 
@@ -72,7 +71,7 @@ library(ggplot2)
 <img src="Buren_fig6_1.png" 
 width="100%" />
 
-##Regulating mechanisms: the ice capelin (mortality) model
+##Regulating mechanisms: the ice-capelin (mortality) model
 <style> 
   #slide-1 > p { 
     margin-top: -50px; 
@@ -151,9 +150,10 @@ width="60%" />
 - Explore spatial variability
 
 ## Summary messages
-- Existing models do not explain full variability of capelin biomass/abundance
-- The integration of recruitment and mortality into one model provides a good fit of data
-- Potential to predict capelin biomass/abundance 1-2 years in advance
+- Existing models do not the explain full variability of capelin biomass/abundance
+- The integration of recruitment and mortality explains most variation in capelin biomass
+     - Potential to predict capelin biomass/abundance 1-2 years in advance
+     - Capelin biomass is likely to be lower than average in 2018
 
 ## Acknowledgements
 > - Gary Stenson
@@ -189,3 +189,49 @@ width="70%" />
 </style>
 <img src="../presentation/model_summary.png" 
 width="70%" />
+
+## To Do List
+- Today
+     - knock out years
+     - with and w\o 2010
+- Next couple of weeks
+     - R-squared
+     - Sensitivity of variables
+     - re-run for age2 & age3
+
+## Results: mortality and recruitment|biomass ~ larval abundance + t~*ice*~ + condition (2015)
+<style> 
+  #slide-2 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="../Bayesian/leave_out/CredInt2015.png" 
+width="60%" />
+
+## Results: mortality and recruitment|biomass ~ larval abundance + t~*ice*~ + condition (2014)
+<style> 
+  #slide-2 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="../Bayesian/leave_out/CredInt2014.png" 
+width="60%" />
+
+## Results: mortality and recruitment|biomass ~ larval abundance + t~*ice*~ + condition (2013)
+<style> 
+  #slide-2 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="../Bayesian/leave_out/CredInt2013.png" 
+width="60%" />
+
+## Results: mortality and recruitment|biomass ~ larval abundance + t~*ice*~ + condition (2012)
+<style> 
+  #slide-2 > p { 
+    margin-top: -50px; 
+  } 
+</style>
+<img src="../Bayesian/leave_out/CredInt2012.png" 
+width="60%" />
+
