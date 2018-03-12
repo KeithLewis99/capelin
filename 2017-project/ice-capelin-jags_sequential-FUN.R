@@ -194,3 +194,32 @@ plotCredInt2 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = c
      p <- p + theme_bw() + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
      return(p)
 }
+
+
+
+
+capelin_data <- function(capelin_data_set){
+     # source: "Age disaggregate abundance for Keith Lewis - 2017 added_v1.xlsx"
+     #browser()
+     if(capelin_data_set == "biomass"){
+          cap <- read_csv('data/capelin-2017.csv')
+          cap$ln_abun_med <- log(cap$abundance_med)
+          cap$ln_ab_lci <- log(cap$ab_lci)
+          cap$ln_ab_uci <- log(cap$ab_uci)
+          cap$ln_biomass_med <- log(cap$biomass_med)
+          cap$ln_bm_lci <- log(cap$bm_lci)
+          cap$ln_bm_uci <- log(cap$bm_uci)
+          return(cap)
+     }
+     else if (x == "age") {
+          ## read in Age2 capelin----
+          #from "capelin_age_disaggregate_abundance.xlsx" worksheet:Age disagg acoustic index
+          capelinAbun <- read_csv('data/capelin_age_disaggregate_abundance.csv')
+          str(capelinAbun)
+          capelinAbun$age2_log <- log(capelinAbun$age2)
+          capelinAbun$age2_log10 <- log10(capelinAbun$age2)
+          capelinAbun$Ln_adult_abun <- log(sum(capelinAbun$age3, capelinAbun$age4, capelinAbun$age5, capelinAbun$age6, na.rm=T) + capelinAbun$age2*capelinAbun$age2PerMat)
+          capelinAbun$adult_abun <- sum(capelinAbun$age3, capelinAbun$age4, capelinAbun$age5, capelinAbun$age6, na.rm=T) + capelinAbun$age2*capelinAbun$age2PerMat
+          return(capelinAbun)
+     }
+}

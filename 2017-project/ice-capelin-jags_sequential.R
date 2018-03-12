@@ -31,28 +31,24 @@ source('D:/Keith/R/zuur_rcode/HighstatLibV7.R')
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
 
+## Set parameters for analysis----
+"biomass" <- "capelin_data_set"
+STpred <- c(-1.1798, -0.5525)
+PSpred <- c(-0.024866638, 0)
+TIpred <- c(0.57, 0.788)
+COpred <- c(0, 0)
+
+# to inform Tice values
+x <- as.Date('2018-02-26') # this is a minimum - I looked at the ice maps on 2018-03-02 and the ice is comming!
+lubridate::yday(x)
+x <- as.Date('2018-03-17')
+lubridate::yday(x)
 
 ## load data----
 ## capelin (1985-2017)----
-# source: Age disaggregate abundance for Keith Lewis - 2017 added_v1.xlsx
-cap <- read_csv('data/capelin-2017.csv')
-glimpse(cap)
-#View(cap)
-cap$ln_abun_med <- log(cap$abundance_med)
-cap$ln_ab_lci <- log(cap$ab_lci)
-cap$ln_ab_uci <- log(cap$ab_uci)
-cap$ln_biomass_med <- log(cap$biomass_med)
-cap$ln_bm_lci <- log(cap$bm_lci)
-cap$ln_bm_uci <- log(cap$bm_uci)
-
-#cap[26,11:13]
-#temp <- subset(cap, year>1998)
-#x <- (temp$ln_biomass_med[4] - temp$ln_biomass_med[12])/2
-
-
-#cap$ln_biomass_med[26] <- cap$ln_biomass_med[26] + x
-#cap$ln_bm_lci[26] <- log(cap$bm_lci)[26] + x
-#cap$ln_bm_uci[26] <- log(cap$bm_uci)[26] + x
+# source(biomass): "Age disaggregate abundance for Keith Lewis - 2017 added_v1.xlsx"
+# source(age2): "capelin_age_disaggregate_abundance.xlsx" worksheet:Age disagg acoustic index
+cap <- capelin_data("biomass")
 
 ## ice (1969-2017)----
 #source: ice-chart-processing-data-v3.R
@@ -238,9 +234,8 @@ df3 <- subset(df1, year>2002)
 
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
-                   ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
-                   PS=c(df3$ps_meanTot_lag2, c(-0.024866638, 0
-)), #see df_norm
+                   ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
+                   PS=c(df3$ps_meanTot_lag2, PSpred), #see df_norm
                    N = nrow(df3) + num_forecasts)
 
 run_recruit <- jags(data=model_data,
@@ -426,16 +421,12 @@ sigma ~ dunif(0, 10)
 # sigma: uninformative for condition
 #df2 <- subset(df1, year>2002)
 df2 <- df1
-x <- as.Date('2018-02-26') # this is a minimum - I looked at the ice maps on 2018-03-02 and the ice is comming!
-lubridate::yday(x)
 
-x <- as.Date('2018-03-17')
-lubridate::yday(x)
 
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)), 
-                   TI=c(df2$tice, c(0.5, 0.788)), #from capelin_larval_indices 
-                   CO=c(df2$resids_lag, c(0, 0)), #made up - need new data
+                   TI=c(df2$tice, TIpred), #from capelin_larval_indices 
+                   CO=c(df2$resids_lag, COpred), #made up - need new data
                    N = nrow(df2) + num_forecasts)
 
 run_mortality <- jags(data=model_data,
@@ -593,7 +584,7 @@ ggsave("Bayesian/mortality_1/priorpost.pdf", width=10, height=8, units="in")
 
 ## M-(uniform)----
 #"alpha + beta*TI[i]*(1-TI[i]/gamma) + delta*CO[i]"
-
+#"alpha + beta*TI[i]*(1-TI[i]/gamma) + delta*CO[i]"
 m.mort_unif = '
 model {
 # 1. Likelihood
@@ -631,10 +622,11 @@ sigma ~ dunif(0, 100)
 # gamma,delta, sigma: uninformative for condition
 #df2 <- subset(df1, year>2002)
 df2 <- df1
+
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)), 
-                   TI=c(df2$tice, c(0.5, 0.788)), #from capelin_larval_indices 
-                   CO=c(df2$resids_lag, c(0, 0)), #made up - need new data
+                   TI=c(df2$tice, TIpred), #from capelin_larval_indices 
+                   CO=c(df2$resids_lag, COpred), #made up - need new data
                    N = nrow(df2) + num_forecasts)
 
 run_mort_unif <- jags(data=model_data,
@@ -823,9 +815,8 @@ sigma ~ dunif(0, 100)
 #df3 <- subset(df2, year>2002)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
-                   ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
-                   CO=c(df3$resids_lag, c(0, 0
-)), #see df_norm
+                   ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
+                   CO=c(df3$resids_lag, COpred), #see df_norm
                    N = nrow(df3) + num_forecasts)
 
 run_RM1 <- jags(data=model_data,
@@ -996,8 +987,8 @@ df3 <- subset(df1, year>2002)
 num_forecasts = 2 # 2 extra years
 
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
-                   ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
-                   TI=c(df3$tice, c(0.5, 0.788)), #made up - need new data
+                   ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
+                   TI=c(df3$tice, TIpred), #made up - need new data
                    N = nrow(df3) + num_forecasts)
 
 run_RM2 <- jags(data=model_data,
@@ -1196,9 +1187,9 @@ sigma ~ dunif(0, 100)
 df3 <- subset(df2, year>2002)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
-                   ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
-                   TI=c(df3$tice, c(0.5, 0.788)), #made up - need new data
-                   CO=c(df3$resids_lag, c(0, 0)),
+                   ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
+                   TI=c(df3$tice, TIpred), #made up - need new data
+                   CO=c(df3$resids_lag, COpred),
                    N = nrow(df3) + num_forecasts)
 
 run_RM3 <- jags(data=model_data,
@@ -1400,8 +1391,8 @@ df3 <- subset(df2, year>2002)
 
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
-                   ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices 
-                   PS=c(df3$ps_meanTot_lag2, c(-0.024866638, 0)), #made up - need new data
+                   ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices 
+                   PS=c(df3$ps_meanTot_lag2, PSpred), #made up - need new data
                    N = nrow(df3) + num_forecasts)
 
 run_recruit_prior <- jags(data=model_data,
@@ -1584,8 +1575,8 @@ sigma ~ dunif(0, 100)
 df2 <- df1
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)), 
-                   TI=c(df2$tice, c(-2.190133, 0)), #from capelin_larval_indices 
-                   CO=c(df2$meanCond_lag, c(0, 0)), #made up - need new data
+                   TI=c(df2$tice, TIpred), #from capelin_larval_indices 
+                   CO=c(df2$meanCond_lag, COpred), #made up - need new data
                    N = nrow(df2) + num_forecasts)
 
 run_mortality <- jags(data=model_data,
@@ -1744,7 +1735,7 @@ sigma ~ dunif(0, 10)
 df2 <- df1
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df2$ln_biomass_med, rep(NA, num_forecasts)), 
-                   TI=c(df2$tice, c(0.5, 0.789)), #from capelin_larval_indices 
+                   TI=c(df2$tice, TIpred), #from capelin_larval_indices 
                    N = nrow(df2) + num_forecasts)
 
 run_mortality_null <- jags(data=model_data,
@@ -1916,7 +1907,7 @@ df3 <- subset(df2, year>2002)
 
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
-                   ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
+                   ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
                    N = nrow(df3) + num_forecasts)
 
 run_recruit_null <- jags(data=model_data,
@@ -2076,14 +2067,14 @@ model {
 df3 <- subset(df2, year>2002)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
-ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
-TI=c(df3$tice, c(0.788, 0.788)), #made up - need new data
-CO=c(df3$resids_lag, c(0, 0)),
-N = nrow(df3) + num_forecasts)
+     ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
+     TI=c(df3$tice, c(0.788, 0.788)), #made up - need new data
+     CO=c(df3$resids_lag, COpred),
+     N = nrow(df3) + num_forecasts)
 
 run_RM3 <- jags(data=model_data,
-parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
-model.file = textConnection(RM3_1p_med))
+                parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
+                model.file = textConnection(RM3_1p_med))
 
 #UPDATE WITH MORE BURN INS
 run_RM3 <-update(run_RM3, n.iter = 300000, n.thin = 50, n.burnin = 100000)
@@ -2282,9 +2273,9 @@ sigma ~ dunif(0, 100)
 df3 <- subset(df2, year>2002)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(df3$ln_biomass_med, rep(NA, num_forecasts)), 
-                   ST=c(df3$surface_tows_lag2, c(-1.1798, -0.5525)), #from capelin_larval_indices - see df_norm
+                   ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
                    TI=c(df3$tice, c(0.98, 0.98)), #made up - need new data
-                   CO=c(df3$resids_lag, c(0, 0)),
+                   CO=c(df3$resids_lag, COpred),
                    N = nrow(df3) + num_forecasts)
 
 run_RM3 <- jags(data=model_data,
