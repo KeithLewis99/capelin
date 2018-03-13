@@ -223,3 +223,22 @@ capelin_data <- function(capelin_data_set){
           return(capelinAbun)
      }
 }
+
+condition_data <- function(condition_data_set, df){
+     if(condition_data_set == "cond"){
+          cond <- read_csv(df)
+          #lag data
+          cond$meanCond_lag <- lag(cond$meanCond, 1)
+          cond$medCond_lag <- lag(cond$medCond, 1)
+          return(cond)
+     } else if(condition_data_set == "resids") {
+          #Fran's original
+          condResids <- read_csv('data/archive/condition_resids.csv')
+               condResids[19:20,2] <- NA
+               condResids[c(19, 20), 1] <- matrix(c(2016, 2017), ncol = 1) 
+               condResids$resids_lag <- lag(condResids$resids, 1)
+               condResids$resids_lag[20] <- condResids$resids_lag[19]
+               #View(condResids)
+               return(condResids)
+     }
+}
