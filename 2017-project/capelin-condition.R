@@ -37,17 +37,19 @@ df <- rbind(df, df_1617)
 glimpse(df)
 View(tail(df, 100))
 write_csv(df, "data/condition_1979_2017.csv")
+
 #create one filter for ice-capelin project and one for Fran and the markdown doc
 df1 <- df %>%
      filter(year > 1992 &  sex==1 & age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
-cols <- c("project", "nafo_div", "project_code", "sex", "maturity")
+cols <- c("project", "nafo_div", "sex", "maturity")
 df1 %<>%
      mutate_each_(funs(factor(.)),cols)
 glimpse(df1)
 
+df1$nafo_div <- as.factor(df1$nafo_div)
 levels(df1$nafo_div)[levels(df1$nafo_div) == "23"] <- "2J"
 levels(df1$nafo_div)[levels(df1$nafo_div) == "31"] <- "3K"
 levels(df1$nafo_div)[levels(df1$nafo_div) == "32"] <- "3L"
@@ -86,11 +88,7 @@ df1 <- df1 %>%
      group_by(year) %>%
      right_join(x=df1, y=quant, by ="year") %>%
      filter(weight < uq & length > lq)
-# for age 1
-#df1 <- df1 %>%
- #    group_by(year) %>%
-  #   right_join(x=df1, y=quant, by ="year") %>%
-   #  filter(weight < uq)
+
 
 ## DATA EXPLORATION - ZUUR 2010----
 ## Step 1 Are there outliers in X and Y?
@@ -126,6 +124,7 @@ ggplot(data=df1) +
 
 ggplot(data=df1) +
      geom_boxplot(aes(x = as.factor(month), y = weight)) +      facet_wrap(~nafo_div)
+
 
 # nafo_div (3L lower length and weight)- probably older bc of latter in season
 ggplot(data=df1) +
@@ -193,19 +192,27 @@ par(mfrow = c(1,1))
 # problems with residuals but this may be due to outliers
 # 3 outliers; homogeneity looks good other than than.  Normality stinks but probably not a problem - very few values.
 # 2405, 3962, 2227 - outliers before filtering for 99%
-data.frame(df1[2405,])# short and heavy
-data.frame(df1[3962,]) # long and light
-data.frame(df1[2227,])# long and light
 
 # new outliers
-data.frame(df1[2006,])# short and heavy
-data.frame(df1[1828,]) # long and light
-data.frame(df1[3542,])# long and light
+data.frame(df1[2006, c("month", "length", "weight")])# short and heavy
+data.frame(df1[1828, c("month", "length", "weight")]) # long and light
+data.frame(df1[3542, c("month", "length", "weight")])# long and light
 #leverage
-data.frame(df1[332,])# short and light
+data.frame(df1[332, c("month", "length", "weight")])# short and light
 
-# for age 2
-data.frame(df1[2363,])
+# check and remove outliers for age 2 - rerun
+data.frame(df1[1343, c("month", "length", "weight")])# l/h
+data.frame(df1[173, c("month", "length", "weight")]) # s/l
+data.frame(df1[2363, c("month", "length", "weight")])# l/l
+df1 <- df1[-c(1343, 173, 2363), ]
+
+# check and remove outliers for age 1 - rerun
+df1[1978, c("month", "length", "weight")] # s/h
+df1[3491, c("month", "length", "weight")] # l/l
+df1[1801, c("month", "length", "weight")] # l/m
+str(df1)
+df1 <- df1[-c(1801, 1978, 3491), ]
+
 
 ##output----
 df1$fits <- fitted(m1)
@@ -217,6 +224,7 @@ df1$resids <- df1$weight-10^df1$fits
 
 plot(df1$rel.cond, df1$resids)
 # produce table
+
 df1 %>%
      group_by(year, nafo_div) %>%
      summarize(meanCond = round(mean(rel.cond),2), stdCond= round(sd(rel.cond),2)) %>% 
@@ -225,47 +233,70 @@ df1 %>%
 
 filter(df1, year >1998) %>%
      count()
-# produce output for Bayesain analysis
-out <- df1 %>%
-     group_by(year) %>%
-     summarize(meanCond = round(mean(rel.cond),4), stdCond= round(sd(rel.cond),4), medCond = round(median(rel.cond), 4))
-#write_csv(out, "data/condition_ag1_out.csv")
-#this was for data to 2015 only
-#write_csv(out, "data/condition_ag2_out.csv")
-write_csv(out, "data/condition_ag2a_out.csv")
+
+df2 <- df1 %>%
+     filter(rel.cond <1.3 & rel.cond > 0.75)
+#df2 <- temp[c("month", "length", "weight")]
+View(temp)
 
 #nafo by year
-ggplot(data=df1) +
+ggplot(data=df2) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
      ylab("Relative condition") +
      xlab("Year") +
      facet_wrap(~nafo_div, ncol=1) + 
+     geom_hline(aes(yintercept = 1), colour = 'red') +
      theme_bw()
 levels(as.factor(df1$year))
 # there appear to be a few outliers here but they should have minimal influence on the final outcome
-nrow(subset(df1, rel.cond > 1.5))
-nrow(subset(df1, rel.cond < 0.75))
+
 
 #month by year
-ggplot(data=df1) +
+ggplot(data=df2) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
      facet_wrap(~month)
+
 #project by year
-ggplot(data=df1) +
+ggplot(data=df2) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
-     facet_wrap(~project)
+     facet_wrap(~project) +
+     geom_hline(aes(yintercept = 1), colour = 'red')
 
 #nafo by month
-ggplot(data=df1) +
+ggplot(data=df2) +
      geom_boxplot(aes(x = month, y = rel.cond, group = month)) + 
-     facet_wrap(~nafo_div)
+     facet_wrap(~nafo_div) +
+     geom_hline(aes(yintercept = 1), colour = 'red')
+
+meanMonthNafo <- df2 %>%
+     group_by(nafo_div, month) %>%
+     summarize(mean = mean(rel.cond)) %>%
+     spread(nafo_div, mean)
+meanMonthNafo
+
+countMonthNafo <- df2 %>%
+     group_by(nafo_div, month) %>%
+     summarize(count = n()) %>%
+     spread(nafo_div, count)
+countMonthNafo
 
 # year by condition
-ggplot(data=df1) +
+ggplot(data=df2) +
      geom_point(aes(x = log10(length), y = log10(weight), colour = nafo_div)) + 
      facet_wrap(~year)
 
+# produce output for Bayesain analysis
+out <- df2 %>%
+     group_by(year) %>%
+     #filter(nafo_div == "3K" & month == 11) %>%
+     summarize(meanCond = round(mean(rel.cond),4), stdCond= round(sd(rel.cond),4), medCond = round(median(rel.cond), 4))
+View(out)
+write_csv(out, "data/condition_ag1_out.csv")
+#this was for data to 2015 only
+#write_csv(out, "data/condition_ag2_out.csv")
+write_csv(out, "data/condition_ag2a_out.csv")
 
+########################
 ## compare observed/expected to residuals - is there a difference
 condResids <- read.csv('data/archive/condition_resids.csv')
 str(condResids)
@@ -309,3 +340,7 @@ temp <- df11 %>%
      summarize(mean_resid = mean(res))
 df1
 levels(as.factor(df1$nafo_div))
+
+
+
+
