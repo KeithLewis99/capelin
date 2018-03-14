@@ -15,7 +15,7 @@
 #'
 #' @examples plotCredInt(df2, yaxis = "ln_biomass_med", ylab = "ln(capelin)", y_line = y_med, ci_df2, pi_df2, model = txt, x = 2006, y = 8)
 
-plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpi = dpi, model = model, x = x, y = y){
+plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpi = dpi, model = model, x = x, y = y, type = type){
      p <- ggplot()  
      #browser()
      p <- p + geom_ribbon(aes(x = c(df$year, 2018:2019), 
@@ -32,7 +32,12 @@ plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci
                          aes_string(y = yaxis, x = "year"),
                          shape = 16, 
                          size = 1.5)
-     p <- p + geom_errorbar(data = df, width = 0.3, colour = "black", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
+    if(!is.na(type)){
+         p <- p + geom_errorbar(data = df, width = 0.3, colour = "black", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
+    } else if (is.na(type)) {
+         p
+    }
+         
      p <- p + xlab("Year") + ylab(paste(ylab))
     # p <- p + theme(axis.title = element_text(size=30), axis.text = element_text(size = 20)) 
      #p <- p + theme(text = element_text(size=25)) + theme_bw()
@@ -115,14 +120,130 @@ posterior_fig <- function(ls){
 
 
 
-# not using - not appropriate
-DIC_out <- function(df){
-     browser()
-     dic_mod <-dic.samples(df$model, 1000, "pD")
-     dic_val <- sum(dic_mod$deviance) + sum(dic_mod$penalty)
-     return(dic_val)
+#' Title
+#'
+#' @param capelin_data_set 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+capelin_data <- function(capelin_data_set){
+# source: "Age disaggregate abundance for Keith Lewis - 2017 added_v1.xlsx"
+     #browser()
+     if(capelin_data_set == "biomass"){
+          cap <- read_csv('data/capelin-2017.csv')
+          cap$ln_abun_med <- log(cap$abundance_med)
+          cap$ln_ab_lci <- log(cap$ab_lci)
+          cap$ln_ab_uci <- log(cap$ab_uci)
+          cap$ln_biomass_med <- log(cap$biomass_med)
+          cap$ln_bm_lci <- log(cap$bm_lci)
+          cap$ln_bm_uci <- log(cap$bm_uci)
+          return(cap)
+     }
+     else if (capelin_data_set == "age") {
+#from "capelin_age_disaggregate_abundance.xlsx" worksheet:Age disagg acoustic index
+          capelinAbun <- read_csv('data/capelin_age_disaggregate_abundance.csv')
+          str(capelinAbun)
+          capelinAbun$age2_log <- log(capelinAbun$age2)
+          capelinAbun$age2_log10 <- log10(capelinAbun$age2)
+          capelinAbun$Ln_adult_abun <- log(sum(capelinAbun$age3, capelinAbun$age4, capelinAbun$age5, capelinAbun$age6, na.rm=T) + capelinAbun$age2*capelinAbun$age2PerMat)
+          capelinAbun$adult_abun <- sum(capelinAbun$age3, capelinAbun$age4, capelinAbun$age5, capelinAbun$age6, na.rm=T) + capelinAbun$age2*capelinAbun$age2PerMat
+          return(capelinAbun)
+     }
+}
+
+#' Title
+#'
+#' @param cond 
+#' @param df 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+condition_data <- function(cond, df){
+     if(cond == "cond"){
+          cond <- read_csv(df)
+          #lag data
+          cond$meanCond_lag <- lag(cond$meanCond, 1)
+          cond$medCond_lag <- lag(cond$medCond, 1)
+          return(cond)
+     } else if(cond == "resids") {
+          #Fran's original
+          condResids <- read_csv('data/archive/condition_resids.csv')
+               condResids[19:20,2] <- NA
+               condResids[c(19, 20), 1] <- matrix(c(2016, 2017), ncol = 1) 
+               condResids$resids_lag <- lag(condResids$resids, 1)
+               condResids$resids_lag[20] <- condResids$resids_lag[19]
+               #View(condResids)
+               return(condResids)
+     }
+}
+
+
+#' Title
+#'
+#' @param x 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+make_direct <- function(x){
+     if(x==
+        "yes"){
+          if(!dir.exists("Bayesian/age2/mortality_0")) dir.create("Bayesian/age2/mortality_0")
+     if(!dir.exists("Bayesian/age2/mortality_1")) dir.create("Bayesian/age2/mortality_1")
+     if(!dir.exists("Bayesian/age2/mortality_2")) dir.create("Bayesian/age2/mortality_2")
+     if(!dir.exists("Bayesian/age2/mortality_3")) dir.create("Bayesian/age2/mortality_3")
+     if(!dir.exists("Bayesian/age2/recruitment_0")) dir.create("Bayesian/age2/recruitment_0")
+     if(!dir.exists("Bayesian/age2/recruitment_1")) dir.create("Bayesian/age2/recruitment_1")
+     if(!dir.exists("Bayesian/age2/recruitment_2")) dir.create("Bayesian/age2/recruitment_2")
+     if(!dir.exists("Bayesian/age2/rm_1")) dir.create("Bayesian/age2/rm_1")
+     if(!dir.exists("Bayesian/age2/rm_2")) dir.create("Bayesian/age2/rm_2")
+     if(!dir.exists("Bayesian/age2/rm_3")) dir.create("Bayesian/age2/rm_3")
+     if(!dir.exists("Bayesian/age2/rm3_1p_high")) dir.create("Bayesian/age2/rm3_1p_high")
+     if(!dir.exists("Bayesian/age2/rm3_1p_med")) dir.create("Bayesian/age2/rm3_1p_med")     
+     }
+}
+
+
+# names for pairs-plot
+#' Title
+#'
+#' @param x 
+#' @param y 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+name_pairPlot <- function(x, y){
+     #browser()
+     df_name <- x
+     df_name <- subset(df_name, year >= 2003)
+     if(y == "biomass"){
+          names(df_name)[names(df_name) == "ln_biomass_med"] <- "ln capelin biomass"
+          #names(df_name)[names(df_name) == "resids_lag"] <- "condition l1"
+          names(df_name)[names(df_name) == "meanCond_lag"] <- "condition l1"
+          
+          names(df_name)[names(df_name) == "surface_tows_lag2"] <- "larval abundance l2"
+          names(df_name)[names(df_name) == "ps_meanTot_lag2"] <- "zooplankton abun l2"
+          return(df_name)
+     } else if (y == "age"){
+          names(df_name)[names(df_name) == "age2"] <-  "log10_age2 index"
+          #names(df_name)[names(df_name) == "resids_lag"] <- "condition l1"
+          names(df_name)[names(df_name) == "meanCond_lag"] <- "condition l1"
+          
+          names(df_name)[names(df_name) == "surface_tows_lag2"] <- "larval abundance l2"
+          names(df_name)[names(df_name) == "ps_meanTot_lag2"] <- "zooplankton abun l2"
+          return(df_name)
+     }
      
 }
+
+
 
 # This is a crude approach to leave one out
 plotCredInt1 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpi = dpi, model = model, x = x, y = y){
@@ -134,8 +255,8 @@ plotCredInt1 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = c
                           alpha = 0.5, fill = "grey60")
      pi_n <- dpi[, ncol(dpi)]
      p <- p + geom_errorbar(aes(x = insert$year, 
-                              ymax = pi_n[2], 
-                              ymin = pi_n[1]), fill = "grey40")
+                                ymax = pi_n[2], 
+                                ymin = pi_n[1]), fill = "grey40")
      #p <- p + geom_text() +
      # annotate("text", label = model, x = x, y = y, size = 7.5)
      p <- p + geom_point(data = df, 
@@ -195,50 +316,11 @@ plotCredInt2 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = c
      return(p)
 }
 
-
-
-
-capelin_data <- function(capelin_data_set){
-     # source: "Age disaggregate abundance for Keith Lewis - 2017 added_v1.xlsx"
-     #browser()
-     if(capelin_data_set == "biomass"){
-          cap <- read_csv('data/capelin-2017.csv')
-          cap$ln_abun_med <- log(cap$abundance_med)
-          cap$ln_ab_lci <- log(cap$ab_lci)
-          cap$ln_ab_uci <- log(cap$ab_uci)
-          cap$ln_biomass_med <- log(cap$biomass_med)
-          cap$ln_bm_lci <- log(cap$bm_lci)
-          cap$ln_bm_uci <- log(cap$bm_uci)
-          return(cap)
-     }
-     else if (x == "age") {
-          ## read in Age2 capelin----
-          #from "capelin_age_disaggregate_abundance.xlsx" worksheet:Age disagg acoustic index
-          capelinAbun <- read_csv('data/capelin_age_disaggregate_abundance.csv')
-          str(capelinAbun)
-          capelinAbun$age2_log <- log(capelinAbun$age2)
-          capelinAbun$age2_log10 <- log10(capelinAbun$age2)
-          capelinAbun$Ln_adult_abun <- log(sum(capelinAbun$age3, capelinAbun$age4, capelinAbun$age5, capelinAbun$age6, na.rm=T) + capelinAbun$age2*capelinAbun$age2PerMat)
-          capelinAbun$adult_abun <- sum(capelinAbun$age3, capelinAbun$age4, capelinAbun$age5, capelinAbun$age6, na.rm=T) + capelinAbun$age2*capelinAbun$age2PerMat
-          return(capelinAbun)
-     }
-}
-
-condition_data <- function(condition_data_set, df){
-     if(condition_data_set == "cond"){
-          cond <- read_csv(df)
-          #lag data
-          cond$meanCond_lag <- lag(cond$meanCond, 1)
-          cond$medCond_lag <- lag(cond$medCond, 1)
-          return(cond)
-     } else if(condition_data_set == "resids") {
-          #Fran's original
-          condResids <- read_csv('data/archive/condition_resids.csv')
-               condResids[19:20,2] <- NA
-               condResids[c(19, 20), 1] <- matrix(c(2016, 2017), ncol = 1) 
-               condResids$resids_lag <- lag(condResids$resids, 1)
-               condResids$resids_lag[20] <- condResids$resids_lag[19]
-               #View(condResids)
-               return(condResids)
-     }
+# not using - not appropriate
+DIC_out <- function(df){
+     browser()
+     dic_mod <-dic.samples(df$model, 1000, "pD")
+     dic_val <- sum(dic_mod$deviance) + sum(dic_mod$penalty)
+     return(dic_val)
+     
 }
