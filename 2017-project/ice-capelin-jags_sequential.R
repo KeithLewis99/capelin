@@ -32,7 +32,9 @@ source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
 
 # make new folders
-make_direct("yes")
+folder_path_gen <- "Bayesian/age2/"
+
+make_direct1(folder_names, folder_path_gen)
 
 ## Set parameters for analysis----
 capelin_data_set <- "age" # type of capelin index - alt value == "biomass"
@@ -47,11 +49,16 @@ COpred <- if(x=="cond"){
 } else if(x =="resids"){
      COpred <- c(0, 0)
      }
-filepath <- "age2" # for filepath for datasets and pairs Plots - set rest individually using Find and Replace
+filepath <- "age2"
+
+
+
+# for filepath for datasets and pairs Plots - set rest individually using Find and Replace
 
 ylab1 = "log10 capelin - age2" #"ln_biomass_med"
 yaxis1 = "age2_log10" # for credInt
-# see line  145, 166
+# see Set Data Sets
+# change filepath below Find/Replace
 
 # to inform Tice values
 y <- as.Date('2018-02-26') # this is a minimum - I looked at the ice maps on 2018-03-02 and the ice is comming!

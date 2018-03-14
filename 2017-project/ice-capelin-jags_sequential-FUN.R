@@ -209,6 +209,28 @@ make_direct <- function(x){
 }
 
 
+folder_names <- c("mortality_0", 
+                  "mortality_1", 
+                  "mortality_2", 
+                  "mortality_3", 
+                  "recruitment_0", 
+                  "recruitment_1", 
+                  "recruitment_2", 
+                  "rm_1", 
+                  "rm_2", 
+                  "rm_3", 
+                  "rm3_1p_high",
+                  "rm3_1p_high")
+
+
+make_direct1 <- function(folder_names, folder_path_gen){
+     #browser()
+     for(i in folder_names){
+          if(!dir.exists(paste0(folder_path_gen, i))) dir.create(paste0(folder_path_gen, i))
+     }
+}
+
+
 # names for pairs-plot
 #' Title
 #'
