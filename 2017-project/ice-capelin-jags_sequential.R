@@ -32,12 +32,12 @@ source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
 
 # make new folders
-folder_path_gen <- "Bayesian/age2/"
+folder_path_gen <- "Bayesian/biomass_cond_ag1/"
 
 make_direct1(folder_names, folder_path_gen)
 
 ## Set parameters for analysis----
-capelin_data_set <- "age" # type of capelin index - alt value == "biomass"
+capelin_data_set <- "biomass" # type of capelin index - alt value == "age"
 cond <- "cond" # type of condition index - alt value == "resids"
 # sets the values for the predition interval
 STpred <- c(-1.1798, -0.5525)
@@ -48,21 +48,26 @@ COpred <- if(x=="cond"){
      COpred <- c(2.676996, 0)
 } else if(x =="resids"){
      COpred <- c(0, 0)
-     }
-filepath <- "age2"
+}
 
 
+# sets the subfolder
+filepath <- "biomass_cond_ag1"  # for filepath for datasets and pairs Plots - set rest individually using Find and Replace
 
-# for filepath for datasets and pairs Plots - set rest individually using Find and Replace
-
-ylab1 = "log10 capelin - age2" #"ln_biomass_med"
-yaxis1 = "age2_log10" # for credInt
+# changes of the axis and axis labels for credInt
+ylab1 = "ln(capelin biomass(ktons))" #alt: "log10 capelin - age2"
+yaxis1 = "ln_biomass_med" # alt: "age2_log10"
 # see Set Data Sets
-# change filepath below Find/Replace
+# see condition data set
+# change "filepath <-" below Find/Replace
+# change "type ="
+# change "CO=c(df3$meanCond_lag alt: resids_lag
 
-# to inform Tice values
-y <- as.Date('2018-02-26') # this is a minimum - I looked at the ice maps on 2018-03-02 and the ice is comming!
-lubridate::yday(y)
+
+# tice Date
+# to inform TIpred values
+tice_day <- as.Date('2018-02-26') # this is a minimum - I looked at the ice maps on 2018-03-02 and the ice is comming!
+lubridate::yday(tice_day)
 
 ## load data----
 ## capelin (1985-2017)----
@@ -75,7 +80,7 @@ cap <- capelin_data(capelin_data_set)
 ice <- read_csv('output-processing/capelin-m1.csv')
 glimpse(ice)
 
-## condition (1995-2015)-----
+## condition (1995-2017)-----
 # source: for "cond" see capelin-condition.R for original and derived datasets
 # source: for "resids" see Fran's original "capelin_condition_maturation.xlsx"
 cond <- condition_data(cond, 'data/condition_ag1_out.csv')
@@ -153,8 +158,8 @@ write_csv(df1, paste0("Bayesian/", filepath, "/all_data_a1.csv"))
 
 
 # pairs-plot: relationships and correlations among RV and EV----
-df_name <- name_pairPlot(df1, "age")
-z <- "log10_age2 index"
+df_name <- name_pairPlot(df1, "biomass")
+z <- "ln capelin biomass" # alt "log10_age2 index"
 
 pdf(paste0("Bayesian/", filepath, "/pairs_resids.pdf"))
 pairs.panels(df_name[c(z, "tice", "condition l1", "larval abundance l2", "zooplankton abun l2")], 
@@ -163,15 +168,17 @@ pairs.panels(df_name[c(z, "tice", "condition l1", "larval abundance l2", "zoopla
              density = F,  # show density plots
              ellipses = F, # show correlation ellipses,
              cex.labels = 1,
-             cex.cor = 5
+             cex.cor = 1
 )
 dev.off()
 
 #######Set data sets----
 df3 <- subset(df1, year>2002)
 df2 <- df1
-pred3 <- df3$age2_log10 # for credInt
-pred2 <- df2$age2_log10 # for credInt
+
+pred3 <- df3$ln_biomass_med # for credInt alt:  age2_log10
+pred2 <- df2$ln_biomass_med # for credInt alt: age2_log10
+
 #########Bayesian models#############################
 ## Recruitment----
 #"alpha + beta*ST[i] + gamma*PS[i]"
@@ -231,7 +238,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma')
-filepath <- "age2/recruitment_1"
+filepath <- "biomass_cond_ag1/recruitment_1"
 
 MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = paste0("Bayesian/", filepath, "/chains.pdf"), width=10, height=8, units="in")
@@ -309,7 +316,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2008, y = 8, type = NA)
+            model = txt, x = 2008, y = 8, type = "biomass")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -402,7 +409,7 @@ sigma ~ dunif(0, 10)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(pred2, rep(NA, num_forecasts)), 
                    TI=c(df2$tice, TIpred), #from capelin_larval_indices 
-                   CO=c(df2$resids_lag, COpred), #made up - need new data
+                   CO=c(df2$meanCond_lag, COpred), #made up - need new data
                    N = nrow(df2) + num_forecasts)
 
 run_mortality <- jags(data=model_data,
@@ -423,7 +430,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma', 'delta')
-filepath <- "age2/mortality_1"
+filepath <- "biomass_cond_ag1/mortality_1"
 
 MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = paste0("Bayesian/", filepath, "/chains.pdf"), width=10, height=8, units="in")
@@ -496,7 +503,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df2, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df2, pi_df2, 
-            model = txt, x = 2008, y = 7, type = NA)
+            model = txt, x = 2008, y = 7, type = "biomass")
 
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
@@ -601,7 +608,7 @@ sigma ~ dunif(0, 100)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(pred2, rep(NA, num_forecasts)), 
                    TI=c(df2$tice, TIpred), #from capelin_larval_indices 
-                   CO=c(df2$resids_lag, COpred), #made up - need new data
+                   CO=c(df2$meanCond_lag, COpred), #made up - need new data
                    N = nrow(df2) + num_forecasts)
 
 run_mort_unif <- jags(data=model_data,
@@ -622,7 +629,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma', 'delta')
-filepath <- "age2/mortality_2"
+filepath <- "biomass_cond_ag1/mortality_2"
 
 MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = paste0("Bayesian/", filepath, "/chains.pdf"), width=10, height=8, units="in")
@@ -689,7 +696,7 @@ txt <- "log(caplein) = alpha +  beta*tice*(1-(tice/gamma(unif))) \n + delta*Cond
 plotCredInt(df2, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df2, pi_df2, 
-            model = txt, x = 2006, y = 8, type = NA)
+            model = txt, x = 2006, y = 8, type = "biomass")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -793,7 +800,7 @@ sigma ~ dunif(0, 100)
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), 
                    ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
-                   CO=c(df3$resids_lag, COpred), #see df_norm
+                   CO=c(df3$meanCond_lag, COpred), #see df_norm
                    N = nrow(df3) + num_forecasts)
 
 run_RM1 <- jags(data=model_data,
@@ -812,7 +819,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma')
-filepath <- "age2/rm_1"
+filepath <- "biomass_cond_ag1/rm_1"
 
 
 MyBUGSChains(out, vars)
@@ -877,7 +884,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2008, y = 8, type = NA)
+            model = txt, x = 2008, y = 8, type = "biomass")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -990,7 +997,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma', 'delta')
-filepath <- "age2/rm_2"
+filepath <- "biomass_cond_ag1/rm_2"
 
 MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = paste0("Bayesian/", filepath, "/chains.pdf"), width=10, height=8, units="in")
@@ -1059,7 +1066,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2010, y = 7.75, type = NA)
+            model = txt, x = 2010, y = 7.75, type = "biomass")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -1171,7 +1178,7 @@ num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), 
                    ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
                    TI=c(df3$tice, TIpred), #made up - need new data
-                   CO=c(df3$resids_lag, COpred),
+                   CO=c(df3$meanCond_lag, COpred),
                    N = nrow(df3) + num_forecasts)
 
 run_RM3 <- jags(data=model_data,
@@ -1194,7 +1201,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma', 'delta', 'epsilon')
-filepath <- "age2/rm_3"
+filepath <- "biomass_cond_ag1/rm_3"
 
 MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = paste0("Bayesian/", filepath, "/chains.pdf"), width=10, height=8, units="in")
@@ -1263,7 +1270,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2010, y = 8, type = NA)
+            model = txt, x = 2010, y = 8, type = "biomass")
 ggsave(paste0("Bayesian/", filepath, "/credInt.png"), width=10, height=8, units="in")
 
 # output by parameter
@@ -1396,7 +1403,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma')
-filepath <- "age2/recruitment_2"
+filepath <- "biomass_cond_ag1/recruitment_2"
 
 MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = paste0("Bayesian/", filepath, "/chains.pdf"), width=10, height=8, units="in")
@@ -1465,7 +1472,7 @@ txt <- "log(caplein) = alpha +  beta(prior)*surface_tows_lag2 \n + gamma*pseudoc
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2008, y = 8, type = NA)
+            model = txt, x = 2008, y = 8, type = "biomass")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -1584,7 +1591,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('beta', 'gamma')
-filepath <- "age2/mortality_0"
+filepath <- "biomass_cond_ag1/mortality_0"
 
 MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = paste0("Bayesian/", filepath, "/chains.pdf"), width=10, height=8, units="in")
@@ -1653,7 +1660,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df2, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df2, pi_df2, 
-            model = txt, x = 2006, y = 8, type = NA)
+            model = txt, x = 2006, y = 8, type = "biomass")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=11, height=8, units="in")
 
 # output by parameter
@@ -1750,7 +1757,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta')
-filepath <- "age2/recruitment_0"
+filepath <- "biomass_cond_ag1/recruitment_0"
 
 MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = paste0("Bayesian/", filepath, "/chains.pdf"), width=10, height=8, units="in")
@@ -1814,7 +1821,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2008, y = 8, type = NA)
+            model = txt, x = 2008, y = 8, type = "biomass")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -1894,7 +1901,7 @@ num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), 
      ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
      TI=c(df3$tice, c(0.788, 0.788)), #made up - need new data
-     CO=c(df3$resids_lag, COpred),
+     CO=c(df3$meanCond_lag, COpred),
      N = nrow(df3) + num_forecasts)
 
 run_RM3 <- jags(data=model_data,
@@ -1917,7 +1924,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma', 'delta', 'epsilon')
-filepath <- "age2/rm3_1p_med"
+filepath <- "biomass_cond_ag1/rm3_1p_med"
 
 MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = paste0("Bayesian/", filepath, "/chains.pdf"), width=10, height=8, units="in")
@@ -1983,7 +1990,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
 ylab = ylab1, 
 y_line = y_med, ci_df3, pi_df3, 
-model = txt, x = 2010, y = 8, type = NA)
+model = txt, x = 2010, y = 8, type = "biomass")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -2101,7 +2108,7 @@ num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), 
                    ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
                    TI=c(df3$tice, c(0.98, 0.98)), #made up - need new data
-                   CO=c(df3$resids_lag, COpred),
+                   CO=c(df3$meanCond_lag, COpred),
                    N = nrow(df3) + num_forecasts)
 
 run_RM3 <- jags(data=model_data,
@@ -2124,7 +2131,7 @@ mean(out$sims.list$FitNew > out$sims.list$Fit)
 
 # Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
 vars <- c('alpha', 'beta', 'gamma', 'delta', 'epsilon')
-filepath <- "age2/rm3_1p_high"
+filepath <- "biomass_cond_ag1/rm3_1p_high"
 
 MyBUGSChains(out, vars)
 ggsave(MyBUGSChains(out, vars), filename = paste0("Bayesian/", filepath, "/chains.pdf"), width=10, height=8, units="in")
@@ -2190,7 +2197,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2010, y = 8, type = NA)
+            model = txt, x = 2010, y = 8, type = "biomass")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
