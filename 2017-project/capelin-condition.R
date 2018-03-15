@@ -341,6 +341,72 @@ temp <- df11 %>%
 df1
 levels(as.factor(df1$nafo_div))
 
+#######################
+df1 <- df %>%
+     filter(year > 1992 &  age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
+     filter(!is.na(weight)) %>%
+     filter(!is.na(length)) 
+
+cols <- c("project", "nafo_div", "sex", "maturity")
+df1 %<>%
+     mutate_each_(funs(factor(.)),cols)
+glimpse(df1)
+
+df1$nafo_div <- as.factor(df1$nafo_div)
+levels(df1$nafo_div)[levels(df1$nafo_div) == "23"] <- "2J"
+levels(df1$nafo_div)[levels(df1$nafo_div) == "31"] <- "3K"
+levels(df1$nafo_div)[levels(df1$nafo_div) == "32"] <- "3L"
+levels(df1$sex)[levels(df1$sex) == "1"] <- "Male"
+levels(df1$sex)[levels(df1$sex) == "2"] <- "Female"
+
+glimpse(df1)
+
+m2 <- lm(log10(weight) ~ log10(length), data= df1)
 
 
+df1$fits <- fitted(m2)
+m2$fitted.values
+str(m2)
+df1$rel.cond <- df1$weight/10^df1$fits
 
+df1$resids <- df1$weight-10^df1$fits
+
+plot(df1$rel.cond, df1$resids)
+# produce table
+
+df1 %>%
+     group_by(year, nafo_div) %>%
+     summarize(meanCond = round(mean(rel.cond),2), stdCond= round(sd(rel.cond),2)) %>% 
+     unite(mean, meanCond:stdCond, sep = " +/- ") %>%
+     spread(key = nafo_div, value = mean)
+
+filter(df1, year >1998) %>%
+     count()
+
+df2 <- df1 %>%
+     filter(rel.cond <1.3 & rel.cond > 0.75) %>%
+     filter(sex != 3)
+#df2 <- temp[c("month", "length", "weight")]
+
+#nafo by year
+ggplot(data=df2) +
+     geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
+     ylab("Relative condition") +
+     xlab("Year") +
+     facet_wrap(~nafo_div, ncol=1) + 
+     geom_hline(aes(yintercept = 1), colour = 'red') +
+     theme_bw()
+levels(as.factor(df1$year))
+# there appear to be a few outliers here but they should have minimal influence on the final outcome
+
+ggplot(data=df2) +
+     geom_boxplot(aes(x = sex, y = rel.cond, group = sex), notch=T)
+
+#month by year
+ggplot(data=df2) +
+     geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
+     facet_wrap(~month)
+
+ggplot(data=df2) +
+     geom_boxplot(aes(x = sex, y = rel.cond, group = sex)) + 
+     facet_wrap(~maturity)
