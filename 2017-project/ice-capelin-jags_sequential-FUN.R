@@ -220,7 +220,7 @@ folder_names <- c("mortality_0",
                   "rm_2", 
                   "rm_3", 
                   "rm3_1p_high",
-                  "rm3_1p_high")
+                  "rm3_1p_med")
 
 
 make_direct1 <- function(folder_names, folder_path_gen){
@@ -241,11 +241,11 @@ make_direct1 <- function(folder_names, folder_path_gen){
 #' @export
 #'
 #' @examples
-name_pairPlot <- function(x, y){
+name_pairPlot <- function(x, capelin_data_set){
      #browser()
      df_name <- x
      df_name <- subset(df_name, year >= 2003)
-     if(y == "biomass"){
+     if(capelin_data_set == "biomass"){
           names(df_name)[names(df_name) == "ln_biomass_med"] <- "ln capelin biomass"
           #names(df_name)[names(df_name) == "resids_lag"] <- "condition l1"
           names(df_name)[names(df_name) == "meanCond_lag"] <- "condition l1"
@@ -253,7 +253,7 @@ name_pairPlot <- function(x, y){
           names(df_name)[names(df_name) == "surface_tows_lag2"] <- "larval abundance l2"
           names(df_name)[names(df_name) == "ps_meanTot_lag2"] <- "zooplankton abun l2"
           return(df_name)
-     } else if (y == "age"){
+     } else if (capelin_data_set == "age"){
           names(df_name)[names(df_name) == "age2"] <-  "log10_age2 index"
           #names(df_name)[names(df_name) == "resids_lag"] <- "condition l1"
           names(df_name)[names(df_name) == "meanCond_lag"] <- "condition l1"
@@ -346,3 +346,4 @@ DIC_out <- function(df){
      return(dic_val)
      
 }
+
