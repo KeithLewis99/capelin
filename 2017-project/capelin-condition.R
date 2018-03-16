@@ -285,6 +285,13 @@ ggplot(data=df2) +
      geom_point(aes(x = log10(length), y = log10(weight), colour = nafo_div)) + 
      facet_wrap(~year)
 
+
+# year by condition
+ggplot(data=df2) +
+     geom_point(aes(x = log10(length), y = log10(weight), colour = sex)) + 
+     facet_wrap(~year)
+
+
 # produce output for Bayesain analysis
 out <- df2 %>%
      group_by(year) %>%
@@ -296,7 +303,8 @@ write_csv(out, "data/condition_ag1_out.csv")
 #write_csv(out, "data/condition_ag2_out.csv")
 write_csv(out, "data/condition_ag2a_out.csv")
 
-########################
+
+##Residuals----
 ## compare observed/expected to residuals - is there a difference
 condResids <- read.csv('data/archive/condition_resids.csv')
 str(condResids)
@@ -341,7 +349,7 @@ temp <- df11 %>%
 df1
 levels(as.factor(df1$nafo_div))
 
-#######################
+##Age1 M/F comparisons----
 df1 <- df %>%
      filter(year > 1992 &  age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
@@ -361,46 +369,75 @@ levels(df1$sex)[levels(df1$sex) == "2"] <- "Female"
 
 glimpse(df1)
 
-m2 <- lm(log10(weight) ~ log10(length), data= df1)
+df1.m <- filter(df1, sex == "Male")
+m2.m <- lm(log10(weight) ~ log10(length), data= df1.m)
+
+df1.f <- filter(df1, sex == "Female")
+m2.f <- lm(log10(weight) ~ log10(length), data= df1.f)
 
 
-df1$fits <- fitted(m2)
+df1.m$fits <- fitted(m2.m)
+df1.f$fits <- fitted(m2.f)
+glimpse(df1.f)
+
 m2$fitted.values
 str(m2)
-df1$rel.cond <- df1$weight/10^df1$fits
+df1.m$rel.cond <- df1.m$weight/10^df1.m$fits
 
-df1$resids <- df1$weight-10^df1$fits
+df1.m$resids <- df1.m$weight-10^df1.m$fits
 
-plot(df1$rel.cond, df1$resids)
+plot(df1.m$rel.cond, df1.m$resids)
+
+df1.f$rel.cond <- df1.f$weight/10^df1.f$fits
+df1.f$resids <- df1.f$weight-10^df1.f$fits
+
+plot(df1.f$rel.cond, df1.f$resids)
+
+
+head(df1.f)
+
+temp <- rbind(df1.m, df1.f)
+
 # produce table
 
-df1 %>%
+temp %>%
      group_by(year, nafo_div) %>%
      summarize(meanCond = round(mean(rel.cond),2), stdCond= round(sd(rel.cond),2)) %>% 
      unite(mean, meanCond:stdCond, sep = " +/- ") %>%
      spread(key = nafo_div, value = mean)
 
-filter(df1, year >1998) %>%
+filter(temp, year >1998) %>%
      count()
 
-df2 <- df1 %>%
+temp <- filter(temp, year >1998)
+
+
+df2 <- temp %>%
      filter(rel.cond <1.3 & rel.cond > 0.75) %>%
      filter(sex != 3)
 #df2 <- temp[c("month", "length", "weight")]
 
-#nafo by year
+#nafo by sex
 ggplot(data=df2) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
      ylab("Relative condition") +
      xlab("Year") +
-     facet_wrap(~nafo_div, ncol=1) + 
+     facet_wrap(~sex, ncol=1) + 
      geom_hline(aes(yintercept = 1), colour = 'red') +
      theme_bw()
 levels(as.factor(df1$year))
+
+
+
 # there appear to be a few outliers here but they should have minimal influence on the final outcome
 
 ggplot(data=df2) +
      geom_boxplot(aes(x = sex, y = rel.cond, group = sex), notch=T)
+
+ggplot(data=df2) +
+     geom_boxplot(aes(x = sex, y = rel.cond, group = sex), notch=T) + 
+     facet_wrap(~ year) + 
+     geom_hline(aes(yintercept = 1), colour = 'red')
 
 #month by year
 ggplot(data=df2) +
