@@ -304,36 +304,42 @@ plotCredInt1 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = c
 
 
 # This is a crude approach to leave one out
-plotCredInt2 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpi = dpi, model = model, x = x, y = y){
+plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, insert_year = x, insert_row = z){
      p <- ggplot()  
      #browser()
-     p <- p + geom_ribbon(aes(x = c(df$year, 2010), 
+     p <- p + geom_ribbon(aes(x = c(df$year, insert_year), 
                               ymax = ci[2, ], 
                               ymin = ci[1, ]),
                           alpha = 0.5, fill = "grey60")
-     pi_n <- dpi[,8]
+     pi_n <- dpi[, insert_row]
+# predition interval for point
      p <- p + geom_errorbar(aes(x = insert$year, 
                                 ymax = pi_n[2], 
-                                ymin = pi_n[1]), fill = "grey40")
-     #p <- p + geom_text() +
-     # annotate("text", label = model, x = x, y = y, size = 7.5)
+                                ymin = pi_n[1]))
+     p <- p + geom_point(aes(x = insert$year, 
+                                y = dpp[insert_row]),
+                         colour = "black",
+                         shape = 17, size = 2)
+     
+# ci for capelin
      p <- p + geom_point(data = df, 
                          aes_string(y = yaxis, x = "year"),
                          shape = 16, 
-                         size = 1.5)
+                         size = 1.5,
+                         colour = "black")
      p <- p + geom_errorbar(data = df, width = 0.3, colour = "black", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
      p <- p + xlab("Year") + ylab(paste(ylab))
-     # p <- p + theme(axis.title = element_text(size=30), axis.text = element_text(size = 20)) 
-     #p <- p + theme(text = element_text(size=25)) + theme_bw()
-     p <- p + geom_line(aes(x = c(df$year, 2010), y = y_line))
+     p <- p + geom_line(aes(x = c(df$year, insert_year), y = y_line))
+# ci for knockout year
+     #browser()
+     pd1 <- position_dodge(width = 2)
      p <- p + geom_point(data = insert, 
                          aes_string(y = yaxis, x = "year"),
                          shape = 16, 
                          size = 1.5,
                          colour = "red", 
-                         adj = 0.5)
+                         position=pd1)
      p <- p + geom_errorbar(data = insert, width = 0.3, colour = "red", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
-     
      p <- p + theme_bw() + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
      return(p)
 }
