@@ -304,21 +304,21 @@ plotCredInt1 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = c
 
 
 # This is a crude approach to leave one out
-plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, insert_year = x, insert_row = z){
+plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, insert_year = x){
      p <- ggplot()  
-     browser()
+     #browser()
      # plot credible interval
      p <- p + geom_ribbon(aes(x = c(df$year, insert_year), 
                               ymax = ci[2, ], 
                               ymin = ci[1, ]),
                           alpha = 0.5, fill = "grey60")
-     pi_n <- dpi[, insert_row]
+     pi_n <- dpi[, ncol(dpi)]
 # predition interval for point
      p <- p + geom_errorbar(aes(x = insert$year, 
                                 ymax = pi_n[2], 
                                 ymin = pi_n[1]))
      p <- p + geom_point(aes(x = insert$year, 
-                                y = dpp[insert_row]),
+                                y = last(dpp)),
                          colour = "black",
                          shape = 17, size = 2)
      
