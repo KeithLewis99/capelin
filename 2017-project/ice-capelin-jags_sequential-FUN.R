@@ -306,7 +306,8 @@ plotCredInt1 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = c
 # This is a crude approach to leave one out
 plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, insert_year = x, insert_row = z){
      p <- ggplot()  
-     #browser()
+     browser()
+     # plot credible interval
      p <- p + geom_ribbon(aes(x = c(df$year, insert_year), 
                               ymax = ci[2, ], 
                               ymin = ci[1, ]),
