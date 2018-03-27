@@ -304,7 +304,7 @@ plotCredInt1 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = c
 
 
 # This is a crude approach to leave one out
-plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, insert_year = x){
+plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, insert_year = x, type=type){
      p <- ggplot()  
      #browser()
      # plot credible interval
@@ -328,7 +328,13 @@ plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line
                          shape = 16, 
                          size = 1.5,
                          colour = "black")
-     p <- p + geom_errorbar(data = df, width = 0.3, colour = "black", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
+     
+     if(!is.na(type)){
+          p <- p + geom_errorbar(data = df, width = 0.3, colour = "black", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
+     } else if (is.na(type)) {
+          p
+     }
+     
      p <- p + xlab("Year") + ylab(paste(ylab))
      p <- p + geom_line(aes(x = c(df$year, insert_year), y = y_line))
 # ci for knockout year
@@ -340,7 +346,11 @@ plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line
                          size = 1.5,
                          colour = "red", 
                          position=pd1)
+     if(!is.na(type)){
      p <- p + geom_errorbar(data = insert, width = 0.3, colour = "red", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
+     } else if (is.na(type)) {
+          p
+     }
      p <- p + theme_bw() + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
      return(p)
 }
