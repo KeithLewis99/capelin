@@ -155,8 +155,8 @@ capelin_data <- function(capelin_data_set){
 
 #' Title
 #'
-#' @param cond 
-#' @param df 
+#' @param cond what type measure of condtion is being used, the fitted v. residuals (cond) or just the plain resids as provided by Fran
+#' @param df name of the data set
 #'
 #' @return
 #' @export
