@@ -66,7 +66,7 @@ yaxis1 = "age2_log10" # alt: "age2_log10" "ln_biomass_med"
 
 # tice Date
 # to inform TIpred values
-tice_day <- as.Date('2018-02-26') # this is a minimum - I looked at the ice maps on 2018-03-02 and the ice is comming!
+tice_day <- as.Date('2018-02-26') # this is the lowest ice extent as of 2018-04-09
 lubridate::yday(tice_day)
 
 ## load data----
