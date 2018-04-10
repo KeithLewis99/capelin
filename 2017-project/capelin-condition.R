@@ -1,5 +1,5 @@
 #  Script written by Keith Lewis (Keith.Lewis@dfo-mpo.gc.ca)  #
-#  Created 2017-01-25, R version 3.3.3 (2017-03-06)             #
+#  Created 2018-01-25, R version 3.3.3 (2017-03-06)             #
 
 # The purpose of this file is to:
 # 1) Calculate a condition index for capelin: relative condition = observed/predicted for the capelin project
