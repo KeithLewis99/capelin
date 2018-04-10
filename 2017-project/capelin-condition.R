@@ -141,7 +141,6 @@ ggplot(data=df1) +
      geom_boxplot(aes(x = as.factor(month), y = weight)) +      
      facet_wrap(~nafo_div)
 
-
 # nafo_div (3L lower length and weight)- probably older bc of latter in season
 ggplot(data=df1) +
      geom_boxplot(aes(x = nafo_div, y = length))
@@ -400,126 +399,134 @@ levels(as.factor(df1$nafo_div))
 
 
 ##Age1 M/F comparisons----
-# there is considerable worry that using the males only will cause questions during the review process.  The intent of the following analysis is to test for differences.
+# there is considerable worry that using the males only will cause questions during the review process.  The intent of the following analysis is to test for differences between males and females.
 
-df2 <- df %>%
+#subset data
+df3 <- df %>%
      filter(year > 1992 &  age == 1 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
+#make these variables factors
 cols <- c("project", "nafo_div", "sex", "maturity")
-df2 %<>%
+df3 %<>%
      mutate_each_(funs(factor(.)),cols)
-glimpse(df2)
+glimpse(df3)
 
-df2$nafo_div <- as.factor(df2$nafo_div)
-levels(df2$nafo_div)[levels(df2$nafo_div) == "23"] <- "2J"
-levels(df2$nafo_div)[levels(df2$nafo_div) == "31"] <- "3K"
-levels(df2$nafo_div)[levels(df2$nafo_div) == "32"] <- "3L"
-levels(df2$sex)[levels(df2$sex) == "1"] <- "Male"
-levels(df2$sex)[levels(df2$sex) == "2"] <- "Female"
+#change values to something interpretable
+df3$nafo_div <- as.factor(df3$nafo_div)
+levels(df3$nafo_div)[levels(df3$nafo_div) == "23"] <- "2J"
+levels(df3$nafo_div)[levels(df3$nafo_div) == "31"] <- "3K"
+levels(df3$nafo_div)[levels(df3$nafo_div) == "32"] <- "3L"
+levels(df3$sex)[levels(df3$sex) == "1"] <- "Male"
+levels(df3$sex)[levels(df3$sex) == "2"] <- "Female"
 
 # check levels of data to ensure that subset worked
-levels(df2$project)
-levels(as.factor(df2$sample_number))
-levels(as.factor(df2$year))
-levels(as.factor(df2$month))
-levels(df2$nafo_div)
-levels(df2$maturity)
-range(df2$weight)
-range(df2$length)
-levels(as.factor(df2$age))
+levels(df3$project)
+levels(as.factor(df3$sample_number))
+levels(as.factor(df3$year))
+levels(as.factor(df3$month))
+levels(df3$nafo_div)
+levels(df3$maturity)
+range(df3$weight)
+range(df3$length)
+levels(as.factor(df3$age))
 
 
-quant <- df2 %>%
+# see email from H. Murphy and Methods of ResDoc - these are the values for filtering the dataset that Hannah and Maegen suggested based on biology
+df3 <- df3 %>%
      group_by(year) %>%
-     summarize(wuq = quantile(weight, c(0.99)), wlq = quantile(weight, c(0.01)), luq = quantile(length, c(0.99)), llq = quantile(length, c(0.01)))
-
-
-# filter out heavy and very short
-df2 <- df2 %>%
-     group_by(year) %>%
-     right_join(x=df2, y=quant, by ="year") %>%
-     filter(weight < wuq & weight > wlq) %>%
-     filter(length < luq & length > llq)
-
+     filter(weight > 2 & weight < 20) %>% 
+     filter(length > 80)
+     
 # run models for male and females seperately
-df2.m <- filter(df2, sex == "Male")
-m2.m <- lm(log10(weight) ~ log10(length), data= df2.m)
-
-df2.f <- filter(df2, sex == "Female")
-m2.f <- lm(log10(weight) ~ log10(length), data= df2.f)
-
-
-df2.m$fits <- fitted(m2.m)
-df2.f$fits <- fitted(m2.f)
-glimpse(df2.f)
+#males
+df3.m <- filter(df3, sex == "Male")
+m2.m <- lm(log10(weight) ~ log10(length), data= df3.m)
+df3.m$fits <- fitted(m2.m)
 
 m2.m$fitted.values
 str(m2.m)
-df2.m$rel.cond <- df2.m$weight/10^df2.m$fits
+df3.m$rel.cond <- df3.m$weight/10^df3.m$fits
+df3.m$resids <- df3.m$weight-10^df3.m$fits
 
-df2.m$resids <- df2.m$weight-10^df2.m$fits
+# test for outliers of condition
+quantile(df3.m$weight, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999))
+plot(density(df3.m$weight))
+round(quantile(df3.m$length, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999)), 1)
+
+#these all seem good
+df3.m[df3.m$rel.cond > 1.4, c("sex", "maturity", "rel.cond", "length", "weight")]
+df3.m[df3.m$rel.cond < 0.7, c("sex", "maturity", "rel.cond", "length", "weight")]
+
+plot(df3.m$rel.cond, df3.m$resids)
+plot(boxplot(df3.m$rel.cond))
+
+#females
+df3.f <- filter(df3, sex == "Female")
+m2.f <- lm(log10(weight) ~ log10(length), data= df3.f)
+df3.f$fits <- fitted(m2.f)
+glimpse(df3.f)
+
+df3.f$rel.cond <- df3.f$weight/10^df3.f$fits
+df3.f$resids <- df3.f$weight-10^df3.f$fits
 
 
-df2.m <- df2.m %>%
-     filter(rel.cond <1.3 & rel.cond > 0.75)
+quantile(df3.f$weight, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999))
+plot(density(df3.f$weight))
+round(quantile(df3.f$length, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999)), 1)
 
-plot(df2.m$rel.cond, df2.m$resids)
+df3.f[df3.f$rel.cond > 1.4, c("sex", "maturity", "rel.cond", "length", "weight")]
+df3.f[df3.f$rel.cond < 0.7, c("sex", "maturity", "rel.cond", "length", "weight")]
 
-df2.f$rel.cond <- df2.f$weight/10^df2.f$fits
-df2.f$resids <- df2.f$weight-10^df2.f$fits
-df2.f <- df2.f %>%
-     filter(rel.cond <1.3 & rel.cond > 0.75)
+plot(df3.f$rel.cond, df3.f$resids)
+plot(boxplot(df3.m$rel.cond))
 
-plot(df2.f$rel.cond, df2.f$resids)
+df4 <- rbind(df3.m, df3.f)
 
-temp <- rbind(df2.m, df2.f)
-
-# produce table
-
-temp %>%
+# produce table of rel.cond +/- SD by year and nafo_div
+df4 %>%
      group_by(year, nafo_div) %>%
      summarize(meanCond = round(mean(rel.cond),2), stdCond= round(sd(rel.cond),2)) %>% 
      unite(mean, meanCond:stdCond, sep = " +/- ") %>%
      spread(key = nafo_div, value = mean)
 
-filter(temp, year >1998) %>%
-     count()
 
-temp <- filter(temp, year >1998)
-
-
-df2 <- temp %>%
-     filter(rel.cond <1.3 & rel.cond > 0.75) %>%
-     filter(sex != 3)
-#df2 <- temp[c("month", "length", "weight")]
-
-#nafo by sex
-ggplot(data=df2) +
+#nafo by sex - this graph indicates that M/F condition is very similar across years.
+ggplot(data=df4) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
      ylab("Relative condition") +
      xlab("Year") +
      facet_wrap(~sex, ncol=1) + 
      geom_hline(aes(yintercept = 1), colour = 'red') +
      theme_bw()
-levels(as.factor(df2$year))
+levels(as.factor(df4$year))
 
 # there appear to be a few outliers here but they should have minimal influence on the final outcome
 
-ggplot(data=df2) +
+# rel.cond by sex
+ggplot(data=df4) +
      geom_boxplot(aes(x = sex, y = rel.cond, group = sex), notch=T)
 
-ggplot(data=df2) +
+# rel.cond by sex and year
+ggplot(data=df4) +
      geom_boxplot(aes(x = sex, y = rel.cond, group = sex), notch=T) + 
      facet_wrap(~ year) + 
      geom_hline(aes(yintercept = 1), colour = 'red')
 
 #month by year
-ggplot(data=df2) +
+ggplot(data=df4) +
      geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
      facet_wrap(~month)
 
-ggplot(data=df2) +
+ggplot(data=df4) +
      geom_boxplot(aes(x = sex, y = rel.cond, group = sex)) + 
      facet_wrap(~maturity)
+
+# produce output for Bayesain analysis 1999-2017
+out <- df4 %>%
+     group_by(year) %>%
+     summarize(meanCond = round(mean(rel.cond),4), stdCond= round(sd(rel.cond),4), medCond = round(median(rel.cond), 4))
+View(out)
+
+write_csv(out, "data/condition_ag1_MF_out.csv")     
