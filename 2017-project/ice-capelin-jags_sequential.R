@@ -42,9 +42,10 @@ cond <- "cond" # type of condition index - alt value == "resids"
 dic_run <- "yes" # is this a DIC run? "yes" or "no"
 
 # sets the values for the predition interval
-STpred <- c(-1.1798, -0.5525)
-PSpred <- c(-0.024866638, 0)
-TIpred <- c(0.57, 0.788)
+STpred <- c(-1.1798, -0.5525) # mean from normalized data
+PSpred <- c(-0.024866638, 0) # mean from normalized data
+TIpred <- c(0.57, 0.788)  #first value estimated from this year, second, mean from centered data
+
 x <- "cond"
 COpred <- if(x=="cond"){
      COpred <- c(2.676996, 0)
@@ -79,11 +80,13 @@ cap <- capelin_data(capelin_data_set)
 #source: ice-chart-processing-data-v3.R
 ice <- read_csv('output-processing/capelin-m1.csv')
 glimpse(ice)
+mean(ice$tice)
 
 ## condition (1995-2017)-----
 # source: for "cond" see capelin-condition.R for original and derived datasets
 # source: for "resids" see Fran's original "capelin_condition_maturation.xlsx"
 cond <- condition_data(cond, 'data/condition_ag1_out.csv')
+cond <- condition_data(cond, 'data/condition_ag1_MF_out.csv')
 glimpse(cond)
 condResids <- condition_data("resids", 'data/condition_ag1_out.csv')
 glimpse(condResids)
@@ -92,7 +95,9 @@ glimpse(condResids)
 
 # value for COpred
 norm <- subset(cond, year > 1998)
-(1.0466-mean(norm$meanCond_lag, na.rm=T))/sd(norm$meanCond_lag, na.rm = T)
+# 1.0466 is the value for the condition in 2017 - may need to correct this
+cond2018 <- 1.0466
+(cond2018-mean(norm$meanCond_lag, na.rm=T))/sd(norm$meanCond_lag, na.rm = T)
 
 ## larval data (2003-2017)----
 # source "capelin_age_disaggregate_abundance.xlsx":Larval indices
@@ -133,9 +138,11 @@ capelin_join <- left_join(capelin_join, ps_tot, by = "year")
 
 df <- capelin_join
 glimpse(df)
-#df[c("biomass_med", "ln_biomass_med", "tice", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")]
-df[c("age2", "age2_log10", "tice", "meanCond_lag", "resids_lag", "surface_tows_lag2", "ps_meanTot_lag2")]
-
+if(capelin_data_set == "biomass"){
+     df[c("biomass_med", "ln_biomass_med", "tice", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")]
+} else if (capelin_data_set == "age"){
+     df[c("age2", "age2_log10", "tice", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")]    
+}
 
 
 # normalize the data set----
@@ -143,7 +150,12 @@ df[c("age2", "age2_log10", "tice", "meanCond_lag", "resids_lag", "surface_tows_l
 df1 <- subset(df, year>1998)
 glimpse(df1)
 
-cols <- c("meanCond_lag", "resids_lag", "surface_tows_lag2", "ps_meanTot_lag2")
+if(x == "cond"){
+     cols <- c("meanCond_lag", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")
+} else if (x == "resids"){
+     cols <- c("meanCond_lag", "resids_lag", "surface_tows_lag2", "ps_meanTot_lag2")
+}
+
 df1 %<>%
      mutate_each_(funs(scale),cols)
 glimpse(df1)
@@ -153,6 +165,8 @@ df1$meanCond_lag
 
 # divide by 100
 df1$tice <- df1$tice/100
+mean(df1$tice)
+
 write_csv(df1, paste0("Bayesian/", filepath_gen, "/all_data_a1.csv"))
 # shrink df - not normalized but small and easy to interpret parameters
 
@@ -202,7 +216,7 @@ if(dic_run == "yes" & capelin_data_set == "biomass"){
      pred2 <- df2$age2_log10
 }
 
-#########Bayesian models#############################
+#########Bayesian models#############################----
 ## Recruitment----
 #"alpha + beta*ST[i] + gamma*PS[i]"
 
@@ -1281,7 +1295,9 @@ dic_RM3 <- dic.samples(run_RM3$model, n.iter=1000, type="pD")
 dic_RM3sum <- sum(dic_RM3$deviance)
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
-MyBUGSHist(out, vars)
+source('D:/Keith/R/zuur_rcode/MCMCSupportHighstatV2.R')
+
+MyBUGSHist1(out, vars, transform = "yes")
 ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteriors.pdf"), width=10, height=8, units="in")
 
 #txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta)) + epsilon*CO"
@@ -1877,40 +1893,113 @@ mm <- cowplot::plot_grid(p1, p2, ncol=2)
 ggsave(paste0("Bayesian/", filepath, "/priorpost.pdf"), width=10, height=8, units="in")
 
 
+## DIC table ----
+dic_R1sum
+dic_M1sum
+dic_RM1sum
+dic_RM1sum
+dic_RM2sum
+dic_RM2sum
+dic_RM3sum
+dic_Rosum
+dic_Mosum
+dic_M_unifsum
+dic_R2sum
+tab1 <- as.data.frame(rbind(
+     dic_R1sum,
+      dic_M1sum,
+      dic_RM1sum,
+      dic_RM2sum,
+      dic_RM3sum,
+      dic_Rosum,
+      dic_Mosum,
+      dic_M_unifsum,
+     dic_R2sum
+     
+      ))
+str(tab1)
+names(tab1)[names(tab1)=="V1"] <- "DIC"
+tab1 <- tab1[order(tab1$DIC), , drop = F]
+tab1$dDIC <- tab1$DIC-tab1$DIC[1]
+tab1
+write.csv(tab1, paste0("Bayesian/", filepath_gen, "/DIC.csv"))
+
+########################Sensitivity Analysis------
+# sets the values for the predition interval
+
+temp <- df1$tice
+str(temp)
+
+temp[20] <- 0.57
+mean(temp)
+sd(temp)
+tice_m <- mean(temp)
+tice_h <- mean(temp) + sd(temp)
+tice_l <- mean(temp) - sd(temp)
+
+temp1 <- df1$meanCond_lag
+temp1[20] <- 2.8 # check this value against the new numbers!!!
+mean(temp1)
+sd(temp1)
+cond_m <- mean(temp1)
+cond_h <- mean(temp1) + sd(temp1)
+cond_l <- mean(temp1) - sd(temp1)
+
+#create an array of the possible value combinations
+row.names <- c("high", "med", "low")
+col.names <- "val"
+mat.names <- c("tice", "cond")
+
+T <- c(tice_h, tice_m, tice_l)
+C <- c(cond_h, cond_m, cond_l)
+A <- array(c(T, C), dim = c(3, 1, 2), dimnames = list(row.names, col.names, mat.names))
+A[1, 1, 1]
+A[1, 1, 2]
+
+A[3, 1, 1]
+A[3, 1, 2]
+
+
+
+STpred <- c(-1.1798, -0.5525)
+PSpred <- c(-0.024866638, 0)
+TIpred <- c(0.57, 0.788)
+COpred <- c(2.676996, 0)
+
 ## RM3_projection----
 #"alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])"
 
 RM3_1p_med = '
 model {
-     # 1. Likelihood
-     for (i in 1:N) {
-          #recruitment
-          mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])
-          N2[i] ~ dnorm(mu[i], sigma^-2)
-          N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
-          log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
-          
-          # 3. Discrepancy measures
-          expY[i] <- mu[i]
-          varY[i] <- sigma^2
-          PRes[i] <- (N2[i] - expY[i]) / sigma
-          PResNew[i] <- (N2_new[i] - expY[i]) / sigma
-          #Squared residuals
-          D[i] <- pow(PRes[i], 2) #SSQ
-          DNew[i] <- pow(PResNew[i], 2)
-          #CD[i] <- 
-     }
-     #Sum of squared Pearson residuals:
-     Fit <- sum(D[1:N]) # look at overdispersion
-     FitNew <- sum(DNew[1:N])
-     
-     # 2. Priors
-     alpha ~ dnorm(0, 20^-2) 
-     beta ~ dnorm(0, 10^-2) 
-     gamma ~ dgamma(5, 1/3) 
-     delta ~ dgamma(2.8, 1)
-     epsilon ~ dnorm(0, 20^-2) 
-     sigma ~ dunif(0, 100) 
+# 1. Likelihood
+for (i in 1:N) {
+#recruitment
+mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])
+N2[i] ~ dnorm(mu[i], sigma^-2)
+N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
+log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
+
+# 3. Discrepancy measures
+expY[i] <- mu[i]
+varY[i] <- sigma^2
+PRes[i] <- (N2[i] - expY[i]) / sigma
+PResNew[i] <- (N2_new[i] - expY[i]) / sigma
+#Squared residuals
+D[i] <- pow(PRes[i], 2) #SSQ
+DNew[i] <- pow(PResNew[i], 2)
+#CD[i] <- 
+}
+#Sum of squared Pearson residuals:
+Fit <- sum(D[1:N]) # look at overdispersion
+FitNew <- sum(DNew[1:N])
+
+# 2. Priors
+alpha ~ dnorm(0, 20^-2) 
+beta ~ dnorm(0, 10^-2) 
+gamma ~ dgamma(5, 1/3) 
+delta ~ dgamma(2.8, 1)
+epsilon ~ dnorm(0, 20^-2) 
+sigma ~ dunif(0, 100) 
 }'
 
 #gamma and delta based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
@@ -1919,10 +2008,10 @@ model {
 
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), 
-     ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
-     TI=c(df3$tice, c(0.788, 0.788)), #made up - need new data
-     CO=c(df3$meanCond_lag, COpred),
-     N = nrow(df3) + num_forecasts)
+                   ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
+                   TI=c(df3$tice, c(0.788, 0.788)), #made up - need new data
+                   CO=c(df3$meanCond_lag, COpred),
+                   N = nrow(df3) + num_forecasts)
 
 run_RM3 <- jags(data=model_data,
                 parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
@@ -2008,9 +2097,9 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 
 #plot credible and prediction intervals
 plotCredInt(df3, yaxis = yaxis1, 
-ylab = ylab1, 
-y_line = y_med, ci_df3, pi_df3, 
-model = txt, x = 2010, y = 8, type = NA)
+            ylab = ylab1, 
+            y_line = y_med, ci_df3, pi_df3, 
+            model = txt, x = 2010, y = 8, type = NA)
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -2289,37 +2378,3 @@ p5 <- postPriors(df = epsilon$df, df2 = prior, df3 = epsilon$df_cred, limits, x_
 mm <- cowplot::plot_grid(p1, p2, p3, p4, p5, labels = c("A", "B", "C", "D", "E"), ncol=2)
 
 ggsave(paste0("Bayesian/", filepath, "/priorPost.pdf"), width=10, height=8, units="in")
-
-
-## DIC table ----
-dic_R1sum
-dic_M1sum
-dic_RM1sum
-dic_RM1sum
-dic_RM2sum
-dic_RM2sum
-dic_RM3sum
-dic_Rosum
-dic_Mosum
-dic_M_unifsum
-dic_R2sum
-tab1 <- as.data.frame(rbind(
-     dic_R1sum,
-      dic_M1sum,
-      dic_RM1sum,
-      dic_RM2sum,
-      dic_RM3sum,
-      dic_Rosum,
-      dic_Mosum,
-      dic_M_unifsum,
-     dic_R2sum
-     
-      ))
-str(tab1)
-names(tab1)[names(tab1)=="V1"] <- "DIC"
-tab1 <- tab1[order(tab1$DIC), , drop = F]
-tab1$dDIC <- tab1$DIC-tab1$DIC[1]
-tab1
-write.csv(tab1, paste0("Bayesian/", filepath_gen, "/DIC.csv"))
-
-
