@@ -39,7 +39,7 @@ head(df_1617)
 
 df <- rbind(df, df_1617)
 glimpse(df)
-View(tail(df, 100))
+#View(tail(df, 100))
 
 # save the combined data
 write_csv(df, "data/condition_1979_2017.csv")
@@ -480,7 +480,7 @@ df3.f[df3.f$rel.cond > 1.4, c("sex", "maturity", "rel.cond", "length", "weight")
 df3.f[df3.f$rel.cond < 0.7, c("sex", "maturity", "rel.cond", "length", "weight")]
 
 plot(df3.f$rel.cond, df3.f$resids)
-plot(boxplot(df3.m$rel.cond))
+plot(boxplot(df3.f$rel.cond))
 
 df4 <- rbind(df3.m, df3.f)
 
