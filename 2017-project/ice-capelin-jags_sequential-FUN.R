@@ -46,7 +46,46 @@ plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci
      p <- p + theme_bw(base_size = 30) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
      return(p)
 }
-
+# as above but just for 2018
+plotCredInt_a <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, model = model, x = x, y = y, type = type){
+     p <- ggplot()  
+     #browser()
+     p <- p + geom_ribbon(aes(x = c(df$year, 2018), 
+                              ymax = ci[2, ], 
+                              ymin = ci[1, ]),
+                          alpha = 0.5, fill = "grey60")
+     pi_n <- dpi[, ncol(dpi)]
+    # p <- p + geom_ribbon(aes(x = c(2018), 
+     #                         ymax = pi_n[2], 
+      #                        ymin = pi_n[1]), fill = "grey40")
+     
+     p <- p + geom_errorbar(aes(x = c(2018), 
+                                ymax = pi_n[2], 
+                                ymin = pi_n[1]))
+     #p <- p + geom_point(aes(x = c(2018), 
+      #                       y = last(dpp)),
+       #                  colour = "black",
+        #                 shape = 17, size = 2)
+     #p <- p + geom_text() +
+     # annotate("text", label = model, x = x, y = y, size = 7.5)
+     p <- p + geom_point(data = df, 
+                         aes_string(y = yaxis, x = "year"),
+                         shape = 16, 
+                         size = 1.5)
+     if(!is.na(type)){
+          p <- p + geom_errorbar(data = df, width = 0.3, colour = "black", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
+     } else if (is.na(type)) {
+          p
+     }
+     
+     p <- p + xlab("Year") + ylab(paste(ylab))
+     # p <- p + theme(axis.title = element_text(size=30), axis.text = element_text(size = 20)) 
+     #p <- p + theme(text = element_text(size=25)) + theme_bw()
+     p <- p + geom_line(aes(x = c(df$year, 2018), y = y_line))
+     
+     p <- p + theme_bw(base_size = 30) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
+     return(p)
+}
 
 #' prioPosterior----
 #' Plots the values of the posterior with the prior overlaid on top
