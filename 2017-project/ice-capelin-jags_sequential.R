@@ -48,7 +48,7 @@ TIpred <- c(0.57, 0.788)  #first value estimated from this year, second, mean fr
 
 x <- "cond"
 COpred <- if(x=="cond"){
-     COpred <- c(2.676996, 0)
+     COpred <- c(2.17, 0)
 } else if(x =="resids"){
      COpred <- c(0, 0)
 }
@@ -85,7 +85,7 @@ mean(ice$tice)
 ## condition (1995-2017)-----
 # source: for "cond" see capelin-condition.R for original and derived datasets
 # source: for "resids" see Fran's original "capelin_condition_maturation.xlsx"
-cond <- condition_data(cond, 'data/condition_ag1_out.csv')
+#cond <- condition_data(cond, 'data/condition_ag1_out.csv')
 cond <- condition_data(cond, 'data/condition_ag1_MF_out.csv')
 glimpse(cond)
 condResids <- condition_data("resids", 'data/condition_ag1_out.csv')
@@ -1948,28 +1948,40 @@ cond_l <- mean(temp1) - sd(temp1)
 #create an array of the possible value combinations
 row.names <- c("high", "med", "low")
 col.names <- "val"
+y.names <- c("2018", "2019")
 mat.names <- c("tice", "cond")
 
 T <- c(tice_h, tice_m, tice_l)
 C <- c(cond_h, cond_m, cond_l)
+#A <- array(c(T, C), dim = c(3, 1, 2, 2), dimnames = list(row.names, col.names, y.names, mat.names))
 A <- array(c(T, C), dim = c(3, 1, 2), dimnames = list(row.names, col.names, mat.names))
+
 A[1, 1, 1]
 A[1, 1, 2]
 
 A[3, 1, 1]
 A[3, 1, 2]
 
+comb_ls <- matrix(c("HH", A[1,1,1], A[1,1,2],
+             "MM", A[2,1,1], A[2,1,2],
+             "LL", A[3,1,1], A[3,1,2]), 
+             nrow=3,
+             ncol=3, byrow=T)
+for(i in 1:3){
+     print(comb_ls[i,])
+}
 
+comb_ls[1,]
+STpred <- c(-1.1798)
+PSpred <- c(-0.024866638)
+TIpred <- c(0.57)
+COpred <- c(2.676996)
 
-STpred <- c(-1.1798, -0.5525)
-PSpred <- c(-0.024866638, 0)
-TIpred <- c(0.57, 0.788)
-COpred <- c(2.676996, 0)
 
 ## RM3_projection----
 #"alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])"
 
-RM3_1p_med = '
+RM3_sens = '
 model {
 # 1. Likelihood
 for (i in 1:N) {
@@ -2006,16 +2018,36 @@ sigma ~ dunif(0, 100)
 #delta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
 # gamma,delta, sigma: uninformative for condition
 
-num_forecasts = 2 # 2 extra years
-model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), 
-                   ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
-                   TI=c(df3$tice, c(0.788, 0.788)), #made up - need new data
-                   CO=c(df3$meanCond_lag, COpred),
-                   N = nrow(df3) + num_forecasts)
+num_forecasts = 1
+# 2 extra years
 
+# trying to create a loop so that I can automate the process of assessing sensitivity
+# all is working right except for the loop!!!!
+i <- 2
+
+# create a list of three lists
+rm(model_data)
+rm(model_data_)
+model_data_ <- rep(list(list()),3)
+
+test <- for(i in 1:nrow(comb_ls)){
+     model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), 
+                        ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
+                        TI=c(df3$tice, comb_ls[i,2]), #made up - need new data
+                        CO=c(df3$meanCond_lag, comb_ls[i,3]),
+                        N = nrow(df3) + num_forecasts)
+     model_data_[[i]] <- model_data
+     return(model_data_)
+}
+
+# This will 
+model_data_[[2]] <- model_data
+
+
+     
 run_RM3 <- jags(data=model_data,
                 parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
-                model.file = textConnection(RM3_1p_med))
+                model.file = textConnection(RM3_sens))
 
 #UPDATE WITH MORE BURN INS
 run_RM3 <-update(run_RM3, n.iter = 300000, n.thin = 50, n.burnin = 100000)
@@ -2023,56 +2055,8 @@ run_RM3 <-update(run_RM3, n.iter = 300000, n.thin = 50, n.burnin = 100000)
 
 ##R/M3-plot 5----
 # DIAGNOSTICS
-print(run_RM3, intervals=c(0.025, 0.975), digits = 3)
-out <- run_RM3$BUGSoutput 
-out$mean
-
-#overdispersion - values close to 0.5 indicate a good fit pg. 77 Zuur et al. 2013 Beginners guide to GLM and GLMM
-mean(out$sims.list$FitNew > out$sims.list$Fit)
-# mean = 0.546333
-
-# Asess mixing of chains to see if one MCMC goes badly Zuur et al. 2013, pg 83
+filepath <- paste0(filepath_gen, "/sensitivity")
 vars <- c('alpha', 'beta', 'gamma', 'delta', 'epsilon')
-filepath <- paste0(filepath_gen, "/rm3_1p_med")
-
-MyBUGSChains(out, vars)
-ggsave(MyBUGSChains(out, vars), filename = paste0("Bayesian/", filepath, "/chains.pdf"), width=10, height=8, units="in")
-
-#autocorrelation - this looks good!!!!
-MyBUGSACF(out, vars)
-ggsave(MyBUGSACF(out, vars), filename = paste0("Bayesian/", filepath, "/auto_corr.pdf"), width=10, height=8, units="in")
-
-
-# Model Validation (see Zuuer et al. 2013, pg 77-79 for options for calculating Pearson residuals)
-# Residual diagnostics
-E1 <- out$mean$PRes # Pearson resids
-F1 <- out$mean$expY # Expected values
-N2 <- out$mean$N2   # N2 - observed values? Why do these fill in the NAs of df$ln_biomass_med???
-D <- out$mean$D     # this is SSQ - but i'm looking for Cook'sD
-
-pdf(paste0("Bayesian/", filepath, "/fit_obs.pdf"))
-par(mfrow = c(2,2), mar = c(5,5,2,2))
-plot(x=F1, y = E1, xlab = "Fitted values", ylab = "Pearson residuals")
-abline(h = 0, lty = 2)
-# The below is right but is the not right code.  The code is in ONeNote
-#plot(D, type = "h", xlab = "Observation", ylab = "Cook distance")
-plot(y = N2, x = F1, xlab = "Fitted values", ylab = "Observed data")
-abline(coef = c(0,1), lty = 2)
-par(mfrow = c(1,1))
-dev.off()
-
-# Residuals v covariates Zuur et al. 2013, pg 59-60: look for no patterns; patterns may indicated non-linear
-pdf(paste0("Bayesian/", filepath, "/resid_covar.pdf"))
-par(mfrow = c(2,2), mar = c(5,5,2,2))
-MyVar <- c("tice.std", "meandCond_lag.std")
-test <- as.data.frame(model_data)
-test <- cbind(test, E1)
-#Myxyplot(test, MyVar, "E1")
-plot(test$ST, test$EI, xlab = "ST", ylab = "Pearson resids")
-plot(test$TI, test$EI, xlab = "Tice", ylab = "Pearson resids")
-plot(test$CO, test$EI, xlab = "Condition", ylab = "Pearson resids")
-par(mfrow = c(1,1))
-dev.off()
 
 # CREDIBLE AND PREDICITON INTERVALS
 #generate credible intervals for time series using mu
@@ -2084,95 +2068,29 @@ ci_df3 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
 
 #generate prediciton intevals using N2_new
 y_new = run_RM3$BUGSoutput$sims.list$N2_new
+p_med = apply(y_new,2,'median')
 pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
-write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], paste0("Bayesian/", filepath, "/pi.csv"))
 
+write.csv(t(pi_df3[, ncol(pi_df3)]), paste0("Bayesian/", filepath, "/pi.csv"))
+temp <- read_csv(paste0("Bayesian/", filepath, "/pi.csv"))
+temp <- rbind(t(pi_df3[, ncol(pi_df3)]), temp[, 2:3])
+write_csv(temp, paste0("Bayesian/", filepath, "/pi.csv"))
 
 ## RM_3-_proj_Results----
-# Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
-MyBUGSHist(out, vars)
-ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteriors.pdf"), width=10, height=8, units="in")
-
-#txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta)) + epsilon*CO"
-
 #plot credible and prediction intervals
-plotCredInt(df3, yaxis = yaxis1, 
+#source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
+
+plotCredInt_a(df3, yaxis = yaxis1, 
             ylab = ylab1, 
-            y_line = y_med, ci_df3, pi_df3, 
+            y_line = y_med, ci = ci_df3, dpp = p_med, dpi = pi_df3, 
             model = txt, x = 2010, y = 8, type = NA)
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
-# output by parameter
-OUT1 <- MyBUGSOutput(out, vars)
-print(OUT1, digits =5)
-write.csv(as.data.frame(OUT1), paste0("Bayesian/", filepath, "/params.csv"))
-
-
-# plot posterior against expected distribution
-alpha <- posterior_fig(out$sims.list$alpha)
-beta <- posterior_fig(out$sims.list$beta)
-gamma <- posterior_fig(out$sims.list$gamma)
-delta <- posterior_fig(out$sims.list$delta)
-epsilon <- posterior_fig(out$sims.list$epsilon)
-
-"log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta))"
-
-
-#alpha
-priormean <- 0
-priorsd <- 20
-prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
-limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
-x_label <- "alpha"
-bin_1 <- mean(alpha$df)/100
-
-p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
-
-#beta
-priorsd <- 10
-limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
-x_label <- "beta"
-bin_1 <- mean(beta$df)/100
-
-p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
-
-#gamma
-priormean <- 5
-priorsd <- 1/3
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
-limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
-x_label <- "gamma"
-bin_1 <- mean(gamma$df)/100
-
-p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
-
-
-#delta
-priormean <- 2.8
-priorsd <- 1
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
-limits <- c(min(delta$df)-0.3, max(delta$df) + 0.3)
-x_label <- "delta"
-bin_1 <- mean(delta$df)/100
-
-p4 <- postPriors(df = delta$df, df2 = prior, df3 = delta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
-
-#epsilon
-priormean <- 0
-priorsd <- 20
-prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
-limits <- c(min(epsilon$df)-0.3, max(epsilon$df) + 0.3)
-x_label <- "epsilon"
-bin_1 <- mean(epsilon$df)/100
-
-p5 <- postPriors(df = epsilon$df, df2 = prior, df3 = epsilon$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
-
-mm <- cowplot::plot_grid(p1, p2, p3, p4, p5, labels = c("A", "B", "C", "D", "E"), ncol=2)
-
-ggsave(paste0("Bayesian/", filepath, "/priorPost.pdf"), width=10, height=8, units="in")
 
 
 
+
+##############################################################################
 ## RM3_projection----
 #"alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])"
 
