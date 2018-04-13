@@ -343,6 +343,23 @@ plotCredInt1 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = c
 
 
 # This is a crude approach to leave one out
+#' Title
+#'
+#' @param df 
+#' @param insert 
+#' @param yaxis 
+#' @param ylab 
+#' @param y_line 
+#' @param ci 
+#' @param dpp 
+#' @param dpi 
+#' @param insert_year 
+#' @param type 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, insert_year = x, type=type){
      p <- ggplot()  
      #browser()
@@ -379,7 +396,7 @@ plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line
 # ci for knockout year
      #browser()
      pd1 <- position_dodge(width = 2)
-     p <- p + geom_point(data = insert, 
+     p <- p + geom_point(data = insert, # insert is df3[x,]
                          aes_string(y = yaxis, x = "year"),
                          shape = 16, 
                          size = 1.5,
