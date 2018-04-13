@@ -2078,7 +2078,7 @@ pi_tabl$per_97_5 <- as.numeric(levels(pi_tabl$per_97_5)[pi_tabl$per_97_5])
 write.csv(pi_tabl, paste0("Bayesian/", filepath, "/pi_tabl.csv"))
 
 
-# graph of 
+# graph summarizing the influence of the knockouts
 p <- ggplot(data = data.frame(pi_tabl), aes(x = fct_inorder(model))) 
 p <- p + geom_point(aes(y=as.numeric(pi_pt)), size = 3)
 p <- p + geom_errorbar(aes(ymax = as.numeric(per_97_5), ymin = as.numeric(per_2_5)), width = 0.5)
