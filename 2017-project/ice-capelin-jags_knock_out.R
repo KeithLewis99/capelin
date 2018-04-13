@@ -170,15 +170,52 @@ plotCredInt2(df3, insert,
 
 ggsave(paste0("Bayesian/", folder, "/credInt", insert_year, ".png"), width=10, height=8, units="in")
 
+per_diff_file <- data.frame(year = integer(), 
+                            per_diff = numeric(),
+                            p_med = numeric(),
+                            pi025 = numeric(),
+                            pi975 = numeric())
+
+
 if(dataset == "biomass"){
      per_diff <- ((df2$ln_biomass_med[y] - p_med[15])/df2$ln_biomass_med[y])*100
-     per_diff_file <- as.data.frame(cbind(insert_year, per_diff))
+     #per_diff_file <- as.data.frame(cbind(insert_year, per_diff))
+     per_diff_file[1,2] <- per_diff
 } else if (dataset == "age"){
      per_diff <- ((df2$age2_log10[y] - p_med[15])/df2$age2_log10[y])*100
-     per_diff_file <- as.data.frame(cbind(insert_year, per_diff))
-}
+     #per_diff_file <- as.data.frame(cbind(insert_year, per_diff))
+     per_diff_file[1,2] <- per_diff
+     }
+per_diff_file[1,1] <- insert_year
+per_diff_file[1,3] <- p_med[15]
+per_diff_file[1,4] <- pi_df3[1,15]
+per_diff_file[1,5] <- pi_df3[2,15]
 
-per_diff_file
+year <- c(2003:2006)
+per_diff_file[2:5,1] <- year
+per_diff_file[2:5,2] <- per_diff
+per_diff_file[2:5,3] <- p_med[15]
+per_diff_file[2:5,4] <- pi_df3[1,15]
+per_diff_file[2:5,5] <- pi_df3[2,15]
+
+
+# graph of values v. knockout
+# need to generalize this for biomass and age!
+p <- ggplot( ) 
+p <- p + geom_point(data = per_diff_file, 
+                    aes(y=p_med, x = year), size = 3)
+p <- p + geom_errorbar(data = per_diff_file,
+                       aes(ymax = pi975, ymin = pi025, x = year), width = 0.5)
+p <- p + geom_point(data = df3, 
+                    aes(y=age2_log10, x = year), 
+                    colour = "red", size = 3,
+                    position = position_nudge(x = -0.25))
+p <- p + xlab("Year") + ylab("Estimate and prediction")
+p <- p + theme_bw(base_size = 20) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
+#p <- p + scale_x_discrete(breaks = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"), labels = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"))
+p
+ggsave(paste0("Bayesian/", filepath, "/sensitivity.pdf"), width=10, height=8, units="in")
+# save file as in next line, then hash tag and do the next three lines for all subsequent analyses
 #write_csv(per_diff_file, paste0("Bayesian/", folder, "/perdiff_all.csv"))
 
 temp <- read_csv(paste0("Bayesian/", folder, "/perdiff_all.csv"))
