@@ -153,18 +153,26 @@ posterior_fig <- function(ls){
      return(list(df = df, df_quant = df_quant, df_cred = df_cred))
 }
 
+#' Posterior_fig1----
+#' helper function for extracting credible interval for a given parameter
+#' @param ls - the output of the JAGS model - extact the chain for a given parameter
+#'
+#' @return - list with the chain values for the parameter, the 95% CI, and the chain values within credible intervals
+#' @export
+#'
+#' @examples - gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "gamma")
 posterior_fig1 <- function(ls, transform = transform, parm = parm){
-     browser()
+     #browser()
      if(transform == "no"){
           df <- ls
           df_quant <- quantile(ls, c(0.025, 0.975))
           df_cred <- subset(df, df > df_quant[1] & df < df_quant[2])
-     } else if (transform == "yes" & parm == "gamma") {
+     } else if (transform == "yes" & parm == "slope") {
                df <- ls/10
                df_quant <- quantile(df, c(0.025, 0.975))
                df_cred <- subset(df, df > df_quant[1] & df < df_quant[2])
 
-     } else if(transform == "yes" & parm == "delta") {
+     } else if(transform == "yes" & parm == "width") {
           df <- ls*100
           df_quant <- quantile(df, c(0.025, 0.975))
           df_cred <- subset(df, df > df_quant[1] & df < df_quant[2])
