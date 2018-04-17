@@ -46,6 +46,7 @@ plotCredInt <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci
      p <- p + theme_bw(base_size = 30) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
      return(p)
 }
+
 # as above but just for 2018
 plotCredInt_a <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, model = model, x = x, y = y, type = type){
      p <- ggplot()  
@@ -87,7 +88,7 @@ plotCredInt_a <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = 
      return(p)
 }
 
-#' prioPosterior----
+#' priorPosterior----DEPRECATED
 #' Plots the values of the posterior with the prior overlaid on top
 #' @param df1 - vector of values for posterior
 #' @param df2 - vector of values for prior
@@ -105,24 +106,21 @@ priorPosterior <- function(df1, df2, xlim){
 }
 
 
-
-
-
 #' postPriors()----
 #'
-#' @param df 
-#' @param df2 
-#' @param df3 
-#' @param limits 
-#' @param x_label 
-#' @param priormean 
-#' @param priorsd 
-#' @param by_bin 
+#' @param df - the chain of values of the parameter
+#' @param df2 - the distribution of the prior based on randomly generated data
+#' @param df3 - the chain values within the credible intervals of the parameter
+#' @param limits - an ojbect to set the limits on the grid 
+#' @param x_label - label the graph with the name of the parm
+#' @param priormean -  the mean value of the prior
+#' @param priorsd - the SD of the prior
+#' @param by_bin - 
 #'
 #' @return - figure of the posterior distribution, the prior distribution and the 95% credible interval as a rug.  Abline = 0
 #' @export
 #'
-#' @example
+#' @example p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 postPriors <- function(df, df2, df3, limits = limits, x_label = x_label, priormean, priorsd, by_bin = 1){
      #browser()
      p <- ggplot() + theme_bw(base_size = 20)
@@ -139,34 +137,31 @@ postPriors <- function(df, df2, df3, limits = limits, x_label = x_label, priorme
 }
 
 
-
 #' Posterior_fig----
-#'function for extracting credible interval for a given parameter
-#' @param ls 
+#' helper function for extracting credible interval for a given parameter
+#' @param ls - the output of the JAGS model - extact the chain for a given parameter
 #'
-#' @return - list with dataframe, the values within 95%, and the credible intervals
+#' @return - list with the chain values for the parameter, the 95% CI, and the chain values within credible intervals
 #' @export
 #'
-#' @examples
+#' @examples - alpha <- posterior_fig(out$sims.list$alpha)
 posterior_fig <- function(ls){
      #browser()
      df <- ls
      df_quant <- quantile(ls, c(0.025, 0.975))
      df_cred <- subset(df, df > df_quant[1] & df < df_quant[2])
      return(list(df = df, df_quant = df_quant, df_cred = df_cred))
-     
 }
 
 
-
-#' Title
+##' capelin_data---
+#' function to switch between data types
+#' @param capelin_data_set - data set: either biomass or abundance
 #'
-#' @param capelin_data_set 
-#'
-#' @return
+#' @return - returns the capelin data set desired for the analysis
 #' @export
 #'
-#' @examples
+#' @examples cap <- capelin_data(capelin_data_set)
 capelin_data <- function(capelin_data_set){
 # source: "Age disaggregate abundance for Keith Lewis - 2017 added_v1.xlsx"
      #browser()
@@ -192,15 +187,15 @@ capelin_data <- function(capelin_data_set){
      }
 }
 
-#' Title
-#'
+##' condition_data---
+#' function to switch between condition data types (index v residuals)
 #' @param cond what type measure of condtion is being used, the fitted v. residuals (cond) or just the plain resids as provided by Fran
 #' @param df name of the data set
 #'
-#' @return
+#' @return - the condition data set desired for the analysis
 #' @export
 #'
-#' @examples
+#' @examples - cond <- condition_data(cond, 'data/condition_ag1_MF_out.csv')
 condition_data <- function(cond, df){
      if(cond == "cond"){
           cond <- read_csv(df)
@@ -221,9 +216,9 @@ condition_data <- function(cond, df){
 }
 
 
-#' Title
-#'
-#' @param x 
+##' make_direct---DEPRECATED - 
+#' KEEP THIS just because the code may be useful
+#' @param x a switch to start making folders
 #'
 #' @return
 #' @export
@@ -247,7 +242,7 @@ make_direct <- function(x){
      }
 }
 
-
+# a vector of folder names to feed "folder_path1" 
 folder_names <- c("mortality_0", 
                   "mortality_1", 
                   "mortality_2", 
@@ -262,6 +257,15 @@ folder_names <- c("mortality_0",
                   "rm3_1p_med")
 
 
+#' make_direct1----
+#' function that makes directories automatically if they don't exist
+#' @param folder_names from vector above
+#' @param folder_path_gen - folder path that indicates parent folder where child folders are to be created
+#'
+#' @return - a folder with sub-folders as per "folder_names"
+#' @export
+#'
+#' @examples - make_direct1(folder_names, folder_path1)
 make_direct1 <- function(folder_names, folder_path_gen){
      #browser()
      for(i in folder_names){
@@ -270,16 +274,17 @@ make_direct1 <- function(folder_names, folder_path_gen){
 }
 
 
-# names for pairs-plot
-#' Title
+
+##' name_pairPlot()---
+#' makes a smaller data frame with just the variables needed for the pairs-plot
+#' 
+#' @param x - dataframe
+#' @param y - character object indicating "biomass" or "age"
 #'
-#' @param x 
-#' @param y 
-#'
-#' @return
+#' @return - returns a pairs plot used in EDA phase
 #' @export
 #'
-#' @examples
+#' @examples name_pairPlot(df1, "biomass")
 name_pairPlot <- function(x, capelin_data_set){
      #browser()
      df_name <- x
@@ -305,8 +310,7 @@ name_pairPlot <- function(x, capelin_data_set){
 }
 
 
-
-# This is a crude approach to leave one out
+# DEPRECATED - SEE PlotCredInt2
 plotCredInt1 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpi = dpi, model = model, x = x, y = y){
      p <- ggplot()  
      #browser()
@@ -342,24 +346,24 @@ plotCredInt1 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = c
 }
 
 
-# This is a crude approach to leave one out
-#' Title
+##' plotCredInt2---
+#'  This is a crude approach to leave one out
+#' @param df - the data frame
+#' @param insert - this is the value of the year to insert into the graph
+#' @param yaxis - variable in df for yaxis 
+#' @param ylab - customize the label of the yaxis
+#' @param y_line - predicted values, e.g. y_med
+#' @param ci - credible interval 
+#' @param dpp - median value of the predition interval
+#' @param dpi - 2.5% and 97.5% prediction interval
+#' @param insert_year - value of year to align with credible interval
+#' @param type - this indicates if the capelin index has a confidence interval: 
 #'
-#' @param df 
-#' @param insert 
-#' @param yaxis 
-#' @param ylab 
-#' @param y_line 
-#' @param ci 
-#' @param dpp 
-#' @param dpi 
-#' @param insert_year 
-#' @param type 
-#'
-#' @return
+#' @return - a graph of teh capelin biomass with 95% CIs, the fitted values of the model, and the 95% credible and prediction intervals.
 #' @export
 #'
-#' @examples
+#' @examplesplotCredInt2(df3, insert, yaxis = yaxis1, ylab = ylab1, y_line = y_med, ci = ci_df3, dpp = p_med, dpi = pi_df3, insert_year = insert_year, type = NA)
+
 plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, insert_year = x, type=type){
      p <- ggplot()  
      #browser()
