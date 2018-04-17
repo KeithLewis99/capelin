@@ -68,7 +68,7 @@ yaxis1 = "age2_log10" # alt: "age2_log10" "ln_biomass_med"
 
 # tice Date
 # to inform TIpred values
-tice_day <- as.Date('2018-02-26') # this is the lowest ice extent as of 2018-04-09
+tice_day <- as.Date('2018-02-26') # this is the lowest ice extent as of 2018-04-17
 lubridate::yday(tice_day)
 
 ## load data----
@@ -173,8 +173,8 @@ write_csv(df1, paste0("Bayesian/", filepath_gen, "/all_data_a1.csv"))
 
 
 # pairs-plot: relationships and correlations among RV and EV----
-df_name <- name_pairPlot(df1, "biomass")
-z <- "ln capelin biomass" # alt "log10_age2 index"
+df_name <- name_pairPlot(df1, "age")
+z <- "log10_age2 index" # alt "log10_age2 index" ln capelin biomass
 
 pdf(paste0("Bayesian/", filepath_gen, "/pairs_resids.pdf"))
 pairs.panels(df_name[c(z, "tice", "condition l1", "larval abundance l2", "zooplankton abun l2")], 
@@ -188,6 +188,7 @@ pairs.panels(df_name[c(z, "tice", "condition l1", "larval abundance l2", "zoopla
 dev.off()
 
 #######Set data sets----
+# subset the data depending on whether the analysis if for "biomass" or "age" and if it is for a DIC run ("yes" or "no")
 if(dic_run == "yes" & capelin_data_set == "biomass"){
      df3 <- subset(df1, year>2002)
      df2 <- subset(df1, year>2002)
@@ -529,7 +530,7 @@ str(x)
 dic_M1sum <- sum(dic_M1$deviance)
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. Also, is this matched up properly - i haven't used PanelNames
-MyBUGSHist(out, vars)
+MyBUGSHist1(out, vars, transform = "yes")
 ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteriors.pdf"), width=10, height=8, units="in")
 
 
@@ -552,10 +553,11 @@ write.csv(as.data.frame(OUT1), paste0("Bayesian/", filepath, "/params.csv"))
 
 # plot posterior against expected distribution
 alpha <- posterior_fig(out$sims.list$alpha)
-beta <- posterior_fig(out$sims.list$beta)
-gamma <- posterior_fig(out$sims.list$gamma)
+beta <- posterior_fig1(out$sims.list$beta, transform = "yes", parm = "slope")
+gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "width")
 delta <- posterior_fig(out$sims.list$delta)
 
+gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "slope")
 #alpha
 priormean <- 0
 priorsd <- 20
@@ -726,7 +728,7 @@ dic_M_unif <- dic.samples(run_mort_unif$model, n.iter=1000, type="pD")
 dic_M_unifsum <- sum(dic_M_unif$deviance)
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
-MyBUGSHist(out, vars)
+MyBUGSHist1(out, vars, transform = "yes")
 ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteriors.pdf"), width=10, height=8, units="in")
 
 txt <- "log(caplein) = alpha +  beta*tice*(1-(tice/gamma(unif))) \n + delta*Condition(resids)"
@@ -747,8 +749,8 @@ write.csv(as.data.frame(OUT1), paste0("Bayesian/", filepath, "/params.csv"))
 # plot posterior against expected distribution - BUT DO THIS ONLY FOR INFORMATIVE PRIORS
 # plot posterior against expected distribution
 alpha <- posterior_fig(out$sims.list$alpha)
-beta <- posterior_fig(out$sims.list$beta)
-gamma <- posterior_fig(out$sims.list$gamma)
+beta <- posterior_fig1(out$sims.list$beta, transform = "yes", parm = "slope")
+gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "width")
 delta <- posterior_fig(out$sims.list$delta)
 
 #alpha
@@ -1092,7 +1094,7 @@ dic_RM2 <- dic.samples(run_RM2$model, n.iter=1000, type="pD")
 dic_RM2sum <- sum(dic_RM2$deviance)
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
-MyBUGSHist(out, vars)
+MyBUGSHist1(out, vars, transform = "yes")
 ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteriors.pdf"), width=10, height=8, units="in")
 
 #txt <- "log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta))"
@@ -1113,9 +1115,8 @@ write.csv(as.data.frame(OUT1), paste0("Bayesian/", filepath, "/params.csv"))
 # plot posterior against expected distribution
 alpha <- posterior_fig(out$sims.list$alpha)
 beta <- posterior_fig(out$sims.list$beta)
-gamma <- posterior_fig(out$sims.list$gamma)
-delta <- posterior_fig(out$sims.list$delta)
-
+gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "slope")
+delta <- posterior_fig1(out$sims.list$delta, transform = "yes", parm = "width")
 
 #alpha
 priormean <- 0
@@ -1319,12 +1320,9 @@ write.csv(as.data.frame(OUT1), paste0("Bayesian/", filepath, "/params.csv"))
 # plot posterior against expected distribution
 alpha <- posterior_fig(out$sims.list$alpha)
 beta <- posterior_fig(out$sims.list$beta)
-gamma <- posterior_fig(out$sims.list$gamma)
-delta <- posterior_fig(out$sims.list$delta)
+gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "slope")
+delta <- posterior_fig1(out$sims.list$delta, transform = "yes", parm = "width")
 epsilon <- posterior_fig(out$sims.list$epsilon)
-
-"log(caplein) = alpha + beta*Surface_tows_lag2 \n + gamma*tice*(1-(tice/delta))"
-
 
 #alpha
 priormean <- 0
@@ -1332,7 +1330,7 @@ priorsd <- 20
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
 x_label <- "alpha"
-bin_1 <- mean(alpha$df)/100
+bin_1 <- abs(mean(alpha$df)/100)
 
 p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
@@ -1345,8 +1343,9 @@ bin_1 <- mean(beta$df)/100
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
 #gamma
-priormean <- 5
-priorsd <- 1/3
+
+priormean <- 5/10
+priorsd <- 1/3/10
 prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
 limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
 x_label <- "gamma"
@@ -1358,7 +1357,7 @@ p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_labe
 #delta
 priormean <- 2.8
 priorsd <- 1
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)*100
 limits <- c(min(delta$df)-0.3, max(delta$df) + 0.3)
 x_label <- "delta"
 bin_1 <- mean(delta$df)/100
@@ -1849,7 +1848,7 @@ dic_Ro <- dic.samples(run_recruit_null$model, n.iter=1000, type="pD")
 dic_Rosum <- sum(dic_Ro$deviance)
 
 #PLOT credible and prediction intervals
-MyBUGSHist(out, vars)
+MyBUGSHist1(out, vars, transform = "yes")
 ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteriors.pdf"), width=10, height=8, units="in")
 
 #txt <- "log(caplein) = alpha +  beta*surface_tows_lag2"
@@ -1868,8 +1867,8 @@ write.csv(as.data.frame(OUT1), paste0("Bayesian/", filepath, "/params.csv"))
 
 # plot posterior against expected distribution
 # gamma dist
-alpha <- posterior_fig(out$sims.list$alpha)
-beta <- posterior_fig(out$sims.list$beta)
+alpha <- posterior_fig1(out$sims.list$alpha, transform = "yes", parm = "slope")
+beta <- posterior_fig1(out$sims.list$beta, transform = "yes", parm = "width")
 
 #alpha
 priormean <- 0
