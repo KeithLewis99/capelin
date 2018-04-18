@@ -1916,17 +1916,7 @@ ggsave(paste0("Bayesian/", filepath, "/priorpost.pdf"), width=10, height=8, unit
 
 
 ## DIC table ----
-dic_R1sum
-dic_M1sum
-dic_RM1sum
-dic_RM1sum
-dic_RM2sum
-dic_RM2sum
-dic_RM3sum
-dic_Rosum
-dic_Mosum
-dic_M_unifsum
-dic_R2sum
+index <- c(1:9)
 tab1 <- as.data.frame(rbind(
      dic_R1sum,
       dic_M1sum,
@@ -1940,6 +1930,7 @@ tab1 <- as.data.frame(rbind(
      
       ))
 str(tab1)
+tab1 <- cbind(index, tab1)
 names(tab1)[names(tab1)=="V1"] <- "DIC"
 tab1 <- tab1[order(tab1$DIC), , drop = F]
 tab1$dDIC <- tab1$DIC-tab1$DIC[1]
@@ -2109,6 +2100,7 @@ p
 ggsave(paste0("Bayesian/", filepath, "/sensitivity.pdf"), width=10, height=8, units="in")
 
 # R-squared----
+
 tab2 <- as.data.frame(rbind(
      Ro_r2,
      R2_r2,
@@ -2118,11 +2110,20 @@ tab2 <- as.data.frame(rbind(
      M_unif_r2,
      RM1_r2,
      RM2_r2,
-     RM2_r2
+     RM3_r2
      
 ))
+tab2 <- tibble::rownames_to_column(tab2)
+tab2 <- cbind(index, tab2)
 str(tab2)
-names(tab1)[names(tab1)=="V1"] <- "R_sq"
-tab1 <- tab1[order(tab1$R_sq), , drop = F]
-tab1
-write.csv(tab1, paste0("Bayesian/", filepath_gen, "/Rsquared.csv"))
+names(tab2)[names(tab2)=="rowname"] <- "model"
+names(tab2)[names(tab2)=="V1"] <- "R_sq"
+tab2 <- tab2[order(tab2$R_sq), , drop = F]
+tab2 <- tab2[order(tab2$R_sq, decreasing = T), , drop = F]
+tab2
+write.csv(tab2, paste0("Bayesian/", filepath_gen, "/Rsquared.csv"))
+
+temp <- left_join(tab1, tab2, by = "index")
+temp <- test[c("model", "DIC", "dDIC", "R_sq")]
+
+write.csv(temp, paste0("Bayesian/", filepath_gen, "/DIC_Rsq.csv"))
