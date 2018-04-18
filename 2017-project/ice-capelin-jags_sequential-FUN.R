@@ -278,9 +278,11 @@ folder_names <- c("mortality_0",
                   "recruitment_2", 
                   "rm_1", 
                   "rm_2", 
-                  "rm_3", 
-                  "rm3_1p_high",
-                  "rm3_1p_med")
+                  "rm_3",
+                  "sensitivity"
+                  #"rm3_1p_high",
+                  #"rm3_1p_med"
+                  )
 
 
 #' make_direct1----
@@ -450,3 +452,29 @@ DIC_out <- function(df){
      
 }
 
+#' rsq_bayes()----
+#'
+#' @param ypred - vector values of y from Bayesian chain 
+#' @param out - list of output values from Bayesian analysis
+#'
+#' @return - Bayesian R-squared
+#' @export
+#'
+#' @examples
+rsq_bayes <- function(ypred = ypred, out=out){
+     #browser()
+     # variance of predicted values
+     y_var = apply(y_pred,2,'var')
+     y_Var <- sum(y_var)/15
+     
+     # variance of residuals
+     res_pred = out$BUGSoutput$sims.list$Res
+     res_med = apply(res_pred,2,'median')
+     res_var = apply(res_pred,2,'var')
+     
+     res_Var <- sum(res_var)/15
+     
+     # Bayesian R-squared
+     bay_rsq <- y_Var/((sum(res_var) + sum(y_var))/15)
+     return(bay_rsq)
+}
