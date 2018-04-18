@@ -557,7 +557,7 @@ beta <- posterior_fig1(out$sims.list$beta, transform = "yes", parm = "slope")
 gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "width")
 delta <- posterior_fig(out$sims.list$delta)
 
-gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "slope")
+
 #alpha
 priormean <- 0
 priorsd <- 20
@@ -571,7 +571,7 @@ p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_labe
 #beta
 priormean <- 5
 priorsd <- 1/3
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)/10
 limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
 x_label <- "beta"
 bin_1 <- mean(beta$df)/100
@@ -582,13 +582,13 @@ p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label,
 #gamma
 priormean <- 2.8
 priorsd <- 1
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)*100
 limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
 x_label <- "gamma"
 bin_1 <- mean(gamma$df)/100
 
 p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
-mean(gamma$df)/2
+
 
 #delta
 priormean <- 0
@@ -764,7 +764,7 @@ bin_1 <- mean(alpha$df)/100
 p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
 #beta
-prior <- runif(n = 10000, 0, 100)
+prior <- runif(n = 10000, 0, 100)/10
 limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
 x_label <- "beta"
 bin_1 <- mean(beta$df)/100
@@ -772,7 +772,7 @@ bin_1 <- mean(beta$df)/100
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
 #gamma
-prior <- runif(n = 10000, 0, 10)
+prior <- runif(n = 10000, 0, 10)*100
 limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
 x_label <- "gamma"
 bin_1 <- mean(gamma$df)/100
@@ -798,7 +798,6 @@ p4 <- postPriors(df = delta$df, df2 = prior, df3 = delta$df_cred, limits, x_labe
 mm <- cowplot::plot_grid(p1, p2, p3, p4, ncol=2)
 
 ggsave(paste0("Bayesian/", filepath, "/priorpost.pdf"), width=10, height=8, units="in")
-
 
 
 ## RM_1----
@@ -1140,7 +1139,7 @@ p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label,
 #gamma
 priormean <- 5
 priorsd <- 1/3
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)/10
 str(prior)
 plot(density(prior))
 plot(density(prior), xlim = c(0,5))
@@ -1155,7 +1154,7 @@ p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_labe
 #delta
 priormean <- 2.8
 priorsd <- 1
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)*100
 plot(density(prior))
 plot(density(prior), xlim = c(0,2))
 
@@ -1346,7 +1345,7 @@ p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label,
 
 priormean <- 5/10
 priorsd <- 1/3/10
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)/10
 limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
 x_label <- "gamma"
 bin_1 <- mean(gamma$df)/100
@@ -1706,13 +1705,13 @@ write.csv(as.data.frame(OUT1), paste0("Bayesian/", filepath, "/params.csv"))
 
 # plot posterior against expected distribution
 # gamma dist
-beta <- posterior_fig(out$sims.list$beta)
-gamma <- posterior_fig(out$sims.list$gamma)
+beta <- posterior_fig1(out$sims.list$beta, transform = "yes", parm = "slope")
+gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "width")
 
 #beta
 priormean <- 5
 priorsd <- 1/3
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)/10
 limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
 x_label <- "beta"
 bin_1 <- mean(beta$df)/100
@@ -1723,7 +1722,7 @@ p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label,
 #gamma
 priormean <- 2.8
 priorsd <- 1
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)
+prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)*100
 limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
 x_label <- "gamma"
 bin_1 <- mean(gamma$df)/100
@@ -1734,7 +1733,6 @@ p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_labe
 mm <- cowplot::plot_grid(p2, p3, ncol=2)
 
 ggsave(paste0("Bayesian/", filepath, "/priorpost.pdf"), width=10, height=8, units="in")
-
 
 
 ## R_Null----
