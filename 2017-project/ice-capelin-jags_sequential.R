@@ -235,6 +235,7 @@ log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 # 3. Discrepancy measures
 expY[i] <- mu[i]
 varY[i] <- sigma^2
+Res[i] <- (N2[i] - expY[i])
 PRes[i] <- (N2[i] - expY[i]) / sigma
 PResNew[i] <- (N2_new[i] - expY[i]) / sigma
 #Squared residuals
@@ -261,7 +262,7 @@ model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_recruit <- jags(data=model_data,
-                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'Fit', 'FitNew', 'PRes', 'expY', 'D', 'log_lik'),
+                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'Fit', 'FitNew', 'Res', 'PRes', 'expY', 'D', 'log_lik'),
                       model.file = textConnection(m.recruit))
 
 #UPDATE WITH MORE BURN INS
@@ -345,6 +346,8 @@ dic_R1 <- dic.samples(run_recruit$model, n.iter=1000, type="pD")
 str(x)
 dic_R1sum <- sum(dic_R1$deviance)
 
+R1_r2 <- rsq_bayes(ypred = y_pred, out = run_recruit)
+
 #PLOT credible and prediction intervals
 MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteriors.pdf"), width=10, height=8, units="in")
@@ -417,6 +420,7 @@ log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 # 3. Discrepancy measures
 expY[i] <- mu[i]
 varY[i] <- sigma^2
+Res[i] <- (N2[i] - expY[i])
 PRes[i] <- (N2[i] - expY[i]) / sigma
 PResNew[i] <- (N2_new[i] - expY[i]) / sigma
 #Squared residuals
@@ -452,7 +456,7 @@ model_data <- list(N2 = c(pred2, rep(NA, num_forecasts)),
                    N = nrow(df2) + num_forecasts)
 
 run_mortality <- jags(data=model_data,
-                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', 'log_lik'),
+                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'Res', 'PRes', 'expY', 'D', 'log_lik'),
                       model.file = textConnection(m.mortality))
 
 run_mortality <-update(run_mortality, n.iter = 300000, n.thin = 50, n.burnin = 100000)
@@ -524,10 +528,10 @@ pi_df2 <- apply(y_new,2,'quantile', c(0.05, 0.95))
 write.csv(pi_df2[, (ncol(pi_df2)-1):ncol(pi_df2)], paste0("Bayesian/", filepath, "/pi.csv"))
 
 ## M-Results----
-
 dic_M1 <- dic.samples(run_mortality$model, n.iter=1000, type="pD")
 str(x)
 dic_M1sum <- sum(dic_M1$deviance)
+M1_r2 <- rsq_bayes(ypred = y_pred, out = run_mortality)
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. Also, is this matched up properly - i haven't used PanelNames
 MyBUGSHist1(out, vars, transform = "yes")
@@ -621,6 +625,7 @@ log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 # 3. Discrepancy measures
 expY[i] <- mu[i]
 varY[i] <- sigma^2
+Res[i] <- (N2[i] - expY[i])
 PRes[i] <- (N2[i] - expY[i]) / sigma
 PResNew[i] <- (N2_new[i] - expY[i]) / sigma
 #Squared residuals
@@ -652,7 +657,7 @@ model_data <- list(N2 = c(pred2, rep(NA, num_forecasts)),
                    N = nrow(df2) + num_forecasts)
 
 run_mort_unif <- jags(data=model_data,
-                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
+                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'Res', 'PRes', 'expY', 'D', "log_lik"),
                       model.file = textConnection(m.mort_unif))
 
 run_mort_unif <-update(run_mort_unif, n.iter = 300000, n.thin = 50, n.burnin = 100000)
@@ -726,6 +731,8 @@ write.csv(pi_df2[, (ncol(pi_df2)-1):ncol(pi_df2)], paste0("Bayesian/", filepath,
 # Get the log likelihood
 dic_M_unif <- dic.samples(run_mort_unif$model, n.iter=1000, type="pD")
 dic_M_unifsum <- sum(dic_M_unif$deviance)
+
+M_unif_r2 <- rsq_bayes(ypred = y_pred, out = run_mort_unif)
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 MyBUGSHist1(out, vars, transform = "yes")
@@ -816,6 +823,7 @@ log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 # 3. Discrepancy measures
 expY[i] <- mu[i]
 varY[i] <- sigma^2
+Res[i] <- (N2[i] - expY[i])
 PRes[i] <- (N2[i] - expY[i]) / sigma
 PResNew[i] <- (N2_new[i] - expY[i]) / sigma
 #Squared residuals
@@ -843,7 +851,7 @@ model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_RM1 <- jags(data=model_data,
-                parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
+                parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'Fit', 'FitNew', 'Res', 'PRes', 'expY', 'D', "log_lik"),
                 model.file = textConnection(m.RM1))
 
 
@@ -912,6 +920,8 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], paste0("Bayesian/", filepath,
 ## RM_1-Results----
 dic_RM1 <- dic.samples(run_RM1$model, n.iter=1000, type="pD")
 dic_RM1sum <- sum(dic_RM1$deviance)
+
+RM1_r2 <- rsq_bayes(ypred = y_pred, out = run_RM1)
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 MyBUGSHist(out, vars)
@@ -984,6 +994,7 @@ log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 # 3. Discrepancy measures
 expY[i] <- mu[i]
 varY[i] <- sigma^2
+Res[i] <- (N2[i] - expY[i])
 PRes[i] <- (N2[i] - expY[i]) / sigma
 PResNew[i] <- (N2_new[i] - expY[i]) / sigma
 #Squared residuals
@@ -1015,7 +1026,7 @@ model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_RM2 <- jags(data=model_data,
-                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
+                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'Fit', 'FitNew', 'Res', 'PRes', 'expY', 'D', "log_lik"),
                       model.file = textConnection(m.RM2))
 
 #UPDATE WITH MORE BURN INS
@@ -1091,6 +1102,8 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], paste0("Bayesian/", filepath,
 ## RM_2-Results----
 dic_RM2 <- dic.samples(run_RM2$model, n.iter=1000, type="pD")
 dic_RM2sum <- sum(dic_RM2$deviance)
+
+RM2_r2 <- rsq_bayes(ypred = y_pred, out = run_RM2)
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 MyBUGSHist1(out, vars, transform = "yes")
@@ -1185,6 +1198,7 @@ log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 # 3. Discrepancy measures
 expY[i] <- mu[i]
 varY[i] <- sigma^2
+Res[i] <- (N2[i] - expY[i])
 PRes[i] <- (N2[i] - expY[i]) / sigma
 PResNew[i] <- (N2_new[i] - expY[i]) / sigma
 #Squared residuals
@@ -1217,7 +1231,7 @@ model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_RM3 <- jags(data=model_data,
-                parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
+                parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'Fit', 'FitNew', 'Res', 'PRes', 'expY', 'D', "log_lik"),
                 model.file = textConnection(m.RM3))
 
 #UPDATE WITH MORE BURN INS
@@ -1294,6 +1308,8 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], paste0("Bayesian/", filepath,
 ## RM_3-Results----
 dic_RM3 <- dic.samples(run_RM3$model, n.iter=1000, type="pD")
 dic_RM3sum <- sum(dic_RM3$deviance)
+
+RM3_r2 <- rsq_bayes(ypred = y_pred, out = run_RM3)
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 source('D:/Keith/R/zuur_rcode/MCMCSupportHighstatV2.R')
@@ -1394,6 +1410,7 @@ log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 # 3. Discrepancy measures
 expY[i] <- mu[i]
 varY[i] <- sigma^2
+Res[i] <- (N2[i] - expY[i])
 PRes[i] <- (N2[i] - expY[i]) / sigma
 PResNew[i] <- (N2_new[i] - expY[i]) / sigma
 #Squared residuals
@@ -1422,7 +1439,7 @@ model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_recruit_prior <- jags(data=model_data,
-                    parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
+                    parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'Fit', 'FitNew', 'Res', 'PRes', 'expY', 'D', "log_lik"),
                     model.file = textConnection(m.recruit.prior))
 
 #UPDATE WITH MORE BURN INS
@@ -1496,6 +1513,7 @@ dic_R2 <- dic.samples(run_recruit_prior$model, n.iter=1000, type="pD")
 str(x)
 dic_R2sum <- sum(dic_R2$deviance)
 
+R2_r2 <- rsq_bayes(ypred = y_pred, out = run_recruit_prior)
 
 #PLOT credible and prediction intervals
 MyBUGSHist(out, vars)
@@ -1577,6 +1595,7 @@ log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 # 3. Discrepancy measures
 expY[i] <- mu[i]
 varY[i] <- sigma^2
+Res[i] <- (N2[i] - expY[i])
 PRes[i] <- (N2[i] - expY[i]) / sigma
 PResNew[i] <- (N2_new[i] - expY[i]) / sigma
 #Squared residuals
@@ -1606,7 +1625,7 @@ model_data <- list(N2 = c(pred2, rep(NA, num_forecasts)),
                    N = nrow(df2) + num_forecasts)
 
 run_mortality_null <- jags(data=model_data,
-                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'beta', 'gamma', 'Fit', 'FitNew', 'PRes', 'expY', 'D', 'log_lik'),
+                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'beta', 'gamma', 'Fit', 'FitNew', 'Res', 'PRes', 'expY', 'D', 'log_lik'),
                       model.file = textConnection(m.mortality_null))
 
 run_mortality_null <- update(run_mortality_null, n.iter = 50000, n.thin = 50)
@@ -1683,6 +1702,8 @@ write.csv(pi_df2[, (ncol(pi_df2)-1):ncol(pi_df2)], paste0("Bayesian/", filepath,
 dic_Mo <- dic.samples(run_mortality_null$model, n.iter=1000, type="pD")
 dic_Mosum <- sum(dic_Mo$deviance)
 
+Mo_r2 <- rsq_bayes(ypred = y_pred, out = run_mortality_null)
+
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. Also, is this matched up properly - i haven't used PanelNames
 MyBUGSHist(out, vars)
 ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteriors.pdf"), width=10, height=8, units="in")
@@ -1751,6 +1772,7 @@ log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
 # 3. Discrepancy measures
 expY[i] <- mu[i]
 varY[i] <- sigma^2
+Res[i] <- (N2[i] - expY[i])
 PRes[i] <- (N2[i] - expY[i]) / sigma
 PResNew[i] <- (N2_new[i] - expY[i]) / sigma
 #Squared residuals
@@ -1775,7 +1797,7 @@ model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)),
                    N = nrow(df3) + num_forecasts)
 
 run_recruit_null <- jags(data=model_data,
-                    parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'Fit', 'FitNew', 'PRes', 'expY', 'D', 'log_lik'),
+                    parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'Fit', 'FitNew', 'Res', 'PRes', 'expY', 'D', 'log_lik'),
                     model.file = textConnection(m.recruit.null))
 
 #UPDATE WITH MORE BURN INS
@@ -1844,6 +1866,8 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], paste0("Bayesian/", filepath,
 ## R_NUll-Results----
 dic_Ro <- dic.samples(run_recruit_null$model, n.iter=1000, type="pD")
 dic_Rosum <- sum(dic_Ro$deviance)
+
+Ro_r2 <- rsq_bayes(ypred = y_pred, out = run_recruit_null)
 
 #PLOT credible and prediction intervals
 MyBUGSHist1(out, vars, transform = "yes")
@@ -1975,8 +1999,7 @@ comb_ls <- matrix(c("MO", TIpred, COpred,
              ncol=3, byrow=T)
 
 
-
-## RM3_projection----
+# model for sensitivity
 #"alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])"
 
 RM3_sens = '
@@ -2085,3 +2108,21 @@ p <- p + theme_bw(base_size = 20) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5)
 p
 ggsave(paste0("Bayesian/", filepath, "/sensitivity.pdf"), width=10, height=8, units="in")
 
+# R-squared----
+tab2 <- as.data.frame(rbind(
+     Ro_r2,
+     R2_r2,
+     R1_r2,
+     Mo_r2,
+     M1_r2,
+     M_unif_r2,
+     RM1_r2,
+     RM2_r2,
+     RM2_r2
+     
+))
+str(tab2)
+names(tab1)[names(tab1)=="V1"] <- "R_sq"
+tab1 <- tab1[order(tab1$R_sq), , drop = F]
+tab1
+write.csv(tab1, paste0("Bayesian/", filepath_gen, "/Rsquared.csv"))
