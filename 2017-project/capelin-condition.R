@@ -46,6 +46,7 @@ write_csv(df, "data/condition_1979_2017.csv")
 
 age <- 1
 
+####STOP - go to Age 1 M/F####################################################################################
 #create one filter for ice-capelin project and one for Fran and the markdown doc
 df1 <- df %>%
      filter(year > 1992 &  sex==1 & age == 1 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
@@ -436,7 +437,7 @@ levels(as.factor(df3$age))
 # see email from H. Murphy and Methods of ResDoc - these are the values for filtering the dataset that Hannah and Maegen suggested based on biology
 df3 <- df3 %>%
      group_by(year) %>%
-     filter(weight > 2 & weight < 20) %>% 
+     filter(weight > 2) %>% 
      filter(length > 80)
      
 # run models for male and females seperately
@@ -454,8 +455,10 @@ df3.m$resids <- df3.m$weight-10^df3.m$fits
 quantile(df3.m$weight, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999))
 plot(density(df3.m$weight))
 round(quantile(df3.m$length, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999)), 1)
+plot(density(df3.m$length))
 
-#these all seem good
+# Look at capelin with very high or low condition
+# I checked with Magen and all these seem good
 df3.m[df3.m$rel.cond > 1.4, c("sex", "maturity", "rel.cond", "length", "weight")]
 df3.m[df3.m$rel.cond < 0.7, c("sex", "maturity", "rel.cond", "length", "weight")]
 
@@ -475,9 +478,10 @@ df3.f$resids <- df3.f$weight-10^df3.f$fits
 quantile(df3.f$weight, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999))
 plot(density(df3.f$weight))
 round(quantile(df3.f$length, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999)), 1)
+plot(density(df3.f$length))
 
-df3.f[df3.f$rel.cond > 1.4, c("sex", "maturity", "rel.cond", "length", "weight")]
-df3.f[df3.f$rel.cond < 0.7, c("sex", "maturity", "rel.cond", "length", "weight")]
+#df3.f[df3.f$rel.cond > 1.4, c("sex", "maturity", "rel.cond", "length", "weight")]
+#df3.f[df3.f$rel.cond < 0.7, c("sex", "maturity", "rel.cond", "length", "weight")]
 
 plot(df3.f$rel.cond, df3.f$resids)
 plot(boxplot(df3.f$rel.cond))
@@ -530,3 +534,101 @@ out <- df4 %>%
 View(out)
 
 write_csv(out, "data/condition_ag1_MF_out.csv")     
+
+
+##Age2 M/F comparisons----
+# first, consolidate the age 1 comparisions as above
+glimpse(df3)
+m2.a1 <- lm(log10(weight) ~ log10(length), data= df3)
+m2.a1$fits <- fitted(m2.a1)
+
+df.a1 <- df3
+df.a1$rel.cond <- df.a1$weight/10^m2.a1$fits
+df.a1$resids <- df.a1$weight-10^m2.a1$fits
+
+# now do the same for age 2
+#subset data
+df.a2 <- df %>%
+     filter(year > 1992 &  age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
+     filter(!is.na(weight)) %>%
+     filter(!is.na(length)) 
+
+#make these variables factors
+cols <- c("project", "nafo_div", "sex", "maturity")
+df.a2 %<>%
+     mutate_each_(funs(factor(.)),cols)
+glimpse(df.a2)
+
+#change values to something interpretable
+df.a2$nafo_div <- as.factor(df.a2$nafo_div)
+levels(df.a2$nafo_div)[levels(df.a2$nafo_div) == "23"] <- "2J"
+levels(df.a2$nafo_div)[levels(df.a2$nafo_div) == "31"] <- "3K"
+levels(df.a2$nafo_div)[levels(df.a2$nafo_div) == "32"] <- "3L"
+levels(df.a2$sex)[levels(df.a2$sex) == "1"] <- "Male"
+levels(df.a2$sex)[levels(df.a2$sex) == "2"] <- "Female"
+
+# check levels of data to ensure that subset worked
+levels(df.a2$project)
+levels(as.factor(df.a2$sample_number))
+levels(as.factor(df.a2$year))
+levels(as.factor(df.a2$month))
+levels(df.a2$nafo_div)
+levels(df.a2$maturity)
+range(df.a2$weight)
+range(df.a2$length)
+levels(as.factor(df.a2$age))
+
+plot(density(df.a2$weight))
+plot(density(df.a2$length))
+
+# see email from H. Murphy and Methods of ResDoc - these are the values for filtering the dataset that Hannah and Maegen suggested based on biology
+df.a2 <- df.a2 %>%
+     group_by(year) %>%
+     filter(weight > 6) %>% 
+     filter(length > 120)
+
+
+glimpse(df.a2)
+m2.a2 <- lm(log10(weight) ~ log10(length), data= df.a2)
+m2.a2$fits <- fitted(m2.a2)
+
+df.a2$rel.cond <- df.a2$weight/10^m2.a2$fits
+df.a2$resids <- df.a2$weight-10^m2.a2$fits
+
+df.a1_2 <- bind_rows(df.a1, df.a2)
+#nafo by sex - this graph indicates that M/F condition is very similar across years.
+ggplot(data=df.a1_2) +
+     geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
+     ylab("Relative condition") +
+     xlab("Year") +
+     facet_wrap(~age, ncol=1) + 
+     geom_hline(aes(yintercept = 1), colour = 'red') +
+     theme_bw()
+
+
+# rel.cond by sex
+ggplot(data=df.a1_2) +
+     geom_boxplot(aes(x = age, y = rel.cond, group = age), notch=T)
+
+# rel.cond by sex and year
+ggplot(data=df.a1_2) +
+     geom_boxplot(aes(x = age, y = rel.cond, group = age), notch=T) + 
+     facet_wrap(~ year) + 
+     geom_hline(aes(yintercept = 1), colour = 'red')
+
+#month by year
+ggplot(data=df.a1_2) +
+     geom_boxplot(aes(x = year, y = rel.cond, group = year)) + 
+     facet_grid(age~month)
+
+ggplot(data=df.a1_2) +
+     geom_boxplot(aes(x = age, y = rel.cond, group = age)) + 
+     facet_wrap(~maturity)
+
+out.a1_2 <- df.a1_2 %>%
+     group_by(year, age) %>%
+     summarize(meanCond = round(mean(rel.cond),4), stdCond= round(sd(rel.cond),4), medCond = round(median(rel.cond), 4))
+temp <- spread(out.a1_2[c(1:3)], key = age, value = meanCond) %>% 
+     setNames(c("year", "age1", "age2"))
+plot(temp$age1 ~ temp$age2)
+str(temp)
