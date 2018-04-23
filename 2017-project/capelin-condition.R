@@ -547,7 +547,7 @@ df.a1$rel.cond <- df.a1$weight/10^m2.a1$fits
 df.a1$resids <- df.a1$weight-10^m2.a1$fits
 
 # now do the same for age 2
-#subset data
+#subset data- 
 df.a2 <- df %>%
      filter(year > 1992 &  age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
@@ -578,14 +578,9 @@ range(df.a2$weight)
 range(df.a2$length)
 levels(as.factor(df.a2$age))
 
+# Based on these plots and discussions with Megan Boucher, there is no need to subset.  All of these values are possible and reasonable.  Likely fish born late in the year and they never catch up.
 plot(density(df.a2$weight))
 plot(density(df.a2$length))
-
-# see email from H. Murphy and Methods of ResDoc - these are the values for filtering the dataset that Hannah and Maegen suggested based on biology
-df.a2 <- df.a2 %>%
-     group_by(year) %>%
-     filter(weight > 6) %>% 
-     filter(length > 120)
 
 
 glimpse(df.a2)
@@ -632,3 +627,5 @@ temp <- spread(out.a1_2[c(1:3)], key = age, value = meanCond) %>%
      setNames(c("year", "age1", "age2"))
 plot(temp$age1 ~ temp$age2)
 str(temp)
+
+write_csv(out.a1_2, "data/condition_ag1_2_MF_out.csv")  
