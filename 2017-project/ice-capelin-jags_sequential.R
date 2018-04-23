@@ -1920,18 +1920,19 @@ index <- c(1:9)
 tab1 <- as.data.frame(rbind(
      dic_R1sum,
       dic_M1sum,
+     dic_M_unifsum,
       dic_RM1sum,
       dic_RM2sum,
       dic_RM3sum,
-      dic_Rosum,
-      dic_Mosum,
-      dic_M_unifsum,
-     dic_R2sum
-     
+     dic_R2sum, # informed recruitment 
+     dic_Mosum, 
+     dic_Rosum
       ))
 str(tab1)
+tab1 <- tibble::rownames_to_column(tab1)
 tab1 <- cbind(index, tab1)
 names(tab1)[names(tab1)=="V1"] <- "DIC"
+names(tab1)[names(tab1)=="rowname"] <- "model"
 tab1 <- tab1[order(tab1$DIC), , drop = F]
 tab1$dDIC <- tab1$DIC-tab1$DIC[1]
 tab1
@@ -1945,13 +1946,16 @@ filepath <- paste0(filepath_gen, "/sensitivity")
 temp <- df1$tice
 str(temp)
 
+# this value is from line 71-72
 temp[20] <- 0.57
 mean(temp)
 sd(temp)
 tice_m <- round(mean(temp), 2)
 tice_h <- round(mean(temp) + sd(temp), 2)
-tice_l <- round(mean(temp) - sd(temp), 2)
+tice_l <- round(mean(temp) - 2*sd(temp), 2)
 
+
+# where did this value come from??  Normalized condition data
 temp1 <- df1$meanCond_lag
 temp1[20] <- 2.8 # check this value against the new numbers!!!
 mean(temp1)
@@ -1971,11 +1975,7 @@ C <- c(cond_h, cond_m, cond_l)
 #A <- array(c(T, C), dim = c(3, 1, 2, 2), dimnames = list(row.names, col.names, y.names, mat.names))
 A <- array(c(T, C), dim = c(3, 1, 2), dimnames = list(row.names, col.names, mat.names))
 
-STpred <- c(-1.1798)
-PSpred <- c(-0.024866638)
-TIpred <- c(0.57)
-COpred <- c(2.68)
-
+# the values TIpred and COpred are from lines 46-48
 comb_ls <- matrix(c("MO", TIpred, COpred,
                     "HH", A[1,1,1], A[1,1,2],
                     "HM", A[1,1,1], A[2,1,2],
@@ -1983,12 +1983,19 @@ comb_ls <- matrix(c("MO", TIpred, COpred,
                     "MH", A[2,1,1], A[1,1,2],
                     "MM", A[2,1,1], A[2,1,2],
                     "ML", A[2,1,1], A[3,1,2],
-                    "HL", A[3,1,1], A[1,1,2],
-                    "HM", A[3,1,1], A[2,1,2],
+                    "LH", A[3,1,1], A[1,1,2],
+                    "LM", A[3,1,1], A[2,1,2],
                     "LL", A[3,1,1], A[3,1,2]), 
              nrow=10,
              ncol=3, byrow=T)
 
+
+comb_ls <- matrix(c("MO", TIpred, COpred,
+                    "MH", A[2,1,1], A[1,1,2],
+                    "MM", A[2,1,1], A[2,1,2],
+                    "ML", A[2,1,1], A[3,1,2]), 
+                  nrow=10,
+                  ncol=3, byrow=T)
 
 # model for sensitivity
 #"alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])"
@@ -2042,6 +2049,7 @@ p_med_ <- rep(list(list()), 10)
 pi_df3_ <- rep(list(list()), 10)
 
 # a loop for automating the process of assessing sensitivity
+# the values TIpred and COpred are from lines 46-48
 for(i in 1:10){
      model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), 
                         ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
@@ -2069,6 +2077,7 @@ for(i in 1:10){
 # create a table of prediction intervals
 # create the blank matrix
 model <- c("MO", "HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL")
+model <- c("MO", "MH", "MM", "ML")
 pi_pt <- rep(NA, 10)
 per_2_5 <- rep(NA, 10)
 per_97_5 <- rep(NA, 10)
@@ -2079,6 +2088,7 @@ for(i in seq(model)){
      pi_tabl[i, 2] <- round(p_med_[[i]][16], 2)
      pi_tabl[i, 3:4] <- round(pi_df3_[[i]][,16], 2)
 }
+
 pi_tabl
 pi_tabl <- data.frame(pi_tabl)
 str(pi_tabl)
@@ -2088,31 +2098,37 @@ pi_tabl$per_97_5 <- as.numeric(levels(pi_tabl$per_97_5)[pi_tabl$per_97_5])
 
 write.csv(pi_tabl, paste0("Bayesian/", filepath, "/pi_tabl.csv"))
 
-
 # graph summarizing the influence of the knockouts
 p <- ggplot(data = data.frame(pi_tabl), aes(x = fct_inorder(model))) 
 p <- p + geom_point(aes(y=as.numeric(pi_pt)), size = 3)
 p <- p + geom_errorbar(aes(ymax = as.numeric(per_97_5), ymin = as.numeric(per_2_5)), width = 0.5)
 p <- p + xlab("Scenario") + ylab("Prediction point estimate \n & interval")
 p <- p + theme_bw(base_size = 20) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
+p <- p + geom_hline(aes(yintercept = pi_tabl$pi_pt[1]), colour = "red", size = 2)
 #p <- p + scale_x_discrete(breaks = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"), labels = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"))
 p
 ggsave(paste0("Bayesian/", filepath, "/sensitivity.pdf"), width=10, height=8, units="in")
 
-# R-squared----
+# This shows the reason why the middle values for tice are slightly higher than the high values.  Also shows the influence of high and low values on model
+p3 <- ggplot()
+p3 <- p3 + geom_line(aes(x = c(temp[5:19], 0.57), y = y_med_[[1]]))
+p3 <- p3 + geom_line(aes(x = c(temp[5:19], 0.57), y = y_med_[[5]]), colour = "red")
+p3 <- p3 + geom_line(aes(x = c(temp[5:19], 0.57), y = y_med_[[9]]), colour = "blue")
+p3
 
+# R-squared----
 tab2 <- as.data.frame(rbind(
-     Ro_r2,
-     R2_r2,
      R1_r2,
-     Mo_r2,
      M1_r2,
      M_unif_r2,
      RM1_r2,
      RM2_r2,
-     RM3_r2
-     
+     RM3_r2,
+     R2_r2,
+     Mo_r2,
+     Ro_r2
 ))
+
 tab2 <- tibble::rownames_to_column(tab2)
 tab2 <- cbind(index, tab2)
 str(tab2)
@@ -2124,6 +2140,6 @@ tab2
 write.csv(tab2, paste0("Bayesian/", filepath_gen, "/Rsquared.csv"))
 
 temp <- left_join(tab1, tab2, by = "index")
-temp <- test[c("model", "DIC", "dDIC", "R_sq")]
+temp <- temp[c("model.x", "model.y","DIC", "dDIC", "R_sq")]
 
 write.csv(temp, paste0("Bayesian/", filepath_gen, "/DIC_Rsq.csv"))
