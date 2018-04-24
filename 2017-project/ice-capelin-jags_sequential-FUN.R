@@ -272,7 +272,7 @@ make_direct <- function(x){
 folder_names <- c("mortality_0", 
                   "mortality_1", 
                   "mortality_2", 
-                  "mortality_3", 
+                 # "mortality_3", 
                   "recruitment_0", 
                   "recruitment_1", 
                   "recruitment_2", 
@@ -463,18 +463,18 @@ DIC_out <- function(df){
 #' @examples
 rsq_bayes <- function(ypred = ypred, out=out){
      #browser()
-     # variance of predicted values
-     y_var = apply(y_pred,2,'var')
-     y_Var <- sum(y_var)/15
+     # variance of predicted values: use 1:15 bc 15 observations of capelin
+     y_var = apply(ypred[, 1:15], 1, 'var')
+     y_Var <- sum(y_var)/nrow(ypred) # this is the sum of variances from each posterior draw / the number of posterior draws
      
      # variance of residuals
-     res_pred = out$BUGSoutput$sims.list$Res
-     res_med = apply(res_pred,2,'median')
-     res_var = apply(res_pred,2,'var')
+     res_pred = out$BUGSoutput$sims.list$Res[, 1:15] # as above but for resids
+     #res_med = apply(res_pred,2,'median')
+     res_var = apply(res_pred,1,'var')
      
-     res_Var <- sum(res_var)/15
+     #res_Var <- sum(res_var)/nrow(y_pred)
      
      # Bayesian R-squared
-     bay_rsq <- y_Var/((sum(res_var) + sum(y_var))/15)
+     bay_rsq <- y_Var/(sum(res_var + y_var)/nrow(y_pred))
      return(bay_rsq)
 }
