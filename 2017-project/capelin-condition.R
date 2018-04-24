@@ -625,7 +625,13 @@ out.a1_2 <- df.a1_2 %>%
      summarize(meanCond = round(mean(rel.cond),4), stdCond= round(sd(rel.cond),4), medCond = round(median(rel.cond), 4))
 temp <- spread(out.a1_2[c(1:3)], key = age, value = meanCond) %>% 
      setNames(c("year", "age1", "age2"))
+
+# how related are age 1 and age 2 conditions?
 plot(temp$age1 ~ temp$age2)
+summary(lm(temp$age1 ~ temp$age2))
 str(temp)
+
+out.a1_2 <- out.a1_2 %>% 
+     summarize(meanCond = mean(meanCond))
 
 write_csv(out.a1_2, "data/condition_ag1_2_MF_out.csv")  
