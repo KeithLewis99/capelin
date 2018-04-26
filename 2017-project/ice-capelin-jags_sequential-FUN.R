@@ -223,11 +223,16 @@ capelin_data <- function(capelin_data_set){
 #'
 #' @examples - cond <- condition_data(cond, 'data/condition_ag1_MF_out.csv')
 condition_data <- function(cond, df){
-     if(cond == "cond"){
+     if(cond == "cond_dat_a1"){
           cond <- read_csv(df)
           #lag data
           cond$meanCond_lag <- lag(cond$meanCond, 1)
           cond$medCond_lag <- lag(cond$medCond, 1)
+          return(cond)
+     } else if (cond == "cond_dat_a1_2") {
+          cond <- read_csv(df)
+          #lag data
+          cond$meanCond_lag <- lag(cond$meanCond, 1)
           return(cond)
      } else if(cond == "resids") {
           #Fran's original
@@ -460,21 +465,19 @@ DIC_out <- function(df){
 #' @return - Bayesian R-squared
 #' @export
 #'
-#' @examples
+#' @examples R1_r2 <- rsq_bayes(ypred = y_pred, out = run_recruit)
+# see jags_bayes_R2 for proof that this matches the Gelmen code
 rsq_bayes <- function(ypred = ypred, out=out){
-     #browser()
-     # variance of predicted values: use 1:15 bc 15 observations of capelin
-     y_var = apply(ypred[, 1:15], 1, 'var')
-     y_Var <- sum(y_var)/nrow(ypred) # this is the sum of variances from each posterior draw / the number of posterior draws
-     
-     # variance of residuals
-     res_pred = out$BUGSoutput$sims.list$Res[, 1:15] # as above but for resids
-     #res_med = apply(res_pred,2,'median')
-     res_var = apply(res_pred,1,'var')
-     
-     #res_Var <- sum(res_var)/nrow(y_pred)
-     
-     # Bayesian R-squared
-     bay_rsq <- y_Var/(sum(res_var + y_var)/nrow(y_pred))
-     return(bay_rsq)
-}
+          #browser()
+          # variance of predicted values
+          y_var = apply(ypred, 1, 'var')
+
+          # variance of residuals
+          res_pred = out$BUGSoutput$sims.list$Res
+          #res_med = apply(res_pred,2,'median')
+          res_var = apply(res_pred,1,'var')
+          
+          # Distribution of Bayesian R-squared
+          bay_rsq <- y_var/(res_var + y_var)
+          return(bay_rsq)
+     }
