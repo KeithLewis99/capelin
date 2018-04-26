@@ -39,19 +39,23 @@ make_direct1(folder_names, folder_path1)
 
 ## Set parameters for analysis----
 capelin_data_set <- "age" # type of capelin index - alt value ==  "biomass" "age"
-cond <- "cond" # type of condition index - alt value == "resids"
+cond <- "cond_dat_a1_2" # type of condition index - alt value == "resids" or "cond_dat_a1_2"
 dic_run <- "yes" # is this a DIC run? "yes" or "no"
 
 # sets the values for the predition interval
-STpred <- c(-1.1798, -0.5525) # mean from normalized data
-PSpred <- c(-0.024866638, 0) # mean from normalized data
-TIpred <- c(0.57, 0.788)  #first value estimated from this year, second, mean from centered data
+# these values are normalized.  The normalization was performed after the data were all brought together.  The calculations are performed on lines 159-164 unless stated otherwise
+STpred <- c(-1.1798, -0.5525)
+PSpred <- c(-0.024866638, 0) 
+TIpred <- c(0.57, 0.788)  #first value estimated from this year (line 71-72), second, mean from centered data (line 168)
 
-x <- "cond"
-COpred <- if(x=="cond"){
-     COpred <- c(2.17, 0)
+x <- "condition" #"resids"
+y <- "a1" # "a1_2"
+COpred <- if(x=="condition" & y == "a1"){
+     COpred <- c(1.67, 0) # from lines 159-164
+} else if(x=="condition" & y == "a1_2"){
+     COpred <- c(1.90, 0) # from lines 159-164
 } else if(x =="resids"){
-     COpred <- c(0, 0)
+          COpred <- c(0, 0)
 }
 
 
@@ -81,24 +85,17 @@ cap <- capelin_data(capelin_data_set)
 #source: ice-chart-processing-data-v3.R
 ice <- read_csv('output-processing/capelin-m1.csv')
 glimpse(ice)
-mean(ice$tice)
 
 ## condition (1995-2017)-----
 # source: for "cond" see capelin-condition.R for original and derived datasets
 # source: for "resids" see Fran's original "capelin_condition_maturation.xlsx"
 #cond <- condition_data(cond, 'data/condition_ag1_out.csv')
-cond <- condition_data(cond, 'data/condition_ag1_MF_out.csv')
-glimpse(cond)
+if(cond == "cond_dat_a1"){
+     cond_dat <- condition_data(cond, 'data/condition_ag1_MF_out.csv')
+} else if (cond == "cond_dat_a1_2"){
+     cond_dat <- condition_data(cond, 'data/condition_ag1_2_MF_out.csv')     
+}
 condResids <- condition_data("resids", 'data/condition_ag1_out.csv')
-glimpse(condResids)
-#View(cond)
-#View(condResids)
-
-# value for COpred
-norm <- subset(cond, year > 1998)
-# 1.0466 is the value for the condition in 2017 - may need to correct this
-cond2018 <- 1.0466
-(cond2018-mean(norm$meanCond_lag, na.rm=T))/sd(norm$meanCond_lag, na.rm = T)
 
 ## larval data (2003-2017)----
 # source "capelin_age_disaggregate_abundance.xlsx":Larval indices
@@ -132,7 +129,7 @@ ps_tot$ps_sdTot_lag2 <- lag(ps_tot$ps_sdTot, 2)
 
 ##join the above data sets----
 capelin_join <- left_join(cap, ice, by = "year")
-capelin_join <- left_join(capelin_join, cond, by = "year")
+capelin_join <- left_join(capelin_join, cond_dat, by = "year")
 capelin_join <- left_join(capelin_join, condResids, by = "year")
 capelin_join <- left_join(capelin_join, larvae, by = "year")
 capelin_join <- left_join(capelin_join, ps_tot, by = "year")
@@ -151,7 +148,7 @@ if(capelin_data_set == "biomass"){
 df1 <- subset(df, year>1998)
 glimpse(df1)
 
-if(x == "cond"){
+if(x == "condition"){
      cols <- c("meanCond_lag", "meanCond_lag", "surface_tows_lag2", "ps_meanTot_lag2")
 } else if (x == "resids"){
      cols <- c("meanCond_lag", "resids_lag", "surface_tows_lag2", "ps_meanTot_lag2")
@@ -160,9 +157,15 @@ if(x == "cond"){
 df1 %<>%
      mutate_each_(funs(scale),cols)
 glimpse(df1)
-df$meanCond
-df$meanCond_lag
+df1$meanCond
 df1$meanCond_lag
+df1$meanCond_lag
+co_temp <- df1[c("year", "meanCond")]
+co_temp$meanCond_n <- scale(co_temp$meanCond)
+ps_temp <- df1[c("year", "ps_meanTot")]
+ps_temp$ps_meanTot_n <- scale(ps_temp$ps_meanTot)
+st_temp <- df1[c("year", "surface_tows")]
+st_temp$surface_tows_n <- scale(st_temp$surface_tows)
 
 # divide by 100
 df1$tice <- df1$tice/100
@@ -346,7 +349,10 @@ dic_R1 <- dic.samples(run_recruit$model, n.iter=1000, type="pD")
 str(x)
 dic_R1sum <- sum(dic_R1$deviance)
 
-R1_r2 <- rsq_bayes(ypred = y_pred, out = run_recruit)
+source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
+
+R1_r2m <- rsq_bayes(ypred = y_pred, out = run_recruit)
+R1_r2 <- c(median(R1_r2m), sd(R1_r2m))
 
 #PLOT credible and prediction intervals
 MyBUGSHist(out, vars)
@@ -531,7 +537,8 @@ write.csv(pi_df2[, (ncol(pi_df2)-1):ncol(pi_df2)], paste0("Bayesian/", filepath,
 dic_M1 <- dic.samples(run_mortality$model, n.iter=1000, type="pD")
 str(x)
 dic_M1sum <- sum(dic_M1$deviance)
-M1_r2 <- rsq_bayes(ypred = y_pred, out = run_mortality)
+M1_r2m <- rsq_bayes(ypred = y_pred, out = run_mortality)
+M1_r2 <- c(median(M1_r2m), sd(M1_r2m))
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. Also, is this matched up properly - i haven't used PanelNames
 MyBUGSHist1(out, vars, transform = "yes")
@@ -732,7 +739,8 @@ write.csv(pi_df2[, (ncol(pi_df2)-1):ncol(pi_df2)], paste0("Bayesian/", filepath,
 dic_M_unif <- dic.samples(run_mort_unif$model, n.iter=1000, type="pD")
 dic_M_unifsum <- sum(dic_M_unif$deviance)
 
-M_unif_r2 <- rsq_bayes(ypred = y_pred, out = run_mort_unif)
+M_unif_r2m <- rsq_bayes(ypred = y_pred, out = run_mort_unif)
+M_unif_r2 <- c(median(M_unif_r2m), sd(M_unif_r2m))
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 MyBUGSHist1(out, vars, transform = "yes")
@@ -921,7 +929,8 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], paste0("Bayesian/", filepath,
 dic_RM1 <- dic.samples(run_RM1$model, n.iter=1000, type="pD")
 dic_RM1sum <- sum(dic_RM1$deviance)
 
-RM1_r2 <- rsq_bayes(ypred = y_pred, out = run_RM1)
+RM1_r2m <- rsq_bayes(ypred = y_pred, out = run_RM1)
+RM1_r2 <- c(median(RM1_r2m), sd(RM1_r2m))
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 MyBUGSHist(out, vars)
@@ -1103,7 +1112,8 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], paste0("Bayesian/", filepath,
 dic_RM2 <- dic.samples(run_RM2$model, n.iter=1000, type="pD")
 dic_RM2sum <- sum(dic_RM2$deviance)
 
-RM2_r2 <- rsq_bayes(ypred = y_pred, out = run_RM2)
+RM2_r2m <- rsq_bayes(ypred = y_pred, out = run_RM2)
+RM2_r2 <- c(median(RM2_r2m), sd(RM2_r2m))
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 MyBUGSHist1(out, vars, transform = "yes")
@@ -1309,7 +1319,8 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], paste0("Bayesian/", filepath,
 dic_RM3 <- dic.samples(run_RM3$model, n.iter=1000, type="pD")
 dic_RM3sum <- sum(dic_RM3$deviance)
 
-RM3_r2 <- rsq_bayes(ypred = y_pred, out = run_RM3)
+RM3_r2m <- rsq_bayes(ypred = y_pred, out = run_RM3)
+RM3_r2 <- c(median(RM3_r2m), sd(RM3_r2m))
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
 source('D:/Keith/R/zuur_rcode/MCMCSupportHighstatV2.R')
@@ -1513,7 +1524,8 @@ dic_R2 <- dic.samples(run_recruit_prior$model, n.iter=1000, type="pD")
 str(x)
 dic_R2sum <- sum(dic_R2$deviance)
 
-R2_r2 <- rsq_bayes(ypred = y_pred, out = run_recruit_prior)
+R2_r2m <- rsq_bayes(ypred = y_pred, out = run_recruit_prior)
+R2_r2 <- c(median(R2_r2m), sd(R2_r2m))
 
 #PLOT credible and prediction intervals
 MyBUGSHist(out, vars)
@@ -1702,7 +1714,8 @@ write.csv(pi_df2[, (ncol(pi_df2)-1):ncol(pi_df2)], paste0("Bayesian/", filepath,
 dic_Mo <- dic.samples(run_mortality_null$model, n.iter=1000, type="pD")
 dic_Mosum <- sum(dic_Mo$deviance)
 
-Mo_r2 <- rsq_bayes(ypred = y_pred, out = run_mortality_null)
+Mo_r2m <- rsq_bayes(ypred = y_pred, out = run_mortality_null)
+Mo_r2 <- c(median(Mo_r2m), sd(Mo_r2m))
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. Also, is this matched up properly - i haven't used PanelNames
 MyBUGSHist(out, vars)
@@ -1867,7 +1880,8 @@ write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], paste0("Bayesian/", filepath,
 dic_Ro <- dic.samples(run_recruit_null$model, n.iter=1000, type="pD")
 dic_Rosum <- sum(dic_Ro$deviance)
 
-Ro_r2 <- rsq_bayes(ypred = y_pred, out = run_recruit_null)
+Ro_r2m <- rsq_bayes(ypred = y_pred, out = run_recruit_null)
+Ro_r2 <- c(median(Ro_r2m), sd(Ro_r2m))
 
 #PLOT credible and prediction intervals
 MyBUGSHist1(out, vars, transform = "yes")
@@ -1952,12 +1966,13 @@ mean(temp)
 sd(temp)
 tice_m <- round(mean(temp), 2)
 tice_h <- round(mean(temp) + sd(temp), 2)
-tice_l <- round(mean(temp) - 2*sd(temp), 2)
+tice_l <- round(mean(temp) - 1*sd(temp), 2)
+tice_vl <- round(mean(temp) - 2*sd(temp), 2)
 
 
 # where did this value come from??  Normalized condition data
 temp1 <- df1$meanCond_lag
-temp1[20] <- 2.8 # check this value against the new numbers!!!
+temp1[20] <- COpred[1]
 mean(temp1)
 sd(temp1)
 cond_m <- round(mean(temp1), 2)
@@ -1965,18 +1980,18 @@ cond_h <- round(mean(temp1) + sd(temp1), 2)
 cond_l <- round(mean(temp1) - sd(temp1), 2)
 
 #create an array of the possible value combinations
-row.names <- c("high", "med", "low")
+row.names <- c("high", "med", "low", "veryLow")
 col.names <- "val"
 y.names <- c("2018", "2019")
 mat.names <- c("tice", "cond")
 
-T <- c(tice_h, tice_m, tice_l)
-C <- c(cond_h, cond_m, cond_l)
+T <- c(tice_h, tice_m, tice_l, tice_vl)
+C <- c(cond_h, cond_m, cond_l, NA)
 #A <- array(c(T, C), dim = c(3, 1, 2, 2), dimnames = list(row.names, col.names, y.names, mat.names))
-A <- array(c(T, C), dim = c(3, 1, 2), dimnames = list(row.names, col.names, mat.names))
+A <- array(c(T, C), dim = c(4, 1, 2), dimnames = list(row.names, col.names, mat.names))
 
 # the values TIpred and COpred are from lines 46-48
-comb_ls <- matrix(c("MO", TIpred, COpred,
+comb_ls <- matrix(c("MO", TIpred[1], COpred[1],
                     "HH", A[1,1,1], A[1,1,2],
                     "HM", A[1,1,1], A[2,1,2],
                     "HL", A[1,1,1], A[3,1,2],
@@ -1985,17 +2000,12 @@ comb_ls <- matrix(c("MO", TIpred, COpred,
                     "ML", A[2,1,1], A[3,1,2],
                     "LH", A[3,1,1], A[1,1,2],
                     "LM", A[3,1,1], A[2,1,2],
-                    "LL", A[3,1,1], A[3,1,2]), 
-             nrow=10,
+                    "LL", A[3,1,1], A[3,1,2],
+                    "vLH", A[4,1,1], A[1,1,2],
+                    "vLM", A[4,1,1], A[2,1,2],
+                    "vLL", A[4,1,1], A[3,1,2]), 
+             nrow=13,
              ncol=3, byrow=T)
-
-
-comb_ls <- matrix(c("MO", TIpred, COpred,
-                    "MH", A[2,1,1], A[1,1,2],
-                    "MM", A[2,1,1], A[2,1,2],
-                    "ML", A[2,1,1], A[3,1,2]), 
-                  nrow=10,
-                  ncol=3, byrow=T)
 
 # model for sensitivity
 #"alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])"
@@ -2041,17 +2051,17 @@ num_forecasts = 1
 # 2 extra years
 
 # create a bunch of empty lists
-run_RM3_ <- rep(list(list()), 10)
-y_pred_ <- rep(list(list()), 10)
-y_med_ <- rep(list(list()), 10)
-ci_df3_ <- rep(list(list()), 10)
-p_med_ <- rep(list(list()), 10)
-pi_df3_ <- rep(list(list()), 10)
+run_RM3_ <- rep(list(list()), 13)
+y_pred_ <- rep(list(list()), 13)
+y_med_ <- rep(list(list()), 13)
+ci_df3_ <- rep(list(list()), 13)
+p_med_ <- rep(list(list()), 13)
+pi_df3_ <- rep(list(list()), 13)
 
 # a loop for automating the process of assessing sensitivity
 # the values TIpred and COpred are from lines 46-48
-for(i in 1:10){
-     model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), 
+for(i in 1:13){
+     model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), #10^pred3 puts it on arithmetic scale
                         ST=c(df3$surface_tows_lag2, STpred), #from capelin_larval_indices - see df_norm
                         TI=c(df3$tice, comb_ls[i,2]), #made up - need new data
                         CO=c(df3$meanCond_lag, comb_ls[i,3]),
@@ -2076,11 +2086,11 @@ for(i in 1:10){
 
 # create a table of prediction intervals
 # create the blank matrix
-model <- c("MO", "HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL")
-model <- c("MO", "MH", "MM", "ML")
-pi_pt <- rep(NA, 10)
-per_2_5 <- rep(NA, 10)
-per_97_5 <- rep(NA, 10)
+model <- c("MO", "HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL", "vLH", "vLM", "vLL")
+#model <- c("MO", "MH", "MM", "ML")
+pi_pt <- rep(NA, 13)
+per_2_5 <- rep(NA, 13)
+per_97_5 <- rep(NA, 13)
 pi_tabl <- cbind(model, pi_pt, per_2_5, per_97_5)
 
 # loop to collect all of the prection intervals
@@ -2089,12 +2099,21 @@ for(i in seq(model)){
      pi_tabl[i, 3:4] <- round(pi_df3_[[i]][,16], 2)
 }
 
+# loop to collect all of the prection intervals
+for(i in seq(model)){
+     pi_tabl[i, 2] <- p_med_[[i]][16]
+     pi_tabl[i, 3:4] <- pi_df3_[[i]][,16]
+}
+
 pi_tabl
 pi_tabl <- data.frame(pi_tabl)
 str(pi_tabl)
 pi_tabl$pi_pt <- as.numeric(levels(pi_tabl$pi_pt)[pi_tabl$pi_pt])
+pi_tabl$pi_pt <- 10^pi_tabl$pi_pt
 pi_tabl$per_2_5 <- as.numeric(levels(pi_tabl$per_2_5)[pi_tabl$per_2_5])
+pi_tabl$per_2_5 <- 10^pi_tabl$per_2_5
 pi_tabl$per_97_5 <- as.numeric(levels(pi_tabl$per_97_5)[pi_tabl$per_97_5])
+pi_tabl$per_97_5 <- 10^pi_tabl$per_97_5
 
 write.csv(pi_tabl, paste0("Bayesian/", filepath, "/pi_tabl.csv"))
 
@@ -2134,12 +2153,13 @@ tab2 <- cbind(index, tab2)
 str(tab2)
 names(tab2)[names(tab2)=="rowname"] <- "model"
 names(tab2)[names(tab2)=="V1"] <- "R_sq"
+names(tab2)[names(tab2)=="V2"] <- "SD"
 tab2 <- tab2[order(tab2$R_sq), , drop = F]
 tab2 <- tab2[order(tab2$R_sq, decreasing = T), , drop = F]
 tab2
 write.csv(tab2, paste0("Bayesian/", filepath_gen, "/Rsquared.csv"))
 
 temp <- left_join(tab1, tab2, by = "index")
-temp <- temp[c("model.x", "model.y","DIC", "dDIC", "R_sq")]
+temp <- temp[c("model.x", "model.y","DIC", "dDIC", "R_sq", "SD")]
 
 write.csv(temp, paste0("Bayesian/", filepath_gen, "/DIC_Rsq.csv"))
