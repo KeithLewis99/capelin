@@ -49,7 +49,7 @@ age <- 1
 ####STOP - go to Age 1 M/F####################################################################################
 #create one filter for ice-capelin project and one for Fran and the markdown doc
 df1 <- df %>%
-     filter(year > 1992 &  sex==1 & age == 1 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
+     filter(year > 1992 &  sex==1 & age == 1 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year capelin after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
@@ -404,7 +404,7 @@ levels(as.factor(df1$nafo_div))
 
 #subset data
 df3 <- df %>%
-     filter(year > 1992 &  age == 1 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
+     filter(year > 1992 &  age == 1 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year old capelin after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
@@ -549,7 +549,7 @@ df.a1$resids <- df.a1$weight-10^m2.a1$fits
 # now do the same for age 2
 #subset data- 
 df.a2 <- df %>%
-     filter(year > 1992 &  age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year males after 1992, just project 23 sex == 1 &
+     filter(year > 1992 &  age == 2 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #two-year old capelin after 1992, just project 23 sex == 1 &
      filter(!is.na(weight)) %>%
      filter(!is.na(length)) 
 
@@ -635,3 +635,63 @@ out.a1_2 <- out.a1_2 %>%
      summarize(meanCond = mean(meanCond))
 
 write_csv(out.a1_2, "data/condition_ag1_2_MF_out.csv")  
+
+
+######## Aditional analyses----
+# confirm Fran's trend that capelin size hasn't really decreased, its been the age that has.
+
+glimpse(df)
+df_age <- df %>%
+     filter(maturity != 6 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(31, 32)) %>% 
+     filter(!is.na(age)) 
+
+df_age_avg <- df_age %>%
+     group_by(year) %>% 
+     summarize(mean_age = mean(age), sd_age = sd(age))
+
+# this does not match the 2008 doc because these are sampled capelin (I think) and not commercial capelin
+p <- ggplot(data=df_age_avg, aes(x=year, y = mean_age))
+p <- p + geom_point()
+p <- p + geom_errorbar(data=df_age_avg, aes(ymin=mean_age-sd_age, ymax=mean_age+sd_age))
+p <- p + geom_line(aes(x=year, y = mean_age))
+
+
+df_prop <- df_age %>%
+     group_by(year, age) %>% 
+     summarise(n = n()) %>% 
+     mutate(freq = n/sum(n))
+
+p <- ggplot(data = df_prop)
+p <- p + geom_col
+
+p <- ggplot()
+p <- p + geom_col(data = df_prop, aes(x = year, y = freq, fill = as.factor(age)))
+
+
+# for length
+df_length <- df %>%
+     filter(maturity != 6 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(31, 32) & age >= 1 & age < 6) %>% 
+     filter(!is.na(length)) %>% 
+     filter(!is.na(age))
+
+df_length_avg <- df_length %>%
+     group_by(year) %>% 
+     summarize(mean_length = mean(length), sd_length = sd(length))
+
+p <- ggplot(data=df_length_avg, aes(x=year, y = mean_length))
+p <- p + geom_point()
+p <- p + geom_errorbar(aes(ymin=mean_length-sd_length, ymax=mean_length+sd_length))
+p <- p + geom_line(aes(x=year, y = mean_length))
+
+
+df_length_age_avg <- df_length %>%
+     group_by(year, age) %>% 
+     summarize(mean_length = mean(length), sd_length = sd(length))
+
+
+p <- ggplot(data=df_length_age_avg, aes(x=year, y = mean_length, colour = as.factor(age)))
+p <- p + geom_point()
+#p <- p + geom_errorbar(aes(ymin=mean_length-sd_length, ymax=mean_length+sd_length))
+p <- p + geom_line()
+p <- p + scale_colour_discrete(name = "Age", breaks = c(5, 4, 3, 2, 1))
+p <- p + facet_wrap(~age)
