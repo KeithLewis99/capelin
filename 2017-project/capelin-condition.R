@@ -641,9 +641,12 @@ write_csv(out.a1_2, "data/condition_ag1_2_MF_out.csv")
 # confirm Fran's trend that capelin size hasn't really decreased, its been the age that has.
 
 glimpse(df)
+levels(as.factor(df$age))
+
 df_age <- df %>%
-     filter(maturity != 6 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(31, 32)) %>% 
+     filter(maturity != 6 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(31, 32) & age != 0 & age !=7) %>% 
      filter(!is.na(age)) 
+levels(as.factor(df_age$age))
 
 df_age_avg <- df_age %>%
      group_by(year) %>% 
@@ -654,19 +657,20 @@ p <- ggplot(data=df_age_avg, aes(x=year, y = mean_age))
 p <- p + geom_point()
 p <- p + geom_errorbar(data=df_age_avg, aes(ymin=mean_age-sd_age, ymax=mean_age+sd_age))
 p <- p + geom_line(aes(x=year, y = mean_age))
+p <- p + theme_tufte() + xlab("Year") + ylab("Age (years)")
+p
 
-
+# age from the acoustic survey
 df_prop <- df_age %>%
      group_by(year, age) %>% 
      summarise(n = n()) %>% 
      mutate(freq = n/sum(n))
 
-p <- ggplot(data = df_prop)
-p <- p + geom_col
-
 p <- ggplot()
 p <- p + geom_col(data = df_prop, aes(x = year, y = freq, fill = as.factor(age)))
-
+p <- p + scale_fill_discrete(name = "Age")
+p <- p + theme_minimal() + xlab("Year") + ylab("Proportion")
+p
 
 # for length
 df_length <- df %>%
@@ -682,16 +686,63 @@ p <- ggplot(data=df_length_avg, aes(x=year, y = mean_length))
 p <- p + geom_point()
 p <- p + geom_errorbar(aes(ymin=mean_length-sd_length, ymax=mean_length+sd_length))
 p <- p + geom_line(aes(x=year, y = mean_length))
+p
 
-
+# length by age
 df_length_age_avg <- df_length %>%
      group_by(year, age) %>% 
-     summarize(mean_length = mean(length), sd_length = sd(length))
-
+     summarize(mean_length = mean(length), sd_length = sd(length)) %>% 
+     mutate(cv = sd_length/mean_length)
 
 p <- ggplot(data=df_length_age_avg, aes(x=year, y = mean_length, colour = as.factor(age)))
 p <- p + geom_point()
-#p <- p + geom_errorbar(aes(ymin=mean_length-sd_length, ymax=mean_length+sd_length))
 p <- p + geom_line()
 p <- p + scale_colour_discrete(name = "Age", breaks = c(5, 4, 3, 2, 1))
-p <- p + facet_wrap(~age)
+p <- p + theme_bw() + xlab("Year") + ylab("Length (mm)")
+p
+
+p <- ggplot(data=df_length_age_avg, aes(x=year, y = cv, colour = as.factor(age)))
+p <- p + geom_point()
+p <- p + geom_line()
+p <- p + scale_colour_discrete(name = "Age", breaks = c(5, 4, 3, 2, 1))
+p <- p + theme_bw() + xlab("Year") + ylab("Coefficient of variation")
+p
+
+
+# for weight
+df_weight <- df %>%
+     filter(year > 1991 & maturity != 6 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(31, 32) & age >= 1 & age < 6) %>% 
+     filter(!is.na(weight)) %>% 
+     filter(!is.na(age))
+
+df_weight_avg <- df_weight %>%
+     group_by(year) %>% 
+     summarize(mean_weight = mean(weight), sd_weight = sd(weight))
+
+p <- ggplot(data=df_weight_avg, aes(x=year, y = mean_weight))
+p <- p + geom_point()
+p <- p + geom_errorbar(aes(ymin=mean_weight-sd_weight, ymax=mean_weight+sd_weight))
+p <- p + geom_line(aes(x=year, y = mean_weight))
+p
+
+# weight by age
+df_weight_age_avg <- df_weight %>%
+     group_by(year, age) %>% 
+     summarize(mean_weight = mean(weight), sd_weight = sd(weight)) %>% 
+     mutate(cv = sd_weight/mean_weight)
+
+
+p <- ggplot(data=df_weight_age_avg, aes(x=year, y = mean_weight, colour = as.factor(age)))
+p <- p + geom_point()
+p <- p + geom_line()
+p <- p + scale_colour_discrete(name = "Age", breaks = c(5, 4, 3, 2, 1))
+p <- p + theme_bw() + xlab("Year") + ylab("Weight (mm)")
+p
+
+p <- ggplot(data=df_weight_age_avg, aes(x=year, y = cv, colour = as.factor(age)))
+p <- p + geom_point()
+p <- p + geom_line()
+p <- p + scale_colour_discrete(name = "Age", breaks = c(5, 4, 3, 2, 1))
+p <- p + theme_bw() + xlab("Year") + ylab("Coefficient of variation")
+p
+
