@@ -24,9 +24,11 @@ source('D:/Keith/R/zuur_rcode/HighstatLibV7.R')
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
 
-## data knock out----
 
-dataset <- "age" #biomass
+## data knock out----
+filepath_gen <- "Bayesian/biomass_cond_ag1_DIC/" #"ag2_cond_ag1_DIC"
+
+dataset <- "biomass" #"age"
 if(dataset == "biomass"){
      df <- read_csv("Bayesian/biomass_cond_ag1/all_data_a1.csv")
      df2 <- df
@@ -46,6 +48,7 @@ if(dataset == "biomass"){
      var_x <- df3$age2_log10
 }
 
+##ITERATIONS START HERE----
 #df3: 2003-2017
 df3$year
 x <- 15 #1:15 1 = 2003,  8 = 2010, 15 = 2017
@@ -56,7 +59,7 @@ df3 <- df3[-x, ]
 y <- x+4
 insert_year <- 2017 # value of year to align with credible interval
 insert_row  <- x
-folder <- "leave_out_ag2"
+folder <- "sensitivity"
 
 st <- df2[c("year", "surface_tows_lag2")][y,]
 ti <- df2[c("year", "tice")][y,]
@@ -154,7 +157,7 @@ plotCredInt2(df3, insert,
              dpi = pi_df3, 
              insert_year = insert_year, type = NA)
 
-ggsave(paste0("Bayesian/", folder, "/credInt", insert_year, ".png"), width=10, height=8, units="in")
+ggsave(paste0(filepath_gen, folder, "/credInt", insert_year, ".png"), width=10, height=8, units="in")
 
 # this creates a file that accumulates the predicted value of the knockout values
 per_diff_file <- data.frame(year = integer(), 
@@ -174,51 +177,72 @@ if(dataset == "biomass"){
      per_diff_file[1,2] <- per_diff
      }
 
-# this enters the above values into the dataframe "per_diff_file
+# this enters the above values into the dataframe "per_diff_fileo
+# re-run this for every year to create the file
 per_diff_file[1,1] <- insert_year
 per_diff_file[1,3] <- p_med[15]
 per_diff_file[1,4] <- pi_df3[1,15]
 per_diff_file[1,5] <- pi_df3[2,15]
 
-# dummy values - just to see if it works - delete once values are decided upon
-# DELETE
-year <- c(2003:2006)
-per_diff_file[2:5,1] <- year
-per_diff_file[2:5,2] <- per_diff
-per_diff_file[2:5,3] <- p_med[15]
-per_diff_file[2:5,4] <- pi_df3[1,15]
-per_diff_file[2:5,5] <- pi_df3[2,15]
 
 # save file as in next line, then hash tag and do the next three lines for all subsequent analyses
-#write_csv(per_diff_file, paste0("Bayesian/", folder, "/perdiff_all.csv"))
+#write_csv(per_diff_file, paste0(filepath_gen, folder, "/perdiff_all.csv"))
 
-temp <- read_csv(paste0("Bayesian/", folder, "/perdiff_all.csv"))
+temp <- read_csv(paste0(filepath_gen, folder, "/perdiff_all.csv"))
 
 temp <- rbind(per_diff_file, temp)
 
-write_csv(temp, paste0("Bayesian/", folder, "/perdiff_all.csv"))
+write_csv(temp, paste0(filepath_gen, folder, "/perdiff_all.csv"))
 
 
 # graph of values v. knockout
 # use final values from above - change "per_diff_file" in ggplot code to temp
 # need to generalize this for biomass and age!
-type <- NA
-p <- ggplot( ) 
-p <- p + geom_point(data = per_diff_file, 
+
+type <- "CI"
+p <- p + geom_linerange(aes(ymin = (lcl), ymax = (ucl)), position = position_dodge(width = dg), size = 0.7)
+df3
+
+temp$data <- "KO"
+df3$data <- "MO"
+
+df4 <- df3[,c("year", "ln_biomass_med", "ln_bm_lci", "ln_bm_uci", "data")]
+temp1 <- temp[, -2]
+temp1[2, 2:4] <- NA
+temp1[12, 2:4] <- NA
+names(df4) <- names(temp1)
+temp2 <- rbind(temp1, df4)
+
+dg <- 0.5
+p <- ggplot(data = temp2, aes(x = year, y = p_med, group = data, color = data)) 
+p <- p + geom_point(position = position_dodge(width = dg), size = 1.5)
+p <- p + geom_linerange(aes(ymin = (pi025), ymax = (pi975)), position = position_dodge(width = dg), size = 0.7)
+p <- p + labs(x = 'Year', y = 'Prediction/confidence \n intervals')
+p <- p + scale_color_manual(values = c("red", "black"))
+p <- p + theme_bw(base_size = 25)
+p <- p + theme(legend.title = element_blank())#, axis.text.x  = element_text(angle=90, vjust=0.5))
+ggsave(paste0(filepath_gen, "/sensitivity/loo.pdf"), width=10, height=8, units="in")
+
+
+p <- p + geom_point(data = temp2, 
                     aes(y=p_med, x = year), size = 3)
-p <- p + geom_errorbar(data = per_diff_file,
+p <- p + geom_linerange(data = temp2,
                        aes(ymax = pi975, ymin = pi025, x = year), width = 0.5)
 p <- p + geom_point(data = df3, 
-                    aes(y=age2_log10, x = year), 
+                    aes(y=ln_biomass_med, x = year), #age2_log10
                     colour = "red", size = 3,
                     position = position_nudge(x = -0.25))
 if(!is.na(type)){
-     p <- p + geom_errorbar(data = df, width = 0.3, colour = "red", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
+     p <- p + geom_linerange(data = df3, 
+                            aes(x = year, ymin=ln_bm_lci, ymax=ln_bm_uci), 
+                            width = 0.3, colour = "red", 
+                            position = position_nudge(x = -0.25, y = 0))
 } else if (is.na(type)) {
+     
      p
 }
 p <- p + xlab("Year") + ylab("Estimate and prediction")
 p <- p + theme_bw(base_size = 20) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
 #p <- p + scale_x_discrete(breaks = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"), labels = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"))
 p
-ggsave(paste0("Bayesian/", filepath, "/sensitivity.pdf"), width=10, height=8, units="in")
+ggsave(paste0("Bayesian/", filepath_gen, "/sensitivity/loo.pdf"), width=10, height=8, units="in")
