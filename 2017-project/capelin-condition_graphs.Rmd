@@ -1,0 +1,107 @@
+---
+title: "Capelin Condition"
+author: Fran Mowbray and Keith P. Lewis
+date: "January 26, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(xtable)
+library(ggplot2)
+library(readr)
+library(tidyr)
+library(dplyr)
+library(magrittr)
+
+knitr::opts_chunk$set(echo = TRUE)
+df <- read_csv('data/capelin_condition_maturation_v1.csv')
+glimpse(df)
+head(df)
+
+#create one filter for ice-capelin project and one for Fran and the markdown doc
+df1 <- df %>%
+     filter(year > 1992 & sex == 1 & age == 1 & maturity != 6 & project != 10) %>% #one-year males after 1992, just project 23
+     filter(!is.na(weight)) %>%
+     filter(!is.na(length)) 
+
+cols <- c("project", "nafo_div", "project_code", "sex", "maturity")
+df1 %<>%
+     mutate_each_(funs(factor(.)),cols)
+glimpse(df1)
+
+levels(df1$nafo_div)[levels(df1$nafo_div) == "23"] <- "2J"
+levels(df1$nafo_div)[levels(df1$nafo_div) == "31"] <- "3K"
+levels(df1$nafo_div)[levels(df1$nafo_div) == "32"] <- "3L"
+levels(df1$sex)[levels(df1$sex) == "1"] <- "Male"
+levels(df1$sex)[levels(df1$sex) == "2"] <- "Female"
+
+# look at levels of data
+levels(df1$project)
+levels(as.factor(df1$sample_number))
+levels(as.factor(df1$year))
+levels(as.factor(df1$month))
+levels(df1$nafo_div)
+levels(df1$maturity)
+range(df1$weight)
+range(df1$length)
+levels(as.factor(df1$age))
+
+# filter out 99% by year - how to do this????
+summary(df1$weight)
+mean_w <- mean(df1$weight)
+sd_w <- sd(df1$weight)
+nrow(df1)
+uci <- mean_w + qnorm(0.995)*sd_w/sqrt(nrow(df1))
+quantile(df1$weight, c(0.5, 0.95, 0.99, 0.995, 0.999))
+
+count_n <- df1 %>%
+     group_by(year) %>%
+     summarize(n = n())
+
+quant <- df1 %>%
+     group_by(year) %>%
+     summarize(uci = quantile(weight, c(0.99))) 
+
+df1 <- df1 %>%
+     group_by(year) %>%
+     right_join(x=df1, y=quant, by ="year") %>%
+     filter(weight < uci)
+
+```
+
+## Introduction/Methods
+
+The condition of age-1 capelin from October to Deember can be an important predictor of abundance/biomass in teh following year - the age when many become mature and which constitutes the largest part of the stock.  Condition can be assessed by examining the observed weight over the expected weight, the latter derived from a simple regression of weight as a function of length.  
+The condition index included age-1, male fish from 1992 to 2015 that were sampled during the Campelen project [not sure how to say this].  Further, we excluded fish in maturity class 6 [we discussed but not sure what this is]. Finally, to account for possible errors in the weighing process, we eliminated all fish heavier than the 99th quartile.
+
+## Results
+The relationship between length and weight was very strong based on a log10-log10 regression of length against weight (R-squred = 0.9607).  The assumptions of the analysis were largely met for homogeneity of variance although there were several outliers.   The residuals were not normally distributed but we accept the model given the number of samples, the parameter estimates are far from zero, and violation of this assumption generally has a small impact on the results. [we could try a glm - perhaps log-normal dist??]
+```{r echo = FALSE, results='hide'}
+m1 <- lm(log10(weight) ~ log10(length), data= df1)
+summary(m1)
+```
+
+```{r 'resids1', fig.cap="Residual diagnostics of log(length) ~ log(weight)",echo = FALSE, results='asis'}
+op <- par(mfrow = c(2,2))
+plot(m1, add.smooth=F)
+par(op)
+par(mfrow = c(1,1))
+```
+
+## Including Plots
+
+Condition is summarized by year and NAFO division
+
+```{r echo = FALSE, results='asis'}
+df1$fits <- fitted(m1)
+df1$rel.cond <- df1$weight/df1$fits
+
+tab1 <- xtable(df1 %>%
+     group_by(year, nafo_div) %>%
+     summarize(meanCond = round(mean(rel.cond),2), stdCond= round(sd(rel.cond),2)) %>% 
+     unite(mean, meanCond:stdCond, sep = " +/- ") %>%
+     spread(key = nafo_div, value = mean))
+
+print(tab1, comment = FALSE)
+```
+
