@@ -223,17 +223,14 @@ capelin_data <- function(capelin_data_set){
 #'
 #' @examples - cond <- condition_data(cond, 'data/condition_ag1_MF_out.csv')
 condition_data <- function(cond, df){
-     if(cond == "cond_dat_a1"){
+     #browser()
+     if(cond == "cond"){
           cond <- read_csv(df)
           #lag data
           cond$meanCond_lag <- lag(cond$meanCond, 1)
           cond$medCond_lag <- lag(cond$medCond, 1)
           return(cond)
-     } else if (cond == "cond_dat_a1_2") {
-          cond <- read_csv(df)
-          #lag data
-          cond$meanCond_lag <- lag(cond$meanCond, 1)
-          return(cond)
+
      } else if(cond == "resids") {
           #Fran's original
           condResids <- read_csv('data/archive/condition_resids.csv')
