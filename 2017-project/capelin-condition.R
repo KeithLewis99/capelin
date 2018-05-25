@@ -451,6 +451,10 @@ str(m2.m)
 df3.m$rel.cond <- df3.m$weight/10^df3.m$fits
 df3.m$resids <- df3.m$weight-10^df3.m$fits
 
+
+ggplot(data=df3.m) + geom_point(aes(x=log10(length), y = log10(weight), colour=nafo_div)) + 
+     facet_wrap(~nafo_div)
+
 # test for outliers of condition
 quantile(df3.m$weight, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999))
 plot(density(df3.m$weight))
@@ -468,12 +472,13 @@ plot(boxplot(df3.m$rel.cond))
 #females
 df3.f <- filter(df3, sex == "Female")
 m2.f <- lm(log10(weight) ~ log10(length), data= df3.f)
+
 df3.f$fits <- fitted(m2.f)
 glimpse(df3.f)
 
 df3.f$rel.cond <- df3.f$weight/10^df3.f$fits
 df3.f$resids <- df3.f$weight-10^df3.f$fits
-
+plot(density(df3.f$rel.cond))
 
 quantile(df3.f$weight, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999))
 plot(density(df3.f$weight))
@@ -505,6 +510,11 @@ ggplot(data=df4) +
      geom_hline(aes(yintercept = 1), colour = 'red') +
      theme_bw()
 levels(as.factor(df4$year))
+
+op <- par(mfrow = c(2,2))
+plot(m2.f, add.smooth=F)
+par(op)
+par(mfrow = c(1,1))
 
 # there appear to be a few outliers here but they should have minimal influence on the final outcome
 
@@ -541,6 +551,7 @@ write_csv(out, "data/condition_ag1_MF_out.csv")
 glimpse(df3)
 m2.a1 <- lm(log10(weight) ~ log10(length), data= df3)
 m2.a1$fits <- fitted(m2.a1)
+
 
 df.a1 <- df3
 df.a1$rel.cond <- df.a1$weight/10^m2.a1$fits
@@ -644,9 +655,10 @@ glimpse(df)
 levels(as.factor(df$age))
 
 df_age <- df %>%
-     filter(maturity != 6 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(31, 32) & age != 0 & age !=7) %>% 
+     filter(maturity != 6 & as.factor(month) %in% c("10", "11", "12") & project != 10 & as.factor(nafo_div) %in% c(31, 32) & age != 0 & age !=7) %>% 
      filter(!is.na(age)) 
 levels(as.factor(df_age$age))
+
 
 df_age_avg <- df_age %>%
      group_by(year) %>% 
@@ -669,8 +681,15 @@ df_prop <- df_age %>%
 p <- ggplot()
 p <- p + geom_col(data = df_prop, aes(x = year, y = freq, fill = as.factor(age)))
 p <- p + scale_fill_discrete(name = "Age")
-p <- p + theme_minimal() + xlab("Year") + ylab("Proportion")
+p <- p + theme(axis.title.x = element_text(face = "bold", size = 25), 
+               axis.text.x = element_text(size = 20), 
+               axis.title.y = element_text(face = "bold", size = 25),
+               axis.text.y = element_text(size = 20),
+               legend.title = element_text(size = 25, face = "bold"),
+               legend.text = element_text(size = 20)) + guides(colour = guide_legend(override.aes = list(size=25))) + xlab("Year") + ylab("Proportion")
+#p <- p + theme_bw(base_size = 20)
 p
+ggsave("age_proportion.jpeg", width=8, height=5, units="in")
 
 # for length
 df_length <- df %>%
@@ -691,6 +710,7 @@ p
 # length by age
 df_length_age_avg <- df_length %>%
      group_by(year, age) %>% 
+     filter(year > 1995) %>%
      summarize(mean_length = mean(length), sd_length = sd(length)) %>% 
      mutate(cv = sd_length/mean_length)
 
@@ -698,8 +718,9 @@ p <- ggplot(data=df_length_age_avg, aes(x=year, y = mean_length, colour = as.fac
 p <- p + geom_point()
 p <- p + geom_line()
 p <- p + scale_colour_discrete(name = "Age", breaks = c(5, 4, 3, 2, 1))
-p <- p + theme_bw() + xlab("Year") + ylab("Length (mm)")
+p <- p + theme_bw(base_size = 25) + xlab("Year") + ylab("Length (mm)")
 p
+ggsave("length_age.jpeg", width=10, height=8, units="in")
 
 p <- ggplot(data=df_length_age_avg, aes(x=year, y = cv, colour = as.factor(age)))
 p <- p + geom_point()
