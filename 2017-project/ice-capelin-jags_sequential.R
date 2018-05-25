@@ -33,13 +33,13 @@ source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
 
 # make new folders
-folder_path1 <- "Bayesian/ag2_cond_ag1_DIC/" #"Bayesian/biomass_cond_ag1_DIC/"
+folder_path1 <- "Bayesian/biomass_cond_ag1_DIC/" #"Bayesian/biomass_cond_ag1_DIC/""Bayesian/ag2_cond_ag1_DIC/"
 
 make_direct1(folder_names, folder_path1)
 
 ## Set parameters for analysis----
-capelin_data_set <- "age" # type of capelin index - alt value ==  "biomass" "age"
-cond <- "cond_dat_a1_2" # type of condition index - alt value == "resids" or "cond_dat_a1_2"
+capelin_data_set <- "biomass" # type of capelin index - alt value ==  "biomass" "age"
+cond_dat_a1 <- "cond" # type of condition index - alt value == "resids" or "cond_dat_a1_2"
 dic_run <- "yes" # is this a DIC run? "yes" or "no"
 
 # sets the values for the predition interval
@@ -60,11 +60,11 @@ COpred <- if(x=="condition" & y == "a1"){
 
 
 # sets the subfolder
-filepath_gen <- "ag2_cond_ag1_DIC"  # for filepath for datasets and pairs Plots - "biomass_cond_ag1_DIC"
+filepath_gen <- "biomass_cond_ag1_DIC"  # for filepath for datasets and pairs Plots - "biomass_cond_ag1_DIC" "ag2_cond_ag1_DIC"
 
 # changes of the axis and axis labels for credInt
-ylab1 = "log10 capelin - age2" #alt: "log10 capelin - age2"  "ln(capelin biomass(ktons))"
-yaxis1 = "age2_log10" # alt: "age2_log10" "ln_biomass_med"
+ylab1 = "ln(capelin biomass(ktons))" #alt: "log10 capelin - age2"  "ln(capelin biomass(ktons))"
+yaxis1 = "ln_biomass_med" # alt: "age2_log10" "ln_biomass_med"
 
 # change "type = [something]" or = NA  
 # change "CO=c(df3$meanCond_lag alt: resids_lag
@@ -90,12 +90,13 @@ glimpse(ice)
 # source: for "cond" see capelin-condition.R for original and derived datasets
 # source: for "resids" see Fran's original "capelin_condition_maturation.xlsx"
 #cond <- condition_data(cond, 'data/condition_ag1_out.csv')
-if(cond == "cond_dat_a1"){
-     cond_dat <- condition_data(cond, 'data/condition_ag1_MF_out.csv')
-} else if (cond == "cond_dat_a1_2"){
-     cond_dat <- condition_data(cond, 'data/condition_ag1_2_MF_out.csv')     
+if(cond_dat_a1 == "cond"){
+     cond_dat <- condition_data(cond_dat_a1, 'data/condition_ag1_MF_out.csv')
+} else if (cond_dat_a1_2 == "cond"){
+     cond_dat <- condition_data(cond_dat_a1_2, 'data/condition_ag1_2_MF_out.csv')     
 }
 condResids <- condition_data("resids", 'data/condition_ag1_out.csv')
+
 
 ## larval data (2003-2017)----
 # source "capelin_age_disaggregate_abundance.xlsx":Larval indices
@@ -177,7 +178,7 @@ write_csv(df1, paste0("Bayesian/", filepath_gen, "/all_data_a1.csv"))
 
 # pairs-plot: relationships and correlations among RV and EV----
 df_name <- name_pairPlot(df1, "age")
-z <- "log10_age2 index" # alt "log10_age2 index" ln capelin biomass
+z <- "ln_biomass_med" # alt "log10_age2 index" ln capelin biomass
 
 pdf(paste0("Bayesian/", filepath_gen, "/pairs_resids.pdf"))
 pairs.panels(df_name[c(z, "tice", "condition l1", "larval abundance l2", "zooplankton abun l2")], 
@@ -364,7 +365,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2008, y = 8, type = NA)
+            model = txt, x = 2008, y = 8, type = "CI")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -553,7 +554,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df2, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df2, pi_df2, 
-            model = txt, x = 2008, y = 7, type = NA)
+            model = txt, x = 2008, y = 7, type = "CI")
 
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
@@ -751,7 +752,7 @@ txt <- "log(caplein) = alpha +  beta*tice*(1-(tice/gamma(unif))) \n + delta*Cond
 plotCredInt(df2, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df2, pi_df2, 
-            model = txt, x = 2006, y = 8, type = NA)
+            model = txt, x = 2006, y = 8, type = "CI")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -941,7 +942,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2008, y = 8, type = NA)
+            model = txt, x = 2008, y = 8, type = "CI")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -1125,7 +1126,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2010, y = 7.75, type = NA)
+            model = txt, x = 2010, y = 7.75, type = "CI")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -1334,7 +1335,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2010, y = 8, type = NA)
+            model = txt, x = 2010, y = 8, type = "CI")
 ggsave(paste0("Bayesian/", filepath, "/credInt.png"), width=10, height=8, units="in")
 
 # output by parameter
@@ -1537,7 +1538,7 @@ txt <- "log(caplein) = alpha +  beta(prior)*surface_tows_lag2 \n + gamma*pseudoc
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2008, y = 8, type = NA)
+            model = txt, x = 2008, y = 8, type = "CI")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -1729,7 +1730,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df2, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df2, pi_df2, 
-            model = txt, x = 2006, y = 8, type = NA)
+            model = txt, x = 2006, y = 8, type = "CI")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=11, height=8, units="in")
 
 # output by parameter
@@ -1893,7 +1894,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
             y_line = y_med, ci_df3, pi_df3, 
-            model = txt, x = 2008, y = 8, type = NA)
+            model = txt, x = 2008, y = 8, type = "CI")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
 # output by parameter
@@ -2015,6 +2016,7 @@ model {
 # 1. Likelihood
 for (i in 1:N) {
 #recruitment
+#mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])
 mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
@@ -2087,6 +2089,8 @@ for(i in 1:13){
 # create a table of prediction intervals
 # create the blank matrix
 model <- c("MO", "HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL", "vLH", "vLM", "vLL")
+model <- c("MOD", "LG", "LM", "LP", "MG", "MM", "MP", "EG", "EM", "EP", "vEG", "vEM", "vEP")
+
 #model <- c("MO", "MH", "MM", "ML")
 pi_pt <- rep(NA, 13)
 per_2_5 <- rep(NA, 13)
@@ -2094,10 +2098,10 @@ per_97_5 <- rep(NA, 13)
 pi_tabl <- cbind(model, pi_pt, per_2_5, per_97_5)
 
 # loop to collect all of the prection intervals
-for(i in seq(model)){
-     pi_tabl[i, 2] <- round(p_med_[[i]][16], 2)
-     pi_tabl[i, 3:4] <- round(pi_df3_[[i]][,16], 2)
-}
+#for(i in seq(model)){
+ #    pi_tabl[i, 2] <- round(p_med_[[i]][16], 2)
+  #   pi_tabl[i, 3:4] <- round(pi_df3_[[i]][,16], 2)
+#}
 
 # loop to collect all of the prection intervals
 for(i in seq(model)){
@@ -2126,7 +2130,7 @@ p <- p + theme_bw(base_size = 20) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5)
 p <- p + geom_hline(aes(yintercept = pi_tabl$pi_pt[1]), colour = "red", size = 2)
 #p <- p + scale_x_discrete(breaks = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"), labels = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"))
 p
-ggsave(paste0("Bayesian/", filepath, "/sensitivity.pdf"), width=10, height=8, units="in")
+ggsave(paste0("Bayesian/", filepath, "/sensitivity_arith.pdf"), width=10, height=8, units="in")
 
 # This shows the reason why the middle values for tice are slightly higher than the high values.  Also shows the influence of high and low values on model
 p3 <- ggplot()
