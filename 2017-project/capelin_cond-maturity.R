@@ -8,6 +8,10 @@
 # 4) see if there is a relationship between tice and perAge2 and age2PerMat
 rm(list=ls())
 
+library(readr)
+library(tidyr)
+library(dplyr)
+
 source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
 
 ####----
@@ -39,15 +43,18 @@ plot(cap$age2PerMat, cap$age2_log10)
 points(cap$age2PerMat[12], cap$age2_log10[12], col = "red", bg = "red", pch = 21) #show 2004 
 points(cap$age2PerMat[16], cap$age2_log10[16], col = "blue", bg = "blue", pch = 21) #show 2014
 plot(cap$perAge2, cap$age2_log10)
+plot(cap$age2PerMat, cap_all$ln_biomass_med)
 par(mfrow = c(1,1))
 
 summary(lm(perAge2 ~ age2PerMat, data = cap))
-summary(lm(cap$age2_log10 ~ age2PerMat, data = cap))
-summary(lm(cap$age2_log10 ~ perAge2, data = cap))
+summary(lm(age2_log10 ~ age2PerMat, data = cap))
+summary(lm(age2_log10 ~ perAge2, data = cap))
+summary(lm(ln_biomass_med ~ age2PerMat, data = cap_all))
 
 ####----
-cond <- "cond" # 
-cond1 <- condition_data(cond, 'data/condition_ag1_out.csv')
+source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
+cond_dat_a1 <- "cond" # 
+cond1 <- condition_data(cond_dat_a1, 'data/condition_ag1_out.csv')
 cond1 <- filter(cond1, year > 1998)
 
 df <- left_join(cap_all, cond1, by = "year")
@@ -72,7 +79,8 @@ plot(df$tice, df$meandCond_lag)
 df[12, c("year", "tice", "perAge2", "age2PerMat", "age2_log10", "ln_biomass_med", "meanCond_lag")]
 
 ####----
-cond2 <- condition_data(cond, 'data/condition_ag2_out.csv')
+cond_dat_a1 <- "cond"
+cond2 <- condition_data(cond_dat_a1_2, 'data/condition_ag2_out.csv')
 cond2 <- filter(cond2, year > 1998)
 
 dfc <- left_join(cond1, cond2, by = "year")
