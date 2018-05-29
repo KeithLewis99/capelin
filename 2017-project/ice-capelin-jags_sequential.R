@@ -2167,3 +2167,18 @@ temp <- left_join(tab1, tab2, by = "index")
 temp <- temp[c("model.x", "model.y","DIC", "dDIC", "R_sq", "SD")]
 
 write.csv(temp, paste0("Bayesian/", filepath_gen, "/DIC_Rsq.csv"))
+
+
+##############
+##PI - proof
+# from RM#
+m <- matrix(c(2.707571, 3.720766,
+              6.047425, 6.399664), nrow=2, ncol =2)
+
+m[1,2]-m[1,1]
+m[2,2]-m[2,1]
+
+m1 <- exp(m)
+m1[1,2]-m1[1,1]
+m1[2,2]-m1[2,1]
+# conclude that the PI is wider on arithmetic scale but not on the ln scale.
