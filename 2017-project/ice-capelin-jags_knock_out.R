@@ -203,8 +203,8 @@ type <- "CI"
 p <- p + geom_linerange(aes(ymin = (lcl), ymax = (ucl)), position = position_dodge(width = dg), size = 0.7)
 df3
 
-temp$data <- "KO"
-df3$data <- "MO"
+temp$data <- "PI"
+df3$data <- "CI"
 
 df4 <- df3[,c("year", "ln_biomass_med", "ln_bm_lci", "ln_bm_uci", "data")]
 temp1 <- temp[, -2]
@@ -216,14 +216,16 @@ temp2 <- rbind(temp1, df4)
 dg <- 0.5
 p <- ggplot(data = temp2, aes(x = year, y = p_med, group = data, color = data)) 
 p <- p + geom_point(position = position_dodge(width = dg), size = 1.5)
-p <- p + geom_linerange(aes(ymin = (pi025), ymax = (pi975)), position = position_dodge(width = dg), size = 0.7)
-p <- p + labs(x = 'Year', y = 'Prediction/confidence \n intervals')
+#p <- p + geom_linerange(aes(ymin = (pi025), ymax = (pi975)), position = position_dodge(width = dg), size = 0.7)
+p <- p + geom_errorbar(aes(ymin = (pi025), ymax = (pi975)), position = position_dodge(width = dg), size = 0.7)
+
+p <- p + labs(x = 'Year', y = "ln(capelin biomass(ktons))")
 p <- p + scale_color_manual(values = c("red", "black"))
 p <- p + theme_bw(base_size = 25)
 p <- p + theme(legend.title = element_blank())#, axis.text.x  = element_text(angle=90, vjust=0.5))
 ggsave(paste0(filepath_gen, "/sensitivity/loo.pdf"), width=10, height=8, units="in")
 
-
+# can probably delete all of this below here
 p <- p + geom_point(data = temp2, 
                     aes(y=p_med, x = year), size = 3)
 p <- p + geom_linerange(data = temp2,
