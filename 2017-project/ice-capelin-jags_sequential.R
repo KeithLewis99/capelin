@@ -39,7 +39,7 @@ make_direct1(folder_names, folder_path1)
 
 ## Set parameters for analysis----
 capelin_data_set <- "biomass" # type of capelin index - alt value ==  "biomass" "age"
-cond_dat_a1 <- "cond" # type of condition index - alt value == "resids" or "cond_dat_a1_2"
+#cond_data_a1_2 <- "cond" # type of condition index - alt value == "resids" or "cond_dat_a1_2"
 dic_run <- "yes" # is this a DIC run? "yes" or "no"
 
 # sets the values for the predition interval
@@ -90,11 +90,13 @@ glimpse(ice)
 # source: for "cond" see capelin-condition.R for original and derived datasets
 # source: for "resids" see Fran's original "capelin_condition_maturation.xlsx"
 #cond <- condition_data(cond, 'data/condition_ag1_out.csv')
-if(cond_dat_a1 == "cond"){
-     cond_dat <- condition_data(cond_dat_a1, 'data/condition_ag1_MF_out.csv')
-} else if (cond_dat_a1_2 == "cond"){
-     cond_dat <- condition_data(cond_dat_a1_2, 'data/condition_ag1_2_MF_out.csv')     
+if(capelin_data_set == "age"){
+     cond_dat <- read_csv('data/condition_ag1_MF_out.csv')
+} else if (capelin_data_set == "biomass"){
+     cond_dat <- read_csv('data/condition_ag1_2_MF_out.csv')     
 }
+cond_dat$meanCond_lag <- lag(cond_dat$meanCond, 1)
+cond_dat$medCond_lag <- lag(cond_dat$medCond, 1)
 condResids <- condition_data("resids", 'data/condition_ag1_out.csv')
 
 
@@ -303,7 +305,7 @@ par(mfrow = c(2,2), mar = c(5,5,2,2))
 plot(x=F1, y = E1, xlab = "Fitted values", ylab = "Pearson residuals")
 abline(h = 0, lty = 2)
 # see notes in Mortality model
-plot(y = N2, x = F1, xlab = "Fitted values", ylab = "Observed data")
+plot(y = N2, x = F1, xlab = "Fitted values", ylab = "Observed data") # should follow the line
 abline(coef = c(0,1), lty = 2)
 par(mfrow = c(1,1))
 dev.off()
@@ -563,6 +565,7 @@ OUT1 <- MyBUGSOutput(out, vars)
 print(OUT1, digits =5)
 write.csv(as.data.frame(OUT1), paste0("Bayesian/", filepath, "/params.csv"))
 
+source('D:/Keith/R/zuur_rcode/MCMCSupportHighstatV2.R')
 # plot posterior against expected distribution
 alpha <- posterior_fig(out$sims.list$alpha)
 beta <- posterior_fig1(out$sims.list$beta, transform = "yes", parm = "slope")
@@ -819,6 +822,7 @@ ggsave(paste0("Bayesian/", filepath, "/priorpost.pdf"), width=10, height=8, unit
 ## RM_1----
 #"mu[i] <- alpha + beta*ST[i] + gamma*CO[i]"
 
+summary(lm())
 m.RM1 = '
 model {
 # 1. Likelihood
@@ -1018,10 +1022,12 @@ FitNew <- sum(DNew[1:N])
 
 # 2. Priors
 alpha ~ dnorm(0, 20^-2) 
+#alpha ~ dnorm(0, 100^-2) 
 beta ~ dnorm(0, 10^-2) 
 gamma ~ dgamma(5, 1/3) 
 delta ~ dgamma(2.8, 1)
-#delta ~ dunif(0, 3) 
+#gamma ~ dunif(0, 100) 
+#delta ~ dunif(0, 10) 
 sigma ~ dunif(0, 10) 
 }'
 
@@ -1233,6 +1239,8 @@ sigma ~ dunif(0, 100)
 #gamma and delta based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
 #delta: shape(a) is mean^2/var; we used 90 days based on Ales original #work; scale(s) equal Var/mean
 # gamma,delta, sigma: uninformative for condition
+mean(df3$tice)^2/var(df3$tice)
+var(df3$tice)/mean(df3$tice)
 
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), 
@@ -1324,7 +1332,6 @@ RM3_r2m <- rsq_bayes(ypred = y_pred, out = run_RM3)
 RM3_r2 <- c(median(RM3_r2m), sd(RM3_r2m))
 
 # Zuur pg 85: note that MCMCSupportHighstatV2.R (line 114) says this is to look at ACF - I think that this is wrong. 
-source('D:/Keith/R/zuur_rcode/MCMCSupportHighstatV2.R')
 
 MyBUGSHist1(out, vars, transform = "yes")
 ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteriors.pdf"), width=10, height=8, units="in")
@@ -1442,7 +1449,7 @@ sigma ~ dunif(0, 100)
 }'
 
 # For beta: I ran the same regression as Murphy et al. (2018) in ice-capelin-covariates but for normalized values.  I got somewhat different values. ST slope = 0.35, SE = 0.138 (inverse = 7.25)
-
+# Where is this analysis????
 
 num_forecasts = 2 # 2 extra years
 model_data <- list(N2 = c(pred3, rep(NA, num_forecasts)), 
