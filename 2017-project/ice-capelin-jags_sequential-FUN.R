@@ -223,9 +223,9 @@ capelin_data <- function(capelin_data_set){
 #'
 #' @examples - cond <- condition_data(cond, 'data/condition_ag1_MF_out.csv')
 condition_data <- function(cond, df){
-     #browser()
-     if(cond == "cond"){
-          cond <- read_csv(df)
+     browser()
+     if(cond == "age"|cond == "biomass"){
+          cond <- read_csv(paste(df))
           #lag data
           cond$meanCond_lag <- lag(cond$meanCond, 1)
           cond$medCond_lag <- lag(cond$medCond, 1)
