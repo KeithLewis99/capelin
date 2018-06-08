@@ -33,7 +33,7 @@ source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
 
 # make new folders
-folder_path1 <- "Bayesian/biomass_cond_ag1_DIC/" #"Bayesian/biomass_cond_ag1_DIC/""Bayesian/ag2_cond_ag1_DIC/"
+folder_path1 <- "Bayesian/biomass_cond_ag1_2_DIC/" #"Bayesian/biomass_cond_ag1_DIC/""Bayesian/ag2_cond_ag1_DIC/"
 
 make_direct1(folder_names, folder_path1)
 
@@ -60,7 +60,7 @@ COpred <- if(x=="condition" & y == "a1"){
 
 
 # sets the subfolder
-filepath_gen <- "biomass_cond_ag1_DIC"  # for filepath for datasets and pairs Plots - "biomass_cond_ag1_DIC" "ag2_cond_ag1_DIC"
+filepath_gen <- "biomass_cond_ag1_2_DIC"  # for filepath for datasets and pairs Plots - "biomass_cond_ag1_DIC" "ag2_cond_ag1_DIC"
 
 # changes of the axis and axis labels for credInt
 ylab1 = "ln(capelin biomass(ktons))" #alt: "log10 capelin - age2"  "ln(capelin biomass(ktons))"
@@ -85,6 +85,14 @@ cap <- capelin_data(capelin_data_set)
 #source: ice-chart-processing-data-v3.R
 ice <- read_csv('output-processing/capelin-m1.csv')
 glimpse(ice)
+ice1 <- subset(ice, year > 2002)
+mean(ice1$tice/100)
+var(ice1$tice/100)
+
+sd(ice1$tice/100)
+sh = var(ice1$tice/100)/mean(ice1$tice/100)
+scale = mean(ice1$tice/100)^2/var(ice1$tice/100)
+ra = 1/scale
 
 ## condition (1995-2017)-----
 # source: for "cond" see capelin-condition.R for original and derived datasets
@@ -96,8 +104,8 @@ if(capelin_data_set == "age"){
      cond_dat <- read_csv('data/condition_ag1_2_MF_out.csv')     
 }
 cond_dat$meanCond_lag <- lag(cond_dat$meanCond, 1)
-cond_dat$medCond_lag <- lag(cond_dat$medCond, 1)
-condResids <- condition_data("resids", 'data/condition_ag1_out.csv')
+#cond_dat$medCond_lag <- lag(cond_dat$medCond, 1)
+#condResids <- condition_data("resids", 'data/condition_ag1_out.csv')
 
 
 ## larval data (2003-2017)----
@@ -133,7 +141,7 @@ ps_tot$ps_sdTot_lag2 <- lag(ps_tot$ps_sdTot, 2)
 ##join the above data sets----
 capelin_join <- left_join(cap, ice, by = "year")
 capelin_join <- left_join(capelin_join, cond_dat, by = "year")
-capelin_join <- left_join(capelin_join, condResids, by = "year")
+#capelin_join <- left_join(capelin_join, condResids, by = "year")
 capelin_join <- left_join(capelin_join, larvae, by = "year")
 capelin_join <- left_join(capelin_join, ps_tot, by = "year")
 
@@ -161,7 +169,6 @@ df1 %<>%
      mutate_each_(funs(scale),cols)
 glimpse(df1)
 df1$meanCond
-df1$meanCond_lag
 df1$meanCond_lag
 co_temp <- df1[c("year", "meanCond")]
 co_temp$meanCond_n <- scale(co_temp$meanCond)
@@ -352,8 +359,6 @@ dic_R1 <- dic.samples(run_recruit$model, n.iter=1000, type="pD")
 str(x)
 dic_R1sum <- sum(dic_R1$deviance)
 
-source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
-
 R1_r2m <- rsq_bayes(ypred = y_pred, out = run_recruit)
 R1_r2 <- c(median(R1_r2m), sd(R1_r2m))
 
@@ -444,15 +449,15 @@ FitNew <- sum(DNew[1:N])
 # 2. Priors
 alpha ~ dnorm(0, 20^-2) 
 beta ~ dgamma(5, 1/3) 
-gamma ~ dgamma(2.8, 1)
-delta ~ dnorm(0, 10^-2) 
+gamma ~ dgamma(11.5, 5.7)
+delta ~ dnorm(0, 100^-2) 
 sigma ~ dunif(0, 10) 
 }'
 
 # alpha and delta are based on normalized means and large uniformed priors
 #beta based on Bolker pg 132 - Fig4.13 - trying for an uniformative prior 
-#delta: see gammaDist_mode_shape_rate_calculator.R - 
-# mode = 1.86 - based on Ale's value of 93 for beta*2 -> 186
+#gamma: see gammaDist_mode_shape_rate_calculator.R - 
+# mode = 1.86 - based on Ale's value of 93 for beta*2 -> 186: but this is the mode - Ale's value is the maximum
 # sd = 1
 #shape(a) is mean^2/var; scale(s) equal Var/mean - but we use rate so mean/Var
 # sigma: uninformative for condition
@@ -1021,11 +1026,11 @@ Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
 # 2. Priors
-alpha ~ dnorm(0, 20^-2) 
+alpha ~ dnorm(0, 100^-2) 
 #alpha ~ dnorm(0, 100^-2) 
-beta ~ dnorm(0, 10^-2) 
+beta ~ dnorm(0, 100^-2) 
 gamma ~ dgamma(5, 1/3) 
-delta ~ dgamma(2.8, 1)
+delta ~ dgamma(11.5, 5.7)
 #gamma ~ dunif(0, 100) 
 #delta ~ dunif(0, 10) 
 sigma ~ dunif(0, 10) 
@@ -1228,11 +1233,11 @@ Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
 # 2. Priors
-alpha ~ dnorm(0, 20^-2) 
-beta ~ dnorm(0, 10^-2) 
+alpha ~ dnorm(0, 100^-2) 
+beta ~ dnorm(0, 100^-2) 
 gamma ~ dgamma(5, 1/3) 
-delta ~ dgamma(2.8, 1)
-epsilon ~ dnorm(0, 20^-2) 
+delta ~ dgamma(11.5, 5.7)
+epsilon ~ dnorm(0, 100^-2) 
 sigma ~ dunif(0, 100) 
 }'
 
@@ -2177,7 +2182,7 @@ write.csv(temp, paste0("Bayesian/", filepath_gen, "/DIC_Rsq.csv"))
 
 
 ##############
-##PI - proof
+##PI - proof that the PI for 2019 is wider than 2019 based on the arithmetic scale!
 # from RM#
 m <- matrix(c(2.707571, 3.720766,
               6.047425, 6.399664), nrow=2, ncol =2)
