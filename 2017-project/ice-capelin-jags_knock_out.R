@@ -26,7 +26,7 @@ source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
 
 
 ## data knock out----
-filepath_gen <- "Bayesian/biomass_cond_ag1_DIC/" #"ag2_cond_ag1_DIC"
+filepath_gen <- "Bayesian/biomass_cond_ag1_2_DIC/" #"ag2_cond_ag1_DIC" "Bayesian/biomass_cond_ag1_DIC/"
 
 dataset <- "biomass" #"age"
 if(dataset == "biomass"){
@@ -51,13 +51,13 @@ if(dataset == "biomass"){
 ##ITERATIONS START HERE----
 #df3: 2003-2017
 df3$year
-x <- 15 #1:15 1 = 2003,  8 = 2010, 15 = 2017
+x <- 4 #1:15 1 = 2003,  8 = 2010, 15 = 2017: DO THIS FOR ALL OF THE YEARS INCLUDING 2006 AND 2016!!!
 insert <- df3[x,] # this is the value of the year to insert into the graph
 df3 <- df3[-x, ]
 
 #df2: 1999-2017
 y <- x+4
-insert_year <- 2017 # value of year to align with credible interval
+insert_year <- 2006 # value of year to align with credible interval
 insert_row  <- x
 folder <- "sensitivity"
 
@@ -184,7 +184,6 @@ per_diff_file[1,3] <- p_med[15]
 per_diff_file[1,4] <- pi_df3[1,15]
 per_diff_file[1,5] <- pi_df3[2,15]
 
-
 # save file as in next line, then hash tag and do the next three lines for all subsequent analyses
 #write_csv(per_diff_file, paste0(filepath_gen, folder, "/perdiff_all.csv"))
 
@@ -195,24 +194,22 @@ temp <- rbind(per_diff_file, temp)
 write_csv(temp, paste0(filepath_gen, folder, "/perdiff_all.csv"))
 
 
-# graph of values v. knockout
+## graph of values v. knockout----
 # use final values from above - change "per_diff_file" in ggplot code to temp
 # need to generalize this for biomass and age!
 
 type <- "CI"
-p <- p + geom_linerange(aes(ymin = (lcl), ymax = (ucl)), position = position_dodge(width = dg), size = 0.7)
-df3
 
 temp$data <- "PI"
 df3$data <- "CI"
 
 df4 <- df3[,c("year", "ln_biomass_med", "ln_bm_lci", "ln_bm_uci", "data")]
 temp1 <- temp[, -2]
-temp1[2, 2:4] <- NA
-temp1[12, 2:4] <- NA
+temp1[4, 2:4] <- NA
+temp1[14, 2:4] <- NA
 names(df4) <- names(temp1)
 temp2 <- rbind(temp1, df4)
-
+View(temp2)
 dg <- 0.5
 p <- ggplot(data = temp2, aes(x = year, y = p_med, group = data, color = data)) 
 p <- p + geom_point(position = position_dodge(width = dg), size = 1.5)
@@ -225,6 +222,8 @@ p <- p + theme_bw(base_size = 25)
 p <- p + theme(legend.title = element_blank())#, axis.text.x  = element_text(angle=90, vjust=0.5))
 ggsave(paste0(filepath_gen, "/sensitivity/loo.pdf"), width=10, height=8, units="in")
 
+
+###########
 # can probably delete all of this below here
 p <- p + geom_point(data = temp2, 
                     aes(y=p_med, x = year), size = 3)
