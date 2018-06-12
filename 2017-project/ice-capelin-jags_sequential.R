@@ -32,7 +32,7 @@ source('D:/Keith/R/zuur_rcode/HighstatLibV7.R')
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
 
-# make new folders
+# make new folders - need the full path
 folder_path1 <- "Bayesian/biomass_cond_ag1_2_DIC/" #"Bayesian/biomass_cond_ag1_DIC/""Bayesian/ag2_cond_ag1_DIC/"
 
 make_direct1(folder_names, folder_path1)
@@ -43,21 +43,21 @@ capelin_data_set <- "biomass" # type of capelin index - alt value ==  "biomass" 
 dic_run <- "yes" # is this a DIC run? "yes" or "no"
 
 # sets the values for the predition interval
-# these values are normalized.  The normalization was performed after the data were all brought together.  The calculations are performed on lines 159-164 unless stated otherwise
+# these values are normalized.  The normalization was performed after the data were all brought together.  The calculations are performed on lines 168-174 unless stated otherwise
 STpred <- c(-1.1798, -0.5525)
-PSpred <- c(-0.024866638, 0) 
-TIpred <- c(0.57, 0.788)  #first value estimated from this year (line 71-72), second, mean from centered data (line 168)
+PSpred <- c(-0.024866638, 0) #awating final value from P. Pepin
+TIpred <- c(0.57, 0.788)  #first value estimated from this year (line 74-75), second, mean from centered data (line 168)
 
+# set values for condition values
 x <- "condition" #"resids"
-y <- "a1" # "a1_2"
+y <- "a1_2" # "a1"
 COpred <- if(x=="condition" & y == "a1"){
-     COpred <- c(1.67, 0) # from lines 159-164
+     COpred <- c(1.67, 0) # from lines 168-174
 } else if(x=="condition" & y == "a1_2"){
-     COpred <- c(1.90, 0) # from lines 159-164
+     COpred <- c(1.90, 0) # from lines 168-174
 } else if(x =="resids"){
           COpred <- c(0, 0)
 }
-
 
 # sets the subfolder
 filepath_gen <- "biomass_cond_ag1_2_DIC"  # for filepath for datasets and pairs Plots - "biomass_cond_ag1_DIC" "ag2_cond_ag1_DIC"
@@ -2135,14 +2135,16 @@ write.csv(pi_tabl, paste0("Bayesian/", filepath, "/pi_tabl.csv"))
 
 # graph summarizing the influence of the knockouts
 p <- ggplot(data = data.frame(pi_tabl), aes(x = fct_inorder(model))) 
-p <- p + geom_point(aes(y=as.numeric(pi_pt)), size = 3)
-p <- p + geom_errorbar(aes(ymax = as.numeric(per_97_5), ymin = as.numeric(per_2_5)), width = 0.5)
+#p <- p + geom_point(aes(y=as.numeric(pi_pt)), size = 3)
+p <- p + geom_point(aes(y=pi_pt), size = 3)
+#p <- p + geom_errorbar(aes(ymax = as.numeric(per_97_5), ymin = as.numeric(per_2_5)), width = 0.5)
+p <- p + geom_errorbar(aes(ymax = per_97_5, ymin = per_2_5), width = 0.5)
 p <- p + xlab("Scenario") + ylab("Prediction point estimate \n & interval")
 p <- p + theme_bw(base_size = 20) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
 p <- p + geom_hline(aes(yintercept = pi_tabl$pi_pt[1]), colour = "red", size = 2)
 #p <- p + scale_x_discrete(breaks = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"), labels = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"))
 p
-ggsave(paste0("Bayesian/", filepath, "/sensitivity_arith.pdf"), width=10, height=8, units="in")
+ggsave(paste0("Bayesian/", filepath, "/sensitivity.pdf"), width=10, height=8, units="in")
 
 # This shows the reason why the middle values for tice are slightly higher than the high values.  Also shows the influence of high and low values on model
 p3 <- ggplot()
@@ -2181,8 +2183,8 @@ temp <- temp[c("model.x", "model.y","DIC", "dDIC", "R_sq", "SD")]
 write.csv(temp, paste0("Bayesian/", filepath_gen, "/DIC_Rsq.csv"))
 
 
-##############
-##PI - proof that the PI for 2019 is wider than 2019 based on the arithmetic scale!
+###PI - proof----
+# proof that the PI for 2019 is wider than 2019 based on the arithmetic scale!
 # from RM#
 m <- matrix(c(2.707571, 3.720766,
               6.047425, 6.399664), nrow=2, ncol =2)
