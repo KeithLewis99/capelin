@@ -30,7 +30,7 @@ filepath_gen <- "Bayesian/biomass_cond_ag1_2_DIC/" #"ag2_cond_ag1_DIC" "Bayesian
 
 dataset <- "biomass" #"age"
 if(dataset == "biomass"){
-     df <- read_csv("Bayesian/biomass_cond_ag1/all_data_a1.csv")
+     df <- read_csv(paste0(filepath_gen, "all_data_a1.csv"))
      df2 <- df
      #View(df2)
      df3 <- subset(df2, year>2002)
@@ -54,6 +54,10 @@ df3$year
 x <- 4 #1:15 1 = 2003,  8 = 2010, 15 = 2017: DO THIS FOR ALL OF THE YEARS INCLUDING 2006 AND 2016!!!
 insert <- df3[x,] # this is the value of the year to insert into the graph
 df3 <- df3[-x, ]
+
+xv <- rep(1:15)
+insert_yearv <- c(2003:2017)
+yv <- xv+4
 
 #df2: 1999-2017
 y <- x+4
@@ -221,29 +225,3 @@ p <- p + scale_color_manual(values = c("red", "black"))
 p <- p + theme_bw(base_size = 25)
 p <- p + theme(legend.title = element_blank())#, axis.text.x  = element_text(angle=90, vjust=0.5))
 ggsave(paste0(filepath_gen, "/sensitivity/loo.pdf"), width=10, height=8, units="in")
-
-
-###########
-# can probably delete all of this below here
-p <- p + geom_point(data = temp2, 
-                    aes(y=p_med, x = year), size = 3)
-p <- p + geom_linerange(data = temp2,
-                       aes(ymax = pi975, ymin = pi025, x = year), width = 0.5)
-p <- p + geom_point(data = df3, 
-                    aes(y=ln_biomass_med, x = year), #age2_log10
-                    colour = "red", size = 3,
-                    position = position_nudge(x = -0.25))
-if(!is.na(type)){
-     p <- p + geom_linerange(data = df3, 
-                            aes(x = year, ymin=ln_bm_lci, ymax=ln_bm_uci), 
-                            width = 0.3, colour = "red", 
-                            position = position_nudge(x = -0.25, y = 0))
-} else if (is.na(type)) {
-     
-     p
-}
-p <- p + xlab("Year") + ylab("Estimate and prediction")
-p <- p + theme_bw(base_size = 20) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
-#p <- p + scale_x_discrete(breaks = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"), labels = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"))
-p
-ggsave(paste0("Bayesian/", filepath_gen, "/sensitivity/loo.pdf"), width=10, height=8, units="in")
