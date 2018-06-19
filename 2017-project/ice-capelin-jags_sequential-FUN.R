@@ -121,7 +121,7 @@ priorPosterior <- function(df1, df2, xlim){
 #' @export
 #'
 #' @example p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
-postPriors <- function(df, df2, df3, limits = limits, x_label = x_label, priormean, priorsd, by_bin = 1){
+postPriors <- function(df, df2, df3, limits = limits, x_label = x_label, priormean, priorsd, by_bin = 1, vline="yes"){
      #browser()
      p <- ggplot() + theme_bw(base_size = 20)
      p <- p + coord_cartesian(xlim = c(limits[1], limits[2])) 
@@ -132,7 +132,9 @@ postPriors <- function(df, df2, df3, limits = limits, x_label = x_label, priorme
                              breaks = seq(limits[1], limits[2], by=by_bin)) + xlab(x_label) + ylab("Density")
      p <- p + geom_density(data = as.data.frame(df2), aes(x=df2), size = 1, alpha = 0.3) 
      p <- p + geom_rug(data=data.frame(y=df3), aes(x=y), colour = "red", size=3, alpha=1) 
-     p <- p + geom_vline(aes(xintercept = 0), colour = "red", size = 2)
+     if(vline == "yes"){
+          p <- p + geom_vline(aes(xintercept = 0), colour = "red", size = 2)
+          }
      return(p)
 }
 
@@ -168,10 +170,9 @@ posterior_fig1 <- function(ls, transform = transform, parm = parm){
           df_quant <- quantile(ls, c(0.025, 0.975))
           df_cred <- subset(df, df > df_quant[1] & df < df_quant[2])
      } else if (transform == "yes" & parm == "slope") {
-               df <- ls/10
+               df <- ls/100
                df_quant <- quantile(df, c(0.025, 0.975))
                df_cred <- subset(df, df > df_quant[1] & df < df_quant[2])
-
      } else if(transform == "yes" & parm == "width") {
           df <- ls*100
           df_quant <- quantile(df, c(0.025, 0.975))
@@ -396,7 +397,7 @@ plotCredInt1 <- function(df, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = c
 
 plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, insert_year = x, type=type){
      p <- ggplot()  
-     #browser()
+     browser()
      # plot credible interval
      p <- p + geom_ribbon(aes(x = c(df$year, insert_year), 
                               ymax = ci[2, ], 
@@ -444,6 +445,78 @@ plotCredInt2 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line
      p <- p + theme_bw() + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
      return(p)
 }
+
+
+##' plotCredInt3---
+#'  This is a crude approach to leave one out
+#' @param df - the data frame
+#' @param insert - this is the value of the year to insert into the graph
+#' @param yaxis - variable in df for yaxis 
+#' @param ylab - customize the label of the yaxis
+#' @param y_line - predicted values, e.g. y_med
+#' @param ci - credible interval 
+#' @param dpp - median value of the predition interval
+#' @param dpi - 2.5% and 97.5% prediction interval
+#' @param insert_year - value of year to align with credible interval
+#' @param type - this indicates if the capelin index has a confidence interval: 
+#'
+#' @return - a graph of teh capelin biomass with 95% CIs, the fitted values of the model, and the 95% credible and prediction intervals.
+#' @export
+#'
+#' @examplesplotCredInt2(df3, insert, yaxis = yaxis1, ylab = ylab1, y_line = y_med, ci = ci_df3, dpp = p_med, dpi = pi_df3, insert_year = insert_year, type = NA)
+
+plotCredInt3 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line, ci = ci, dpp = dpp, dpi = dpi, insert_year = x, type=type){
+     p <- ggplot()  
+     #browser()
+     # plot credible interval
+     p <- p + geom_ribbon(aes(x = c(df$year, insert_year), 
+                              ymax = ci[2, ], 
+                              ymin = ci[1, ]),
+                          alpha = 0.5, fill = "grey60")
+     pi_n <- dpi[, ncol(dpi)]
+     # predition interval for point
+     p <- p + geom_errorbar(aes(x = insert$year, 
+                                ymax = pi_n[4], 
+                                ymin = pi_n[1]))
+     p <- p + geom_point(aes(x = insert$year, 
+                             y = last(dpp)),
+                         colour = "black",
+                         shape = 17, size = 2)
+     
+     # ci for capelin
+     p <- p + geom_point(data = df, 
+                         aes_string(y = yaxis, x = "year"),
+                         shape = 16, 
+                         size = 1.5,
+                         colour = "black")
+     
+     if(!is.na(type)){
+          p <- p + geom_errorbar(data = df, width = 0.3, colour = "black", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
+     } else if (is.na(type)) {
+          p
+     }
+     
+     p <- p + xlab("Year") + ylab(paste(ylab))
+     p <- p + geom_line(aes(x = c(df$year, insert_year), y = y_line))
+     # ci for knockout year
+     #browser()
+     pd1 <- position_dodge(width = 2)
+     p <- p + geom_point(data = insert, # insert is df3[x,]
+                         aes_string(y = yaxis, x = "year"),
+                         shape = 16, 
+                         size = 1.5,
+                         colour = "red", 
+                         position=pd1)
+     if(!is.na(type)){
+          p <- p + geom_errorbar(data = insert, width = 0.3, colour = "red", aes(x = year, min=ln_bm_lci, ymax=ln_bm_uci))
+     } else if (is.na(type)) {
+          p
+     }
+     p <- p + theme_bw() + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
+     return(p)
+}
+
+insert_year <- c(2003:2017)     
 
 # not using - not appropriate
 DIC_out <- function(df){
