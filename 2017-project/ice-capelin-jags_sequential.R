@@ -447,12 +447,11 @@ Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
 # 2. Priors
-alpha ~ dnorm(0, 20^-2) 
-#beta ~ dgamma(5, 1/3) 
+alpha ~ dnorm(0, 100^-2) 
 beta ~ dunif(0, 100)
 gamma ~ dgamma(11.5, 5.7)
 delta ~ dnorm(0, 100^-2) 
-sigma ~ dunif(0, 10) 
+sigma ~ dunif(0, 100) 
 }'
 
 # alpha and delta are based on normalized means and large uniformed priors
@@ -579,9 +578,9 @@ gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "width")
 delta <- posterior_fig(out$sims.list$delta)
 
 
-#alpha
+#alpha - Int
 priormean <- 0
-priorsd <- 20
+priorsd <- 100
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
 x_label <- "Intercept"
@@ -589,20 +588,17 @@ bin_1 <- mean(alpha$df)/100
 
 p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-#beta
-priormean <- 5
-priorsd <- 1/3
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)/10
-limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
+#beta - tice-slope
+prior <- runif(n = 10000, min = 0, max = 100)/100
+limits <- c(0, max(beta$df) + 0.1)
 x_label <- expression(paste(t[italic(ice)], "slope"))
 bin_1 <- mean(beta$df)/100
 
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-
-#gamma
-priormean <- 2.8
-priorsd <- 1
+#gamma - tice-width
+priormean <- 11.5
+priorsd <- 5.7
 prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)*100
 limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
 x_label <- expression(paste(t[italic(ice)], "width"))
@@ -611,9 +607,9 @@ bin_1 <- mean(gamma$df)/100
 p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
 
-#delta
+#delta condition
 priormean <- 0
-priorsd <- 20
+priorsd <- 100
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(delta$df)-0.3, max(delta$df) + 0.3)
 x_label <- "Condition"
@@ -778,7 +774,7 @@ beta <- posterior_fig1(out$sims.list$beta, transform = "yes", parm = "slope")
 gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "width")
 delta <- posterior_fig(out$sims.list$delta)
 
-#alpha
+#alpha - INT
 priormean <- 0
 priorsd <- 100
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
@@ -788,16 +784,16 @@ bin_1 <- mean(alpha$df)/100
 
 p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-#beta
-prior <- runif(n = 10000, 0, 100)/10
+#beta - tice-slope
+prior <- runif(n = 10000, 0, 100)/100
 limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
 x_label <- "beta"
 bin_1 <- mean(beta$df)/100
 
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-#gamma
-prior <- runif(n = 10000, 0, 10)*100
+#gamma tice-width
+prior <- runif(n = 10000, 0, 3.65)*100
 limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
 x_label <- "gamma"
 bin_1 <- mean(gamma$df)/100
@@ -805,12 +801,7 @@ bin_1 <- mean(gamma$df)/100
 p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 mean(gamma$df)/2
 
-alpha ~ dnorm(0, 100^-2) 
-beta ~ dunif(0, 100) 
-gamma ~ dunif(0, 10) 
-delta ~ dnorm(0, 100^-2) 
-
-#delta
+#delta - condition
 priormean <- 0
 priorsd <- 100
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
@@ -1028,13 +1019,13 @@ FitNew <- sum(DNew[1:N])
 
 # 2. Priors
 alpha ~ dnorm(0, 100^-2) 
-#beta ~ dnorm(0, 100^-2) 
-beta ~ dunif(0, 100)
-gamma ~ dgamma(5, 1/3) 
+beta ~ dnorm(0, 100^-2)
+gamma ~ dunif(0, 100) 
 delta ~ dgamma(11.5, 5.7)
+sigma ~ dunif(0, 100) 
+#beta ~ dnorm(0, 100^-2) 
 #gamma ~ dunif(0, 100) 
 #delta ~ dunif(0, 10) 
-sigma ~ dunif(0, 10) 
 }'
 
 #gamma and delta based on Bolker pg 132 - Fig4.13 - trying for an uniformative alpha
@@ -1138,7 +1129,7 @@ ggsave(MyBUGSHist(out, vars), filename = paste0("Bayesian/", filepath, "/posteri
 #plot credible and prediction intervals
 plotCredInt(df3, yaxis = yaxis1, 
             ylab = ylab1, 
-            y_line = y_med, ci_df3, pi_df3, 
+            y_line = y_med, ci_df3, pi_df3_80, 
             model = txt, x = 2010, y = 7.75, type = "CI")
 ggsave(paste0("Bayesian/", filepath, "/credInt.pdf"), width=10, height=8, units="in")
 
@@ -1154,9 +1145,9 @@ beta <- posterior_fig(out$sims.list$beta)
 gamma <- posterior_fig1(out$sims.list$gamma, transform = "yes", parm = "slope")
 delta <- posterior_fig1(out$sims.list$delta, transform = "yes", parm = "width")
 
-#alpha
+#alpha - Int
 priormean <- 0
-priorsd <- 20
+priorsd <- 100
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
 x_label <- "Intercept"
@@ -1164,8 +1155,7 @@ bin_1 <- mean(alpha$df)/100
 
 p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = -bin_1)
 
-#beta
-priorsd <- 10
+#beta - Larval abundance
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
 x_label <- "Larval abundance"
@@ -1173,24 +1163,17 @@ bin_1 <- mean(beta$df)/100
 
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-#gamma
-priormean <- 5
-priorsd <- 1/3
-prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)/100
-str(prior)
-plot(density(prior))
-plot(density(prior), xlim = c(0,5))
-
-limits <- c(min(gamma$df)-0.3, max(gamma$df) + 0.3)
+#gamma - tices-slope
+prior <- runif(n = 10000, min = 0, max = 100)/100
+limits <- c(0, max(gamma$df) + 0.1)
 x_label <- expression(paste(t[italic(ice)], "slope"))
 bin_1 <- mean(gamma$df)/100
 
-p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
+p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1, vline = "no")
 
-
-#delta
-priormean <- 2.8
-priorsd <- 1
+#delta - tice - width
+priormean <- 11.5
+priorsd <- 5.7
 prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)*100
 plot(density(prior))
 plot(density(prior), xlim = c(0,2))
@@ -1214,7 +1197,7 @@ model {
 # 1. Likelihood
 for (i in 1:N) {
 #recruitment
-mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])
+mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta) + epsilon*CO[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
 log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
@@ -1235,12 +1218,11 @@ Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
 # 2. Priors
-alpha ~ dnorm(0, 100^-2) 
-#beta ~ dnorm(0, 100^-2) 
-beta ~ dunif(0, 100)
-gamma ~ dunif(0, 100) 
-delta ~ dgamma(11.5, 5.7)
-epsilon ~ dnorm(0, 100^-2) 
+alpha ~ dnorm(0, 100^-2) # Int
+beta ~ dnorm(0, 100^-2) # larval abun
+gamma ~ dunif(0, 100) # tice -slope
+delta ~ dgamma(11.5, 5.7) #tice-width
+epsilon ~ dnorm(0, 100^-2) # condition
 sigma ~ dunif(0, 100) 
 }'
 
@@ -1325,6 +1307,7 @@ y_pred = run_RM3$BUGSoutput$sims.list$mu
 #look at output
 y_med = apply(y_pred,2,'median')
 ci_df3 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
+ci_df3 <- apply(y_pred,2,'quantile', c(0.025, 0.975))
 
 #generate prediciton intevals using N2_new
 y_new = run_RM3$BUGSoutput$sims.list$N2_new
@@ -1368,9 +1351,9 @@ delta <- posterior_fig1(out$sims.list$delta, transform = "yes", parm = "width")
 epsilon <- posterior_fig(out$sims.list$epsilon)
 
 
-#alpha
+#alpha - INT
 priormean <- 0
-priorsd <- 20
+priorsd <- 100
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(alpha$df)-0.3, max(alpha$df) + 0.3)
 x_label <- "Intercept"
@@ -1378,15 +1361,15 @@ bin_1 <- abs(mean(alpha$df)/100)
 
 p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-#beta
-priorsd <- 10
+#beta - larval abundance
+priorsd <- 100
 limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
 x_label <- "Larval abundance"
 bin_1 <- mean(beta$df)/100
 
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-#gamma
+#gamma - tice-slope
 prior <- runif(n = 10000, min = 0, max = 100)/100
 limits <- c(0, max(gamma$df) + 0.1)
 x_label <- expression(paste(t[italic(ice)], "slope"))
@@ -1395,9 +1378,9 @@ bin_1 <- mean(gamma$df)/100
 p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1, vline = "no")
 
 
-#delta
-priormean <- 2.8
-priorsd <- 1
+#delta - tice-width
+priormean <- 11.5
+priorsd <- 5.7
 prior <- rgamma(n = 10000, shape = priormean, rate = priorsd)*100
 limits <- c(min(delta$df)-0.3, max(delta$df) + 0.3)
 x_label <- expression(paste(t[italic(ice)], "width"))
@@ -1405,13 +1388,16 @@ bin_1 <- mean(delta$df)/100
 
 p4 <- postPriors(df = delta$df, df2 = prior, df3 = delta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-#epsilon
+#epsilon - condition
 priormean <- 0
-priorsd <- 20
+priorsd <- 100
 prior <- rnorm(n = 10000, mean = priormean, sd = priorsd)
 limits <- c(min(epsilon$df), max(epsilon$df) - 0.3)
+#limits <- c(quantile(epsilon$df, 0.05), quantile(epsilon$df, 0.8))
 x_label <- "Condition"
 bin_1 <- mean(epsilon$df)/100
+
+quantile(epsilon$df, c(0.01, 0.1, 0.2, 0.3, 0.4, 0.50, 0.6, 0.7, 0.8, 0.9, 0.99))
 
 p5 <- postPriors(df = epsilon$df, df2 = prior, df3 = epsilon$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
@@ -1638,7 +1624,7 @@ FitNew <- sum(DNew[1:N])
 #beta ~ dgamma(5, 1/3) 
 beta ~ dunif(0, 100)
 gamma ~ dgamma(2.8, 1)
-sigma ~ dunif(0, 10) 
+sigma ~ dunif(0, 100) 
 }'
 
 
@@ -2031,8 +2017,7 @@ model {
 # 1. Likelihood
 for (i in 1:N) {
 #recruitment
-#mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])
-mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])
+mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta) + epsilon*CO[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
 log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
@@ -2052,11 +2037,11 @@ Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
 # 2. Priors
-alpha ~ dnorm(0, 20^-2) 
-beta ~ dnorm(0, 10^-2) 
-gamma ~ dgamma(5, 1/3) 
-delta ~ dgamma(2.8, 1)
-epsilon ~ dnorm(0, 20^-2) 
+alpha ~ dnorm(0, 100^-2) # Int
+beta ~ dnorm(0, 100^-2) # larval abun
+gamma ~ dunif(0, 100) # tice -slope
+delta ~ dgamma(11.5, 5.7) #tice-width
+epsilon ~ dnorm(0, 100^-2) # condition
 sigma ~ dunif(0, 100) 
 }'
 
@@ -2088,7 +2073,7 @@ for(i in 1:13){
                      parameters.to.save = c('mu', 'sigma', 'N2', 'N2_new', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'Fit', 'FitNew', 'PRes', 'expY', 'D', "log_lik"),
                      model.file = textConnection(RM3_sens))
      #list(model_data_)
-     #run_RM3 <-update(run_RM3, n.iter = 300000, n.thin = 50, n.burnin = 100000)
+     run_RM3 <-update(run_RM3, n.iter = 300000, n.thin = 50, n.burnin = 100000)
      run_RM3_[[i]] <- run_RM3
      #list(run_RM3_)
 #     y_pred_[[i]] = run_RM3_[[i]]$BUGSoutput$sims.list$mu
@@ -2097,8 +2082,7 @@ for(i in 1:13){
      ci_df3_[[i]] <- apply(y_pred_,2,'quantile', c(0.05, 0.95))
      y_new_ = run_RM3$BUGSoutput$sims.list$N2_new
      p_med_[[i]] = apply(y_new_,2,'median')
-     #pi_df3_[[i]] <- apply(y_new_,2,'quantile', c(0.05, 0.95))
-     pi_df3_[[i]] <- apply(y_new_,2,'quantile', c(0.1, 0.9))
+     pi_df3_[[i]] <- apply(y_new_,2,'quantile', c(0.025, 0.1, 0.9, 0.975))
      list(run_RM3_[[i]], y_med_[[i]], ci_df3_[[i]], p_med_[[i]], pi_df3_[[i]])
 }
 
@@ -2111,7 +2095,9 @@ model <- c("MOD", "LG", "LM", "LP", "MG", "MM", "MP", "EG", "EM", "EP", "vEG", "
 pi_pt <- rep(NA, 13)
 per_2_5 <- rep(NA, 13)
 per_97_5 <- rep(NA, 13)
-pi_tabl <- cbind(model, pi_pt, per_2_5, per_97_5)
+per_10 <- rep(NA, 13)
+per_90 <- rep(NA, 13)
+pi_tabl <- cbind(model, pi_pt, per_2_5, per_10, per_90, per_97_5)
 
 # loop to collect all of the prection intervals
 #for(i in seq(model)){
@@ -2122,19 +2108,25 @@ pi_tabl <- cbind(model, pi_pt, per_2_5, per_97_5)
 # loop to collect all of the prection intervals
 for(i in seq(model)){
      pi_tabl[i, 2] <- p_med_[[i]][16]
-     pi_tabl[i, 3:4] <- pi_df3_[[i]][,16]
+     pi_tabl[i, 3:6] <- pi_df3_[[i]][,16]
 }
 
 pi_tabl
 pi_tabl <- data.frame(pi_tabl)
 str(pi_tabl)
 # use "as.numeric" lines for ln scale, and "10^.." lines for arithmetic (which looks awful)
-pi_tabl$pi_pt <- as.numeric(levels(pi_tabl$pi_pt)[pi_tabl$pi_pt])
-pi_tabl$pi_pt <- 10^pi_tabl$pi_pt
-pi_tabl$per_2_5 <- as.numeric(levels(pi_tabl$per_2_5)[pi_tabl$per_2_5])
-pi_tabl$per_2_5 <- 10^pi_tabl$per_2_5
-pi_tabl$per_97_5 <- as.numeric(levels(pi_tabl$per_97_5)[pi_tabl$per_97_5])
-pi_tabl$per_97_5 <- 10^pi_tabl$per_97_5
+scale <- "ln" #"arithmetic
+if(scale == "ln"){
+     pi_tabl$pi_pt <- as.numeric(levels(pi_tabl$pi_pt)[pi_tabl$pi_pt])
+     pi_tabl$per_2_5 <- as.numeric(levels(pi_tabl$per_2_5)[pi_tabl$per_2_5])
+     pi_tabl$per_10 <- as.numeric(levels(pi_tabl$per_10)[pi_tabl$per_10])
+     pi_tabl$per_90 <- as.numeric(levels(pi_tabl$per_90)[pi_tabl$per_90])
+     pi_tabl$per_97_5 <- as.numeric(levels(pi_tabl$per_97_5)[pi_tabl$per_97_5])
+} else {
+     pi_tabl$pi_pt <- 10^pi_tabl$pi_pt
+     pi_tabl$per_2_5 <- 10^pi_tabl$per_2_5
+     pi_tabl$per_97_5 <- 10^pi_tabl$per_97_5
+}
 
 write.csv(pi_tabl, paste0("Bayesian/", filepath, "/pi_tabl.csv"))
 
@@ -2143,8 +2135,8 @@ p <- ggplot(data = data.frame(pi_tabl), aes(x = fct_inorder(model)))
 #p <- p + geom_point(aes(y=as.numeric(pi_pt)), size = 3)
 p <- p + geom_point(aes(y=pi_pt), size = 3)
 #p <- p + geom_errorbar(aes(ymax = as.numeric(per_97_5), ymin = as.numeric(per_2_5)), width = 0.5)
-p <- p + geom_errorbar(aes(ymax = per_97_5, ymin = per_2_5), width = 0.5)
-p <- p + xlab("Scenario") + ylab("Prediction point estimate \n & interval")
+p <- p + geom_errorbar(aes(ymax = per_90, ymin = per_10), width = 0.5)
+p <- p + xlab("Scenario") + ylab("Prediction point estimate \n & interval (80%)")
 p <- p + theme_bw(base_size = 20) + theme(plot.margin = unit(c(0.5, 1, 0.5, 0.5), "cm"))
 p <- p + geom_hline(aes(yintercept = pi_tabl$pi_pt[1]), colour = "red", size = 2)
 #p <- p + scale_x_discrete(breaks = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"), labels = c("HH", "HM", "HL", "MH", "MM", "ML", "LH", "LM", "LL"))
