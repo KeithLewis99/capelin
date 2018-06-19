@@ -51,12 +51,12 @@ if(dataset == "biomass"){
 ##ITERATIONS START HERE----
 #df3: 2003-2017
 df3$year
-x <- 4 #1:15 1 = 2003,  8 = 2010, 15 = 2017: DO THIS FOR ALL OF THE YEARS INCLUDING 2006 AND 2016!!!
+x <- 1 #1:15 1 = 2003,  8 = 2010, 15 = 2017: DO THIS FOR ALL OF THE YEARS INCLUDING 2006 AND 2016!!!
 insert <- df3[x,] # this is the value of the year to insert into the graph
 df3 <- df3[-x, ]
 
-xv <- rep(1:15)
-insert_yearv <- c(2003:2017)
+xv <- rep(1:14)
+insert_yearv <- c(2003:2005, 2007:2015, 2017)
 yv <- xv+4
 
 #df2: 1999-2017
@@ -80,7 +80,7 @@ model {
 # 1. Likelihood
 for (i in 1:N) {
 #recruitment
-mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta + epsilon*CO[i])
+mu[i] <- alpha + beta*ST[i] + gamma*TI[i]*(1-TI[i]/delta) + epsilon*CO[i]
 N2[i] ~ dnorm(mu[i], sigma^-2)
 N2_new[i] ~ dnorm(mu[i], sigma^-2) # #### ADB: This is simulated data   
 log_lik[i] <- logdensity.norm(N2[i], mu[i], sigma^-2)
@@ -115,6 +115,15 @@ sigma ~ dunif(0, 100)
 
 
 num_forecasts =  1# 1 extra years
+
+# create a bunch of empty lists
+run_RM3_ <- rep(list(list()), 13)
+y_pred_ <- rep(list(list()), 13)
+y_med_ <- rep(list(list()), 13)
+ci_df3_ <- rep(list(list()), 13)
+p_med_ <- rep(list(list()), 13)
+pi_df3_ <- rep(list(list()), 13)
+
 # df3$ln_biomass_med
 # df3$age2_log10
 model_data <- list(N2 = c(var_x, rep(NA, num_forecasts)), 
@@ -129,6 +138,7 @@ run_RM3 <- jags(data=model_data,
 
 #UPDATE WITH MORE BURN INS
 run_RM3 <-update(run_RM3, n.iter = 300000, n.thin = 50, n.burnin = 100000)
+
 
 
 ##R/M3-plot 5----
@@ -146,7 +156,7 @@ ci_df3 <- apply(y_pred,2,'quantile', c(0.05, 0.95))
 #generate prediciton intevals using N2_new
 y_new = run_RM3$BUGSoutput$sims.list$N2_new
 p_med = apply(y_new,2,'median')
-pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.95))
+pi_df3 <- apply(y_new,2,'quantile', c(0.05, 0.1, 0.9, 0.95))
 
 
 ## RM_3-Results----
