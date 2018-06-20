@@ -1,7 +1,7 @@
 # http://doingbayesiandataanalysis.blogspot.ca/2012/01/parameterizing-gamma-distribution-by.html
 
 # Specify desired mode and sd of gamma distribution:
-mode = 1.74 # this is Ale's value from 2014 paper for Beta (width of dome)
+mode = 1.74 # this is Ale's value from 2014 paper for Beta (width of dome) - 1.86 gives shape =11.7 and rate = 5.7
 sd = .6 # this is choosen arbitrarily but signifies two months (60days/100) for the width which means a month for the peak (Beta/2) which allows for reasonable values of the peak.
 
 # Here are the corresponding rate and shape parameter values:
