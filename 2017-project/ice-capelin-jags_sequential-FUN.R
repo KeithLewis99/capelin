@@ -516,8 +516,6 @@ plotCredInt3 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line
      return(p)
 }
 
-insert_year <- c(2003:2017)     
-
 # not using - not appropriate
 DIC_out <- function(df){
      browser()
