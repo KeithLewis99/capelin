@@ -261,9 +261,9 @@ Fit <- sum(D[1:N]) # look at overdispersion
 FitNew <- sum(DNew[1:N])
 
 # 2. Priors
-alpha ~ dnorm(0, 100^-2) 
-beta ~ dnorm(0, 100^-2)
-gamma ~ dnorm(0, 100^-2) 
+alpha ~ dnorm(0, 100^-2) # Int
+beta ~ dnorm(0, 100^-2)  # larval abundance
+gamma ~ dnorm(0, 100^-2) #Psuedocalanus
 sigma ~ dunif(0, 100) 
 }'
 
@@ -1110,7 +1110,7 @@ ci_df3 <- apply(y_pred,2,'quantile', c(0.025, 0.975))
 y_new = run_RM2$BUGSoutput$sims.list$N2_new
 #pi_df3 <- apply(y_new,2,'quantile', c(0.025, 0.975))
 pi_df3_80 <- apply(y_new,2,'quantile', c(0.1, 0.9))
-write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], paste0("Bayesian/", filepath, "/pi.csv"))
+write.csv(pi_df3_80[, (ncol(pi_df3_80)-1):ncol(pi_df3_80)], paste0("Bayesian/", filepath, "/pi.csv"))
 
 
 ## RM_2-Results----
@@ -1312,7 +1312,9 @@ ci_df3 <- apply(y_pred,2,'quantile', c(0.025, 0.975))
 y_new = run_RM3$BUGSoutput$sims.list$N2_new
 #pi_df3 <- apply(y_new,2,'quantile', c(0.025, 0.975))
 pi_df3_80 <- apply(y_new,2,'quantile', c(0.1, 0.9))
-write.csv(pi_df3[, (ncol(pi_df3)-1):ncol(pi_df3)], paste0("Bayesian/", filepath, "/pi.csv"))
+write.csv(pi_df3_80[, (ncol(pi_df3_80)-1):ncol(pi_df3_80)], paste0("Bayesian/", filepath, "/pi.csv"))
+
+pi_df3_80[, (ncol(pi_df3_80)-1):ncol(pi_df3_80)]
 
 
 ## RM_3-Results----
@@ -1369,13 +1371,16 @@ bin_1 <- mean(beta$df)/100
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
 #gamma - tice-slope
-prior <- runif(n = 10000, min = 0, max = 100)/100
+#prior <- runif(n = 100000, min = 0, max = 100)/100
+prior <- runif(n = 100000, min = 0, max = 100)
 limits <- c(0, max(gamma$df) + 0.1)
 x_label <- expression(paste(t[italic(ice)], "slope"))
 bin_1 <- mean(gamma$df)/100
 
-p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1, vline = "no")
 
+p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1, vline = "no")
+#p3 <- p3 + geom_hline(yintercept = 1, size = 1)
+p3 <- p3 + geom_segment(aes(x = 0, y = 1, xend = 1, yend = 1), size = 1)
 
 #delta - tice-width
 priormean <- 11.5
