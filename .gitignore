@@ -8,6 +8,8 @@ git-old/
 2017-project/avc_data/19690117/info/arc0000.nit
 2017-project/avc_data/
 2017-project/.Rproj.user/
+2017-project/archive_R/
+2017-project/map/
 *.rds
 *.obj
 *.exe
@@ -53,3 +55,12 @@ git-old/
 2017-project/ice-capelin-functions.R
 2017-project/bolker_CH7_5_CI.R
 .Rproj.user
+*.doc
+*.docx
+*.sas
+*.jpeg
+*.jpg
+2017-project/manuscript/
+2017-project/.gitignore
+2017-project/presentation/RAP_2018_files/
+ice-capelin-jags_knock_out_a.R
