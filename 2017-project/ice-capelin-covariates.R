@@ -708,7 +708,7 @@ optimGraphs2_all(MaxTice8a, "tice", var2 = "Ssurface_tows_lag2", var2val = 230, 
 
 # As above but with ps_lag2 and Holling II
 # invalid model - not enough parameters
-#MaxTice8b <- calcFit_all3(cape_2001, 
+MaxTice8b <- calcFit_all3(cape_2001, 
                           titlenames, 
                           par = c(1, 200, 1, 1), 
                           var1 = "tice", 

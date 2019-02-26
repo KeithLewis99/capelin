@@ -476,8 +476,8 @@ plotCredInt3 <- function(df, insert, yaxis = yaxis, ylab = ylab, y_line = y_line
      pi_n <- dpi[, ncol(dpi)]
      # predition interval for point
      p <- p + geom_errorbar(aes(x = insert$year, 
-                                ymax = pi_n[4], 
-                                ymin = pi_n[1]))
+                                ymax = pi_n[3], 
+                                ymin = pi_n[2]))
      p <- p + geom_point(aes(x = insert$year, 
                              y = last(dpp)),
                          colour = "black",

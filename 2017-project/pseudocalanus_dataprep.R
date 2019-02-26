@@ -5,7 +5,6 @@
 # 1) Examine the Pseudocalanus data from H. Murphy (emailed 2017-11-07: file "Copy of PSEUSP27_1999_2016.xlsx" - no metadata - see Murhpy et al. 2017) - created metadata for xlsx and csv file
 # - days of year, range of data, years, etc
 
-# 2) prepare for import to "ice-capelin-covariates.R"
 
 rm(list=ls())
 

@@ -68,10 +68,10 @@ text(9, 2, "Buren et al. 2014 \n PlosOne")
 dev.off()
 
 
-## next plot
+## next plot-----
 install.packages("extrafont")
 library(extrafont)
-font_import()
+#font_import()
 y
 year <- c(1, 2, 3, 4)
 month <- c(1:12)
@@ -118,6 +118,64 @@ text(31, 2.1, "spring \n survey", col = "black", adj = 0.5,
      cex = 1.5)
 dev.off()
 
+
+
+
+####variable plus fish----
+png("presentation/variables_plus_fish.png", family = "Arial Black")
+par(mar = c(2, 2, 1, 1))  # set margins(bottom,left,top,right)
+
+plot(x$month_seq, x$year, type='n', xaxt = 'n', yaxt = 'n', xlab = 'Month', ylab = '')
+axis(1, at = seq(1, 37, 3), labels = lab_2, col = "#0000ff00", col.ticks = "black")
+
+#year(t-2)
+arrows(1, 2.5, 12, 2.5, length = 0.1, angle = 20, 
+       code = 3, col = "blue", lwd = 3)
+text(4, 2.7, "year(t-2)", col = "blue", adj = 0.5, 
+     cex = 1.5)
+#larval emergence
+text(9, 2.2, "larval \n emergence", col = "blue", adj = 0.5,      cex = 1.5)
+arrows(8, 2.3, 9.5, 2.3, length = 0, angle = 20, 
+       code = 3, col = "blue", lwd = 3)
+#Pseudo
+text(10, 1.9, bquote(atop(italic("Pseudocalanus"), "emergence")), col = "blue", adj = 0.5, cex = 1.5)
+arrows(7, 2.025, 11, 2.025, length = 0, angle = 20, 
+       code = 3, col = "blue", lwd = 3)
+
+#year(t-1)
+arrows(12, 2.5, 24, 2.5, length = 0.1, angle = 20, 
+       code = 3, col = "red", lwd = 3)
+text(14, 2.7, "year(t-1)", col = "red", adj = 0.5, 
+     cex = 1.5)
+text(23, 2.15, "condition", col = "red", adj = 0.5, 
+     cex = 1.5)
+arrows(21, 2.2, 24, 2.2, length = 0, angle = 20, 
+       code = 3, col = "red", lwd = 3)
+
+#year(t)
+arrows(24, 2.5, 36, 2.5, length = 0.1, angle = 20, 
+       code = 3, col = "black", lwd = 3)
+text(26, 2.7, "year(t)", col = "black", adj = 0.5, 
+     cex = 1.5)
+#tice
+text(27, 2.35, expression("t"[italic(ice)]), col = "black", adj = 0.5, 
+     cex = 1.5)
+arrows(25, 2.4, 28, 2.4, length = 0, angle = 20, 
+       code = 3, col = "black", lwd = 3)
+#spring survey
+text(30, 1.80, "spring \n survey", col = "black", adj = 0.5, 
+     cex = 1.5)
+arrows(29, 1.90, 30, 1.90, length = 0, angle = 20, 
+       code = 3, col = "black", lwd = 3)
+#management meetings
+text(30, 1.5, "management \n meetings", col = "black", adj = 0.5, cex = 1.5)
+arrows(28, 1.6, 28.5, 1.6, length = 0, angle = 20, 
+       code = 3, col = "black", lwd = 3)
+#fishery
+text(32, 1.225, "fishery", col = "black", cex = 1.55)
+arrows(31, 1.3, 33, 1.3, length = 0, angle = 20, 
+       code = 3, col = "black", lwd = 3)
+dev.off()
 
 #plot(1:10, xlab=expression('hi'[5]*'there'[6]^8*'you'[2]))
 

@@ -26,14 +26,14 @@ library(forcats)
 
 rm(list=ls())
 
-## read in source code-----
+## read in source code (Zuur and Lewis functions)-----
 source('D:/Keith/R/zuur_rcode/MCMCSupportHighstatV2.R')
 source('D:/Keith/R/zuur_rcode/HighstatLibV7.R')
 source("D:/Keith/capelin/2017-project/ice-capelin-covariates-FUN.R")
 source("D:/Keith/capelin/2017-project/ice-capelin-jags_sequential-FUN.R")
 
 # make new folders - need the full path
-folder_path1 <- "Bayesian/biomass_cond_ag1_2_DIC/" #"Bayesian/biomass_cond_ag1_DIC/""Bayesian/ag2_cond_ag1_DIC/"
+folder_path1 <- "Bayesian/biomass_cond_ag1_2_DIC_R3/" #"Bayesian/biomass_cond_ag1_DIC/""Bayesian/ag2_cond_ag1_DIC/" "Bayesian/biomass_cond_ag1_2_DIC_new/"
 
 make_direct1(folder_names, folder_path1)
 
@@ -60,10 +60,10 @@ COpred <- if(x=="condition" & y == "a1"){
 }
 
 # sets the subfolder
-filepath_gen <- "biomass_cond_ag1_2_DIC"  # for filepath for datasets and pairs Plots - "biomass_cond_ag1_DIC" "ag2_cond_ag1_DIC"
+filepath_gen <- "biomass_cond_ag1_2_DIC_R3"  # for filepath for datasets and pairs Plots - "biomass_cond_ag1_DIC" "ag2_cond_ag1_DIC" "biomass_cond_ag1_2_DIC_new"
 
 # changes of the axis and axis labels for credInt
-ylab1 = "ln(capelin biomass(ktons))" #alt: "log10 capelin - age2"  "ln(capelin biomass(ktons))"
+ylab1 = "ln(capelin biomass(ktonnes))" #alt: "log10 capelin - age2"  "ln(capelin biomass(ktons))"
 yaxis1 = "ln_biomass_med" # alt: "age2_log10" "ln_biomass_med"
 
 # change "type = [something]" or = NA  
@@ -83,7 +83,7 @@ cap <- capelin_data(capelin_data_set)
 
 ## ice (1969-2017)----
 #source: ice-chart-processing-data-v3.R
-ice <- read_csv('output-processing/capelin-m1.csv')
+ice <- read_csv('output-processing/2017/capelin-m1.csv')
 glimpse(ice)
 ice1 <- subset(ice, year > 2002)
 mean(ice1$tice/100)
@@ -232,7 +232,7 @@ if(dic_run == "yes" & capelin_data_set == "biomass"){
 }
 
 #########Bayesian models#############################----
-## Recruitment----
+## Recruitment-uninformative----
 #"alpha + beta*ST[i] + gamma*PS[i]"
 
 m.recruit = '
@@ -588,10 +588,10 @@ bin_1 <- mean(alpha$df)/100
 
 p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-#beta - tice-slope
+#beta - tice-max rate of increae
 prior <- runif(n = 10000, min = 0, max = 100)/100
 limits <- c(0, max(beta$df) + 0.1)
-x_label <- expression(paste(t[italic(ice)], "slope"))
+x_label <- expression(paste(t[italic(ice)], "-MRI"))
 bin_1 <- mean(beta$df)/100
 
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
@@ -784,7 +784,7 @@ bin_1 <- mean(alpha$df)/100
 
 p1 <- postPriors(df = alpha$df, df2 = prior, df3 = alpha$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-#beta - tice-slope
+#beta - tice-max rate of increase
 prior <- runif(n = 10000, 0, 100)/100
 limits <- c(min(beta$df)-0.3, max(beta$df) + 0.3)
 x_label <- "beta"
@@ -1020,7 +1020,7 @@ FitNew <- sum(DNew[1:N])
 # 2. Priors
 alpha ~ dnorm(0, 100^-2) # int
 beta ~ dnorm(0, 100^-2) # larval abund
-gamma ~ dunif(0, 100)  #tices-slope
+gamma ~ dunif(0, 100)  #tices-max rate of increase
 delta ~ dgamma(11.5, 5.7) #tice-width
 sigma ~ dunif(0, 100) 
 #beta ~ dnorm(0, 100^-2) 
@@ -1163,10 +1163,10 @@ bin_1 <- mean(beta$df)/100
 
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-#gamma - tices-slope
+#gamma - tices-max rate of increae
 prior <- runif(n = 10000, min = 0, max = 100)/100
 limits <- c(0, max(gamma$df) + 0.1)
-x_label <- expression(paste(t[italic(ice)], "slope"))
+x_label <- expression(paste(t[italic(ice)], "-MRI"))
 bin_1 <- mean(gamma$df)/100
 
 p3 <- postPriors(df = gamma$df, df2 = prior, df3 = gamma$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1, vline = "no")
@@ -1220,7 +1220,7 @@ FitNew <- sum(DNew[1:N])
 # 2. Priors
 alpha ~ dnorm(0, 100^-2) # Int
 beta ~ dnorm(0, 100^-2) # larval abun
-gamma ~ dunif(0, 100) # tice -slope
+gamma ~ dunif(0, 100) # tice - max rate increase
 delta ~ dgamma(11.5, 5.7) #tice-width
 epsilon ~ dnorm(0, 100^-2) # condition
 sigma ~ dunif(0, 100) 
@@ -1370,11 +1370,11 @@ bin_1 <- mean(beta$df)/100
 
 p2 <- postPriors(df = beta$df, df2 = prior, df3 = beta$df_cred, limits, x_label, priormean, priorsd, by_bin = bin_1)
 
-#gamma - tice-slope
+#gamma - tice-max rate increase
 #prior <- runif(n = 100000, min = 0, max = 100)/100
 prior <- runif(n = 100000, min = 0, max = 100)
 limits <- c(0, max(gamma$df) + 0.1)
-x_label <- expression(paste(t[italic(ice)], "slope"))
+x_label <- expression(paste(t[italic(ice)], "MRI"))
 bin_1 <- mean(gamma$df)/100
 
 
@@ -1626,7 +1626,7 @@ FitNew <- sum(DNew[1:N])
 
 # 2. Priors
 #beta ~ dgamma(5, 1/3) 
-beta ~ dunif(0, 100)     #tice-slope
+beta ~ dunif(0, 100)     #tice-max rate of increase
 gamma ~ dunif(0, 3.65)   #tice-width
 sigma ~ dunif(0, 100) 
 }'
@@ -1936,15 +1936,15 @@ ggsave(paste0("Bayesian/", filepath, "/priorpost.pdf"), width=10, height=8, unit
 
 
 ## DIC table ----
-index <- c(1:9)
+index <- c(1:7)
 tab1 <- as.data.frame(rbind(
      dic_R1sum,
-      dic_M1sum,
+     # dic_M1sum,
      dic_M_unifsum,
       dic_RM1sum,
       dic_RM2sum,
       dic_RM3sum,
-     dic_R2sum, # informed recruitment 
+     #dic_R2sum, # informed recruitment 
      dic_Mosum, 
      dic_Rosum
       ))
@@ -2043,7 +2043,7 @@ FitNew <- sum(DNew[1:N])
 # 2. Priors
 alpha ~ dnorm(0, 100^-2) # Int
 beta ~ dnorm(0, 100^-2) # larval abun
-gamma ~ dunif(0, 100) # tice -slope
+gamma ~ dunif(0, 100) # tice - max rate of increase
 delta ~ dgamma(11.5, 5.7) #tice-width
 epsilon ~ dnorm(0, 100^-2) # condition
 sigma ~ dunif(0, 100) 
@@ -2157,12 +2157,12 @@ p3
 # R-squared----
 tab2 <- as.data.frame(rbind(
      R1_r2,
-     M1_r2,
+     #M1_r2,
      M_unif_r2,
      RM1_r2,
      RM2_r2,
      RM3_r2,
-     R2_r2,
+     #R2_r2,
      Mo_r2,
      Ro_r2
 ))

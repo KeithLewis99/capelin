@@ -1,4 +1,3 @@
-# The question here is, what is the right area? calcAreaVolLat() faithfully reproduces an areas calculation but is it right?  I have tried to take this function apart to reproduce the values.  Unfortunately, its always different.  Why?  
 # things seem to be changing from day to day - things that were the same yesterday aren't today.  Could be an environment thing??
 
 
@@ -341,21 +340,21 @@ z@polygons[[1]]@ID
 ###############################
 # Eric's code----
 want_bin = test[[1]]$`BIN#`[6:10]
-> want_bin
+want_bin
 length(test1$c)
-[1] 14
-> length(want_poly)
+#[1] 14
+length(want_poly)
 plot(test1$c[want_poly,])
-> plot(water, xlim = c(-70, -48), ylim = c(40, 60), col = "lightblue", border = NA)
-> plot(test1$c[want_poly,], add=T)
-> plot(test1$c[want_poly,], add=T,col="red")
-> a = test1$c[want_poly,]
-> a$AREA
-[1]   43918119  130360938  404375186 3606216830   31709556
-> a$AREA/1000^2
-[1]   43.91812  130.36094  404.37519 3606.21683   31.70956
-> plot(test1$c[want_poly,], add=T,col="red")
-> plot(a, add=T)
+plot(water, xlim = c(-70, -48), ylim = c(40, 60), col = "lightblue", border = NA)
+plot(test1$c[want_poly,], add=T)
+plot(test1$c[want_poly,], add=T,col="red")
+a = test1$c[want_poly,]
+a$AREA
+#[1]   43918119  130360938  404375186 3606216830   31709556
+a$AREA/1000^2
+#[1]   43.91812  130.36094  404.37519 3606.21683   31.70956
+ plot(test1$c[want_poly,], add=T,col="red")
+ plot(a, add=T)
 
 ############################################
 # compare AREA and area in dataframe and polygons while working through the funcitons.  This is what showed that SB was being subsetted improperly------

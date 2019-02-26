@@ -4,6 +4,7 @@ library(dplyr)
 library(psych)
 library(ggplot2)
 
+#just makes a graph of ln capelin biomass by year
 
 rm(list=ls())
 

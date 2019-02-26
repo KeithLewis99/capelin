@@ -3,6 +3,8 @@ library(R2jags)
 library(rjags)
 library(readr)
 
+# a test of JAGS with a simple model plus the NA trick
+
 rm(list=ls())
 ## load data----
 test <- read.csv('figs/covariates/capelin_covariates_2001.csv',header=T)

@@ -57,6 +57,8 @@ library(cleangeo)
 library(broom)
 library(tidyverse)
 #library(doParallel)
+
+## read in source code (Lewis functions)-----
 source("D:/Keith/capelin/2017-project/ice-chart-processing-function-v3.R")
 
 # from here to "subset ice data" can be carved off into another file
@@ -98,7 +100,7 @@ stages$thickness <- sapply(seq_along(trange), function(i) {
 downloaded <- list.files("e00_data/", pattern = ".e00") # this code assumes at least one e00 file in directory, i.e., seed the directory
 downloaded <- downloaded[downloaded != "test.e00"]
 downloaded <- strptime(downloaded, "%Y%m%d.e00")
-dates <- seq(ISOdate(1969, 1, 17), ISOdate(2017, 7, 11), by = "day") # update the second ISOdate to present as desired - however, this does not work well if not updated: also, it reports a numer of erros, one for each day since last e00 file - these should be checked but can generally be ignored.
+dates <- seq(ISOdate(1969, 1, 17), ISOdate(2018, 7, 19), by = "day") # update the second ISOdate to present as desired - however, this does not work well if not updated: also, it reports a numer of erros, one for each day since last e00 file - these should be checked but can generally be ignored.
 
 dates <- dates[format(dates, "%m") %in% c("11", "12", "01", "02", "03", "04", "05", "06", "07")]
 
@@ -106,8 +108,8 @@ dates <- dates[format(dates, "%m") %in% c("11", "12", "01", "02", "03", "04", "0
 #############STOP
 ####################################################################
 #run one of next two lines
-dates <- dates[difftime(max(downloaded), dates, units = "days") < -1] #this line is for simply updating - assumes all past files are downloaded and only looks for new files on EC website past the terminal data supplied in line 92 above
-dates <- dates[!as.Date(dates) %in% as.Date(downloaded)] #this line is for downloading all data from the EC website - takes A LONG TIME!!!!!
+dates <- dates[difftime(max(downloaded), dates, units = "days") < -1] #this line is for simply updating - assumes all past files are downloaded and only looks for new files on EC website past the terminal data supplied in line 103 above
+dates <- dates[!as.Date(dates) %in% as.Date(downloaded)] #this line is for downloading all data from the EC website - takes A LONG TIME!!!!!  See N. Soontiens - this would probably been done more efficiently with an API!
 dates <- format(dates, "%Y%m%d")
 dates
 
@@ -201,8 +203,9 @@ min(trends.2013$minlats) # the minlats is actually 2013-04-15 but bc this was a 
 minlats2013 <- trends.2013[8,]
 minlats2013 <- trends.2013[-15, -16] #remove the fragments
 lookAt(trends.m1)
+lookAt(trends.2013)
 #View(trends.m1)
-save(trends.m1, file = "output-processing/ice-trends-2013-m1.Rdata")
+save(trends.2013, file = "output-processing/ice-trends-2013-m1.Rdata")
 
 # it makes no sense to bind minlat to this because the original ice-trends.Rdata does not have this value - therefore, updating it makes no sense.
 
@@ -213,7 +216,7 @@ trends_update.m1 <- calcAreaVolLat(dates3, ct=m1$ct, sa=m1$sa, sb=m1$sb)
 trends.m1 <- iceOutput(trends_update.m1, dates3)
 lookAt(trends.m1)
 #View(trends.m1)
-save(trends.m1, file = "output-processing/ice-trends-2017-m1-alla.Rdata")
+save(trends.m1, file = "output-processing/ice-trends-2018-m1-alla.Rdata")
 #save(trends.m1, file = "output-processing/ice-trends-2017-m1-subset.Rdata")
 
 # check to insure that subset is less than full set
@@ -224,14 +227,14 @@ subset(x, x < 0)
 trends_update.m2 <- calcAreaVolLat(dates3, ct=m2$ct, sa=m2$sa,  sb=m2$sb)
 trends.m2 <- iceOutput(trends_update.m2, dates3)
 lookAt(trends.m2)
-save(trends.m2, file = "output-processing/ice-trends-2017-m2-all.Rdata")
+save(trends.m2, file = "output-processing/ice-trends-2018-m2-all.Rdata")
 #save(trends.m2, file = "output-processing/ice-trends-2017-m2-subset.Rdata")
 
 ## m3
 trends_update.m3 <- calcAreaVolLat(dates3, ct=m3$ct, sa=m3$sa,  sb=m3$sb)
 trends.m3 <- iceOutput(trends_update.m3, dates3)
 lookAt(trends.m3)
-save(trends.m3, file = "output-processing/ice-trends-2017-m3-all.Rdata")
+save(trends.m3, file = "output-processing/ice-trends-2018-m3-all.Rdata")
 #save(trends.m3, file = "output-processing/ice-trends-2017-m3-subset.Rdata")
 
 ## m4
@@ -239,21 +242,21 @@ trends_update.m4 <- calcAreaVolLat(dates3, ct=m4$ct, sa=m4$sa,  sb=m4$sb)
 trends.m4 <- iceOutput(trends_update.m4, dates3)
 lookAt(trends.m4)
 #save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
-save(trends.m4, file = "output-processing/ice-trends-2017-m4-all.Rdata")
+save(trends.m4, file = "output-processing/ice-trends-2018-m4-all.Rdata")
 
 ## m5
 trends_update.m5 <- calcAreaVolLat(dates3, ct=m5$ct, sa=m5$sa,  sb=m5$sb)
 trends.m5 <- iceOutput(trends_update.m5, dates3)
 lookAt(trends.m5)
 #save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
-save(trends.m5, file = "output-processing/ice-trends-2017-m5-all.Rdata")
+save(trends.m5, file = "output-processing/ice-trends-2018-m5-all.Rdata")
 
 ## m6
 trends_update.m6 <- calcAreaVolLat(dates3, ct=m6$ct, sa=m6$sa,  sb=m6$sb)
 trends.m6 <- iceOutput(trends_update.m6, dates3)
 lookAt(trends.m6)
 #save(trends.m4, file = "output-processing/ice-trends-2017-m4-subset.Rdata")
-save(trends.m6, file = "output-processing/ice-trends-2017-m6-all.Rdata")
+save(trends.m6, file = "output-processing/ice-trends-2018-m6-all.Rdata")
 
 ## Annual maps -----------------------------------------------------------------
 
@@ -276,4 +279,4 @@ dates3[1328]
 trends$area[format(trends$date, "%Y%m%d") == "19910401"] <- NA # polygons were miss-classified
 trends <- trends[trends$date > ISOdate(1969, 11, 1), ] # 1969 was a strange year - difficult to assess patterns/fit curve - unreliable data?
 trends <- na.omit(trends)
-save(trends, file = "\output-processing\ice_trends_2017.Rdata")
+save(trends, file = "output-processing/ice_trends_2018.Rdata")

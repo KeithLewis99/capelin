@@ -70,7 +70,7 @@ test <- unionSpatialPolygons(sub.egg, 16)
 d <- tidy(sub.egg)
 tid <- d[which.min(d$lat),]
 return(tid)
-}
+
 
 # try this with a union of polygons
 nc1 <- readShapePoly(system.file("shapes/sids.shp", package="maptools")[1],proj4string=CRS("+proj=longlat +datum=NAD27"))

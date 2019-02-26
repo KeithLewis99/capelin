@@ -1,6 +1,6 @@
 x <- c(-100:100)
-alpha <- 1 # increaes alpha, decrease |y|, negative turns parabola upside down
-beta <- 50 # increase beta, decrease  |y|
+alpha <- 2 # increaes alpha, decrease |y|, negative turns parabola upside down
+beta <- 100 # increase beta, decrease  |y|
 gamma <- 2 # decrease gamma, decrease y
 delta <- 1
 z <- rnorm(201, mean=50, sd=10)
@@ -22,7 +22,10 @@ plot(x, y1)
 plot(x, y2)
 plot(x, y3)
 plot(x, y4)
+lines(x, y4)
+
 plot(x, y5)
+
 lines(x, y5)
 plot(x, y6)
 lines(x, y6)
