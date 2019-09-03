@@ -150,7 +150,13 @@ dates1 <- downloaded[!downloaded %in% converted] # files left to convert #######
 dates1 <- format(dates1, "%Y%m%d")
 dates1
 
-#"19910218" "19920319" "19920402" "20010409" "20070423" "20070507" "20110214" "20110404" 20150323" "20150427" "20160208"
+# output for dates 1 on 2019-09-03, i.e., they have not been downloaded due to downloading errors
+#checked to see if these could be the date of max ice extent, i.e. could they be tice - none can so safe to ignore.
+# "19780122" "19840313" "19900226" "19910218" "19920319" "19920402" "19931213"
+# "20010409" "20070423" "20070507" "20110214" "20110404" "20110718" "20111114"
+# "20111121" "20120723" "20120730" "20121126" "20131223" "20150216" "20150323"
+# "20150427" "20151109" "20160208" "20161205" "20170731"
+
 
 # helper function to minimize the code
 # e00 to avc_data (coverages) and then to SpatialPolygonsDAtaframe in sp_data
@@ -203,7 +209,7 @@ dates3 <- strptime(converted, "%Y%m%d.Rdata") # use this for the full run
 # leave the loads in ##  because sometimes its good to have these when troubleshooting and you don't want to rerun code
 
 # calculate proper dates for 2013 and manually in area-ice.R
-# note that 2013 was a very wonky ice year with 3-4 retreats and a large ice fragment on Apr 22 at < 49 deg latitude.  Because minlat was not a good proxy for tice in this year, I looked at the maps (D:\Keith\ice\Ice_Charts\Original_Ice_Data\GIF) and determined tice visually as Ale did in teh original work (Buren et al. 2014).  Note that it was a close call between February and April.  Basically, we decided that some low latitude ice hugging the coast in April but with little ice to the north in not the same as a lot of ice above the minlat in Feb and that the latter was more in accord with the spirit of Ale's work.
+# note that 2013 was a very wonky ice year with 3-4 retreats and a large ice fragment on Apr 22 at < 49 deg latitude.  Because minlat was not a good proxy for tice in this year, I looked at the maps (D:\Keith\ice\Ice_Charts\Original_Ice_Data\GIF) and determined tice visually as Ale did in teh original work (Buren et al. 2014).  Note that it was a close call between February and April.  Basically, we decided that some low latitude ice hugging the coast in April but with little ice to the north is not the same as a lot of ice above the minlat in Feb and that the latter was more in accord with the spirit of Ale's work.
 trends_2013 <- calcAreaVolLat(dates3[1306:1330], ct=m1$ct, sa=m1$sa, sb=m1$sb)
 trends.2013 <- iceOutput(trends_2013, dates3[1306:1330]) #makes trends_2013 a dataframe
 max(trends.2013$area) 
@@ -237,7 +243,7 @@ save(trends.m1, file = "output-processing/ice-trends-2019-m1-alla.Rdata")
 
 
 ## Manual discard --------------------------------------------------------------
-#Not sure what below if for but it should have no influence on the analysis
+#Not sure what below is for but it should have no influence on the analysis
 #dates3[-c(23)]
 #23 = "1970-01-16 NST" - no egg data on the ice charts for this day
 
