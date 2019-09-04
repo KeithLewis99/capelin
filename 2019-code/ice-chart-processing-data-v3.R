@@ -55,12 +55,6 @@ library(cleangeo)
 library(broom)
 library(tidyverse)
 
-## read in source code (Lewis functions)-----
-source("ice-chart-processing-function-v3.R")
-load("output-processing/subset-lists.Rdata") # this is now only needed to bring in "m1" which is all of the ice egg data.  There were subsets m2-m6 which removed ice stages and types.
-# this file removes ice north of 55deg lat, Lake Melville, the Bays around NF, the Gulf of St. Lawrence, and the Scotian Shelf
-load("output-processing/filters.Rdata")
-
 ## create dirs for data storage
 if(!dir.exists("avc_data")) dir.create("avc_data")
 if(!dir.exists("e00_data")) dir.create("e00_data")
@@ -68,6 +62,14 @@ if(!dir.exists("sp_data")) dir.create("sp_data")
 if(!dir.exists("output-processing")) dir.create("output-processing")
 if(!dir.exists("figs")) dir.create("figs")
 if(!dir.exists("data")) dir.create("data")
+
+## read in source code (Lewis functions)-----
+source("2019-code\\ice-chart-processing-function-v3.R") # may need to be copied over if it doesn't already exist
+load("output-processing/subset-lists.Rdata") # this is now only needed to bring in "m1" which is all of the ice egg data.  There were subsets m2-m6 which removed ice stages and types.
+# this file removes ice north of 55deg lat, Lake Melville, the Bays around NF, the Gulf of St. Lawrence, and the Scotian Shelf
+load("output-processing/filters.Rdata")
+
+
 
 ## Metadata --------------------------------------------------------------------
 ## For stage codes, see: (https://ec.gc.ca/glaces-ice/default.asp?lang=En&n=D5F7EA14-1&offset=1&toc=show) or https://www.canada.ca/en/environment-climate-change/services/ice-forecasts-observations/latest-conditions/archive-overview/information-about-data.html
@@ -111,7 +113,7 @@ downloaded <- strptime(downloaded, "%Y%m%d.e00") # takes the date from the e00 f
 ##### HEADS UP, FIX THE DATE TO CURRENT DATE!!!!!!!!!---- ##############################
 ####################################################################################
 #this creates a POSIXct vector of all possible dates between the dates specified i.e 50 years!!
-dates <- seq(ISOdate(1969, 1, 17), ISOdate(2019, 6, 19), by = "day") # update the second ISOdate to present as desired - however, this does not work well if not updated: also, it reports a numer of erros, one for each day since last e00 file - these should be checked but can generally be ignored.
+dates <- seq(ISOdate(1969, 1, 17), ISOdate(2019, 8, 28), by = "day") # update the second ISOdate to present as desired - however, this does not work well if not updated: also, it reports a numer of erros, one for each day since last e00 file - these should be checked but can generally be ignored.
 
 #this makes dates just for any months that could have ice
 dates <- dates[format(dates, "%m") %in% c("11", "12", "01", "02", "03", "04", "05", "06", "07")]
@@ -122,7 +124,8 @@ dates <- dates[format(dates, "%m") %in% c("11", "12", "01", "02", "03", "04", "0
 #run one of next two lines
 #this line is for simply updating - assumes all past files are downloaded and only looks for new files on EC website past the terminal data supplied in line 103 above; basically just looks for dates not downloaded by 1) finding the max date in downloaded, 2) finding the difference between "downloaded" and "dates" and keeping values < -1 ie only the most recent dates that would need to downloaded
 dates <- dates[difftime(max(downloaded), dates, units = "days") < -1] 
-#this line is for downloading all data from the EC website - takes A LONG TIME!!!!! #dates <- dates[!as.Date(dates) %in% as.Date(downloaded)] 
+#this line is for downloading all data from the EC website - takes A LONG TIME!!!!! 
+#dates <- dates[!as.Date(dates) %in% as.Date(downloaded)] 
 dates <- format(dates, "%Y%m%d")
 
 # downloads all files not already in e00_data folder
@@ -192,6 +195,12 @@ file.remove("sp_data/20110214.Rdata")
 # third round of removals
 #file.remove("sp_data/20130128.Rdata") - see explantion above for hashing out 2013
 
+# 2019
+# after examining the actual imagery, have decided to remove 18/3/2019 as  
+file.remove("sp_data/20190318.Rdata")
+
+
+
 
 ## Area and volume calculations ------------------------------------------------
 # calculate the area of the sea ice and .....
@@ -226,14 +235,14 @@ save(trends.m1, file = "output-processing/ice-trends-2019-m1-alla.Rdata")
 
 ## Annual maps -----------------------------------------------------------------
 # this is for viewing the flow of ice for a given year - provides an animation.  Not needed for the analysis and is similar to going through the gif files
-# yr <- 2003
-# converted <- list.files("sp_data/", pattern = ".Rdata")
-# dates <- strptime(converted, "%Y%m%d.Rdata")
-# dates <- dates[format(dates, "%Y") == as.character(yr)]
-# for(i in seq_along(dates)) {
-#   load(format(dates[i], "sp_data/%Y%m%d.Rdata"))
-#   plotIce(ice, main = dates[i])
-# }
+yr <- 1991
+converted <- list.files("sp_data/", pattern = ".Rdata")
+dates <- strptime(converted, "%Y%m%d.Rdata")
+dates <- dates[format(dates, "%Y") == as.character(yr)]
+for(i in seq_along(dates)) {
+ load(format(dates[i], "sp_data/%Y%m%d.Rdata"))
+ plotIce(ice, main = dates[i])
+}
 
 
 ## Manual discard --------------------------------------------------------------

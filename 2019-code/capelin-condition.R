@@ -19,8 +19,47 @@ library(tidyr)
 library(dplyr)
 library(tidyselect)
 library(magrittr)
+library(RODBC)
 
 rm(list=ls())
+
+# developing code to directly pull capelin data from the database...
+# open connection to the capelin database
+capelin_db<-odbcConnectAccess2007("J:\\Access Database Project\\Capelin Access database and program (limited access)\\capelin.mdb")
+# get directory of tables
+dir.tables<-sqlTables(capelin_db, tableType="TABLE")
+# need to find out which tables are LSM
+LSM.index<-grep("LSM.*", dir.tables$TABLE_NAME)
+# need to find out which tables are Master
+Master.index<-grep("Master.*", dir.tables$TABLE_NAME)
+# need to find out which tables are Strat but not Frankie
+# first find all the Frankie tables...
+strat.all<-grep("Strat[0-9]{2}", dir.tables$TABLE_NAME)
+strat.frankie<-grep("Frankie", dir.tables$TABLE_NAME)
+Strat.index<-strat.all[which(!(strat.all %in% strat.frankie))]
+
+# we have the indices, now pull in tables, combine them, then merge, then limit to Project Code 10/23
+# pull in LSM data
+LSM.table.list<-lapply(LSM.index, function(x) sqlFetch(capelin_db, dir.tables$TABLE_NAME[x])) %>% lapply(function(x) x%>% select("Sample Number", Year, "LSM Number", Sex, Maturity))
+LSM.table<-bind_rows(LSM.table.list)
+# pull in Master data
+Master.table.list<-lapply(Master.index, function(x) sqlFetch(capelin_db, dir.tables$TABLE_NAME[x])) %>% lapply(function(x) x%>% select("Sample Number", Year, Month, Day, Gear, Country, Ship, "Trip Number", "Set Number", "Project Code", "Comments"))
+Master.table<-bind_rows(Master.table.list)
+# pull in Strat data
+Strat.table.list<-lapply(Strat.index, function(x) sqlFetch(capelin_db, dir.tables$TABLE_NAME[x])) %>% lapply(function(x) x%>% select("Sample Number", Year, "Otolith Number", "LSM Number", Length, Sex, Maturity, Weight, "Stomach Fullness", Age, Gonad))
+Strat.table<-bind_rows(Strat.table.list)
+close(capelin_db)
+
+# clean up column names of each of the big tables...
+colnames(Master.table)<-c("sample.number", "year", "month", "day", "gear", "country", "ship", "trip.number", "set.number", "project.code", "comments")
+colnames(LSM.table)<-c("sample.number", "year","lsm.number", "sex","maturity")
+colnames(Strat.table)<-c("sample.number", "year", "otolith.number", "lsm.number", "length", "sex", "maturity", "weight", "stomach.fullness", "age", "gonad")
+
+lsm.master<-merge(Master.table, LSM.table, all.x=TRUE, all.y=TRUE)
+lsm.master$year2<-lsm.master$year
+lsm.master.strat<-merge(lsm.master, Strat.table, all.x=TRUE, all.y=TRUE)
+
+# OK... at this point I'm stopped with database errors...
 
 ## load data----
 # this from the ice-capelin-covariates file

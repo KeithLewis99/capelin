@@ -32,11 +32,11 @@ library(cowplot)
 #devtools::install_github("tidyverse/ggplot2")
 #library(raster)
 
-setwd("D:\\Keith\\capelin\\2019-code")
+#setwd("D:\\Keith\\capelin\\2019-code")
 
 # load code and data ----------
-source("ice-chart-processing-function-v3.R")
-source("area-ice-function.R")
+source("2019-code\\ice-chart-processing-function-v3.R")
+source("2019-code\\area-ice-function.R")
 
 #load("ice-trends-2017-m1-d3.Rdata")
 #load data from ice-chart-processing-date-v3.R
@@ -55,9 +55,9 @@ trends.m1$year <- year(trends.m1$date)
 #Boxplots-----
 #windows()
 p1 <- ggplot(data = trends.m1, aes(x = year, y = area, group = year)) + 
-  geom_boxplot()
+  geom_boxplot(fill="grey")
 p2 <- ggplot(data = trends.m1, aes(x = year, y = minlats, group = year)) + 
-  geom_boxplot()
+  geom_boxplot(fill="grey")
 
 cowplot::plot_grid(p1, p2, labels = c("m1", ""), ncol=2)
 ggsave("figs/1-area-minlatsBoxplots.pdf", width=10, height=8, units="in")
@@ -168,3 +168,4 @@ write.csv(iceCorr.m1.rsq, file = "output-processing/iceCorr-m1-rsq.csv", row.nam
 
 iceSum.m1 <- iceSum.m1[c("year", "area", "minlats", "tice")]
 write.csv(iceSum.m1, file = "output-processing/capelin-m1.csv", row.names=F, na="")
+
