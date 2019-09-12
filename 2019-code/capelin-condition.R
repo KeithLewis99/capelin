@@ -20,6 +20,7 @@ library(dplyr)
 library(tidyselect)
 library(magrittr)
 library(RODBC)
+library(forcats)
 
 rm(list=ls())
 
@@ -40,10 +41,10 @@ Strat.index<-strat.all[which(!(strat.all %in% strat.frankie))]
 
 # we have the indices, now pull in tables, combine them, then merge, then limit to Project Code 10/23
 # pull in LSM data
-LSM.table.list<-lapply(LSM.index, function(x) sqlFetch(capelin_db, dir.tables$TABLE_NAME[x])) %>% lapply(function(x) x%>% select("Sample Number", Year, "LSM Number", Sex, Maturity))
+LSM.table.list<-lapply(LSM.index, function(x) sqlFetch(capelin_db, dir.tables$TABLE_NAME[x])) %>% lapply(function(x) x%>% select("Sample Number", Year, "LSM Number", Length, Sex, Maturity))
 LSM.table<-bind_rows(LSM.table.list)
 # pull in Master data
-Master.table.list<-lapply(Master.index, function(x) sqlFetch(capelin_db, dir.tables$TABLE_NAME[x])) %>% lapply(function(x) x%>% select("Sample Number", Year, Month, Day, Gear, Country, Ship, "Trip Number", "Set Number", "Project Code", "Comments"))
+Master.table.list<-lapply(Master.index, function(x) sqlFetch(capelin_db, dir.tables$TABLE_NAME[x])) %>% lapply(function(x) x%>% select("Sample Number", Year, Month, Day, "ICNAF Div", Gear, Country, Ship, "Trip Number", "Set Number", "Project Code"))
 Master.table<-bind_rows(Master.table.list)
 # pull in Strat data
 Strat.table.list<-lapply(Strat.index, function(x) sqlFetch(capelin_db, dir.tables$TABLE_NAME[x])) %>% lapply(function(x) x%>% select("Sample Number", Year, "Otolith Number", "LSM Number", Length, Sex, Maturity, Weight, "Stomach Fullness", Age, Gonad))
@@ -51,19 +52,77 @@ Strat.table<-bind_rows(Strat.table.list)
 close(capelin_db)
 
 # clean up column names of each of the big tables...
-colnames(Master.table)<-c("sample.number", "year", "month", "day", "gear", "country", "ship", "trip.number", "set.number", "project.code", "comments")
-colnames(LSM.table)<-c("sample.number", "year","lsm.number", "sex","maturity")
+colnames(Master.table)<-c("sample.number", "year", "month", "day", "nafo.div", "gear", "country", "ship", "trip.number", "set.number", "project.code")
+colnames(LSM.table)<-c("sample.number", "year", "lsm.number", "length", "sex", "maturity")
 colnames(Strat.table)<-c("sample.number", "year", "otolith.number", "lsm.number", "length", "sex", "maturity", "weight", "stomach.fullness", "age", "gonad")
 
 lsm.master<-merge(Master.table, LSM.table, all.x=TRUE, all.y=TRUE)
 lsm.master$year2<-lsm.master$year
-lsm.master.strat<-merge(lsm.master, Strat.table, all.x=TRUE, all.y=TRUE)
+lsm.master.strat<-merge(lsm.master, Strat.table, all.x=TRUE, all.y=TRUE) 
+# I know at this point that there are bad matches in this dataset. I will clean this below when the dataset gets cleaned up for further analysis after the archive data gets pulled in. .
 
-# OK... at this point I'm stopped with database errors...
+# developing code to directly pull capelin archive data from the database...
+# open connection to the capelin database
+capelin_arch_db<-odbcConnectAccess2007("J:\\Access Database Project\\Capelin archive\\capelin archive.mdb")
+# get directory of tables to see what the table names look like for import below...
+dir.tables.arch<-sqlTables(capelin_arch_db, tableType="TABLE")
+
+
+# we have the indices, now pull in tables, combine them, then merge, then limit to Project Code 10/23
+# pull in LSM data
+LSM.table.arch<-sqlFetch(capelin_arch_db, "LSM_archive")
+Master.table.arch<-sqlFetch(capelin_arch_db, "MASTER_archive") %>% select(Sample_Number, Year, Month, Day, NAFO_Div, Gear, Country, Ship, Trip_Number, Set_Number, Strat_Protocol, Project_Code)
+Strat.table.arch<-sqlFetch(capelin_arch_db, "STRAT_archive")
+close(capelin_arch_db)
+
+# from data cleaning, I've seen that the outlier column causes mismatches. Exclude this column from the LSM.table.arch and Strat.table.arch data.frames
+
+# addign in the second year column in order to help exclude mismatches
+Master.table.arch$year2<-Master.table.arch$Year
+
+lsm.master.arch<-merge(LSM.table.arch %>% select(-Outlier), Master.table.arch, all.x=TRUE, all.y=TRUE)
+# during data cleaning, I determined that the 5 cases where the datasets mismatched there are 4 sample_numbers where capelin were not caught (or at least aren't in LSM) - 2005-> sample_number 26, 1979 -> sample_numbers 68, 98, and 2010 -> sample_number 632
+# lsm.master.arch %>% filter(is.na(year2))
+# lsm.master.arch %>% filter(is.na(Length))
+# Additionally, we have a weird fish that comes from a sample_number that doesn't exist 2008, sample_number 2, LSM_number = 1
+# clear out these records before doing next merge...
+lsm.master.arch <- lsm.master.arch %>% filter(!is.na(Length)) %>% filter(!is.na(year2))
+# merge in strat while taking out the Outlier column because it creates mismatches
+lsm.master.strat.arch <- merge(lsm.master.arch, Strat.table.arch %>% select(-Outlier), all.x=TRUE, all.y=TRUE)
+
+# later on I see that Year has to be greater than 1992, so can ignore 1992 and prior...
+lsm.master.strat.arch <- lsm.master.strat.arch %>% filter(Year>1992)
+
+# need to simplify both data sets so that they are more consistent with the existing data...
+# at the same time, use year2 to filter out mismatches 
+lsm.master.strat <- lsm.master.strat %>% filter(!is.na(year2)) %>% select(project.code, sample.number, year, month, nafo.div, length, sex, maturity, weight, stomach.fullness, age, gonad)
+lsm.master.strat.arch <- lsm.master.strat.arch %>% filter(!is.na(year2)) %>% select(Project_Code, Sample_Number, Year, Month, NAFO_Div, Length, Sex, Maturity, Weight, Stomach_Fullness, Age, Gonad)
+
+# need to get the names to match what df has for formating...
+colnames(lsm.master.strat)<-c("project", "sample_number", "year", "month", "nafo_div", "length", "sex", "maturity", "weight", "stomach.fullness", "age", "gonad")
+colnames(lsm.master.strat.arch)<-c("project", "sample_number", "year", "month", "nafo_div", "length", "sex", "maturity", "weight", "stomach.fullness", "age", "gonad")
+
+
+# from here have to decide which dataset to use where they overlap and then progress onwards from here
+head(lsm.master.strat)
+head(lsm.master.strat.arch)
+# table(lsm.master.strat$year) 2006 to 2019
+# table(lsm.master.strat.arch$year) 1993 to 2015
+
+# as more work has gone into cleaning up the archive data, will go with that data rather than current
+lsm.master.strat<-lsm.master.strat %>% filter(year>2015)
+
+# join the archived data and the current data
+df_new<-rbind(lsm.master.strat.arch, lsm.master.strat)
+
+# We are focused on a particualr groups of fish...
+df3_new <- df_new %>% filter(year>1992 & age==1 & maturity!=6 & project==23 & month%in% c(10, 11, 12) & nafo_div%in%c(23, 31, 32)) %>% filter(!is.na(weight)) %>% filter(!is.na(length))
+
 
 ## load data----
 # this from the ice-capelin-covariates file
 df <- read_csv('data/capelin_condition_maturation_v1.csv') # read in full lsm data
+# this step drops the duplicated project code variable
 df <- df[c(1:5, 7:15)]
 glimpse(df)
 head(df)
@@ -85,16 +144,16 @@ write_csv(df, "data/condition_1979_2017.csv")
 
 age <- 1
 
-
+test<-c(0,1,0,1,0,1,0)
+sum(test)
 
 ##Age1 M/F comparisons----
 # there is considerable worry that using the males only will cause questions during the review process.  The intent of the following analysis is to test for differences between males and females.
 
+
 #subset data
 df3 <- df %>%
-     filter(year > 1992 &  age == 1 & maturity != 6 & project != 10 & as.factor(month) %in% c("10", "11", "12") & as.factor(nafo_div) %in% c(23, 31, 32)) %>% #one-year old capelin after 1992, just project 23 sex == 1 &
-     filter(!is.na(weight)) %>%
-     filter(!is.na(length)) 
+     filter(year > 1992 &  age == 1 & maturity != 6 & project != 10 & month %in% c(10, 11, 12) & nafo_div %in% c(23, 31, 32)) %>% filter(!is.na(weight)) %>% filter(!is.na(length)) 
 
 #make these variables factors
 cols <- c("project", "nafo_div", "sex", "maturity")
@@ -103,7 +162,14 @@ df3 %<>%
 glimpse(df3)
 
 #change values to something interpretable
-df3$nafo_div <- as.factor(df3$nafo_div)
+levels(df3$nafo_div)[levels(df3$nafo_div) == "23"] <- "2J"
+levels(df3$nafo_div)[levels(df3$nafo_div) == "31"] <- "3K"
+levels(df3$nafo_div)[levels(df3$nafo_div) == "32"] <- "3L"
+levels(df3$sex)[levels(df3$sex) == "1"] <- "Male"
+levels(df3$sex)[levels(df3$sex) == "2"] <- "Female"
+
+#change values to something interpretable
+df3_new2<-df3_new %>% mutate_at(vars(cols), funs(as.factor)) %>% mutate(nafo_div=fct_recode(nafo_div, "2J" = "23", "3K" = "31", "3L" = "32")) %>% mutate(sex=fct_recode(sex, "Male"="1", "Female"="2", "Unknown"="3"))
 levels(df3$nafo_div)[levels(df3$nafo_div) == "23"] <- "2J"
 levels(df3$nafo_div)[levels(df3$nafo_div) == "31"] <- "3K"
 levels(df3$nafo_div)[levels(df3$nafo_div) == "32"] <- "3L"
