@@ -170,11 +170,7 @@ levels(df3$sex)[levels(df3$sex) == "2"] <- "Female"
 
 #change values to something interpretable
 df3_new2<-df3_new %>% mutate_at(vars(cols), funs(as.factor)) %>% mutate(nafo_div=fct_recode(nafo_div, "2J" = "23", "3K" = "31", "3L" = "32")) %>% mutate(sex=fct_recode(sex, "Male"="1", "Female"="2", "Unknown"="3"))
-levels(df3$nafo_div)[levels(df3$nafo_div) == "23"] <- "2J"
-levels(df3$nafo_div)[levels(df3$nafo_div) == "31"] <- "3K"
-levels(df3$nafo_div)[levels(df3$nafo_div) == "32"] <- "3L"
-levels(df3$sex)[levels(df3$sex) == "1"] <- "Male"
-levels(df3$sex)[levels(df3$sex) == "2"] <- "Female"
+
 
 # check levels of data to ensure that subset worked
 levels(df3$project)
@@ -187,12 +183,28 @@ range(df3$weight)
 range(df3$length)
 levels(as.factor(df3$age))
 
+# check levels of data to ensure that subset worked - repeat to see that it worked for the direct access database
+levels(df3_new2$project)
+levels(as.factor(df3_new2$sample_number))
+levels(as.factor(df3_new2$year))
+levels(as.factor(df3_new2$month))
+levels(df3_new2$nafo_div)
+levels(df3_new2$maturity)
+range(df3_new2$weight)
+range(df3_new2$length)
+levels(as.factor(df3_new2$age))
+
 
 # see email from H. Murphy and Methods of ResDoc - these are the values for filtering the dataset that Hannah and Maegen suggested based on biology
 df3 <- df3 %>%
      group_by(year) %>%
      filter(weight > 2) %>% 
      filter(length > 80)
+
+df3_new2 <- df3_new2 %>% 
+  group_by(year) %>%
+  filter(weight > 2) %>%
+  filter(length > 80)
      
 # run models for male and females seperately
 #males
@@ -209,11 +221,38 @@ df3.m$resids <- df3.m$weight-10^df3.m$fits
 ggplot(data=df3.m) + geom_point(aes(x=log10(length), y = log10(weight), colour=nafo_div)) + 
      facet_wrap(~nafo_div)
 
+
+
+
+# run models for male and females seperately - direct from database
+#males
+df3.new.m <- filter(df3_new2, sex == "Male")
+m2.new.m <- lm(log10(weight) ~ log10(length), data= df3.new.m)
+df3.new.m$fits <- fitted(m2.new.m)
+
+m2.new.m$fitted.values
+str(m2.new.m)
+df3.new.m$rel.cond <- df3.new.m$weight/10^df3.new.m$fits
+df3.new.m$resids <- df3.new.m$weight-10^df3.new.m$fits
+
+
+ggplot(data=df3.new.m) + geom_point(aes(x=log10(length), y = log10(weight), colour=nafo_div)) + 
+  facet_wrap(~nafo_div)
+
+
 # test for outliers of condition
 quantile(df3.m$weight, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999))
 plot(density(df3.m$weight))
 round(quantile(df3.m$length, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999)), 1)
 plot(density(df3.m$length))
+
+
+# test for outliers of condition - direct from database
+quantile(df3.new.m$weight, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999))
+lines(density(df3.new.m$weight), col="red")
+round(quantile(df3.new.m$length, c(0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.995, 0.999)), 1)
+lines(density(df3.new.m$length), col="red")
+
 
 # Look at capelin with very high or low condition
 # I checked with Magen and all these seem good
@@ -222,6 +261,17 @@ df3.m[df3.m$rel.cond < 0.7, c("sex", "maturity", "rel.cond", "length", "weight")
 
 plot(df3.m$rel.cond, df3.m$resids)
 plot(boxplot(df3.m$rel.cond))
+
+
+
+# Look at capelin with very high or low condition - direct access
+# I checked with Magen and all these seem good
+df3.new.m[df3.new.m$rel.cond > 1.4, c("sex", "maturity", "rel.cond", "length", "weight")]
+df3.new.m[df3.new.m$rel.cond < 0.7, c("sex", "maturity", "rel.cond", "length", "weight")]
+
+plot(df3.new.m$rel.cond, df3.new.m$resids)
+plot(boxplot(df3.new.m$rel.cond))
+
 
 #females
 df3.f <- filter(df3, sex == "Female")
